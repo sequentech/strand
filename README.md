@@ -6,7 +6,7 @@
 * http://localhost:8080/src/wasm/test.html
 ### rayon (broken)
 * https://github.com/GoogleChromeLabs/wasm-bindgen-rayon
-* 
+*  .cargo/config
     [target.wasm32-unknown-unknown]
     rustflags = ["-C", "target-feature=+atomics,+bulk-memory,+mutable-globals"]
     
@@ -14,4 +14,4 @@
     build-std = ["panic_abort", "std"]
     
 * rust-toolchain `nightly-2022-04-07`
-* wasm-pack build --release --target web --features=wasmrayon,wasmtest
+* `wasm-pack build --release --target web --features=wasmrayon,wasmtest`
