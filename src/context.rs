@@ -10,8 +10,8 @@ pub trait Ctx: Sized + Clone + Send + Sync + ToFromBTree + ZKProver<Self> {
 
     fn generator(&self) -> &Self::E;
     fn gmod_pow(&self, other: &Self::X) -> Self::E;
-    fn modulus(&self) -> Self::E;
-    fn exp_modulus(&self) -> Self::X;
+    fn modulus(&self) -> &Self::E;
+    fn exp_modulus(&self) -> &Self::X;
 
     fn rnd(&self) -> Self::E;
     fn rnd_exp(&self) -> Self::X;

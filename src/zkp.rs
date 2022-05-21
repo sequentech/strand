@@ -225,17 +225,17 @@ pub trait ZKProver<C: Ctx> {
 
 #[derive(Eq, PartialEq)]
 pub struct Schnorr<C: Ctx> {
-    pub commitment: C::E,
-    pub challenge: C::X,
-    pub response: C::X,
-    pub phantom: PhantomData<C>,
+    pub(crate) commitment: C::E,
+    pub(crate) challenge: C::X,
+    pub(crate) response: C::X,
+    pub(crate) phantom: PhantomData<C>,
 }
 
 #[derive(Eq, PartialEq)]
 pub struct ChaumPedersen<C: Ctx> {
-    pub commitment1: C::E,
-    pub commitment2: C::E,
-    pub challenge: C::X,
-    pub response: C::X,
-    pub phantom: PhantomData<C>,
+    pub(crate) commitment1: C::E,
+    pub(crate) commitment2: C::E,
+    pub(crate) challenge: C::X,
+    pub(crate) response: C::X,
+    pub(crate) phantom: PhantomData<C>,
 }

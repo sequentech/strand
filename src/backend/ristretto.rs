@@ -1,4 +1,5 @@
 use curve25519_dalek::constants::RISTRETTO_BASEPOINT_POINT;
+use curve25519_dalek::constants::BASEPOINT_ORDER;
 use curve25519_dalek::constants::RISTRETTO_BASEPOINT_TABLE;
 use curve25519_dalek::digest::{ExtendableOutputDirty, Update, XofReader};
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
@@ -20,6 +21,9 @@ use sha3::Shake256;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct RistrettoCtx;
+
+const DUMMY_SCALAR: Scalar = BASEPOINT_ORDER;
+const DUMMY_POINT: RistrettoPoint = RISTRETTO_BASEPOINT_POINT;
 
 impl RistrettoCtx {
     // https://docs.rs/bulletproofs/4.0.0/src/bulletproofs/generators.rs.html
@@ -57,14 +61,14 @@ impl Ctx for RistrettoCtx {
         other * &RISTRETTO_BASEPOINT_TABLE
     }
     #[inline(always)]
-    fn modulus(&self) -> RistrettoPoint {
+    fn modulus(&self) -> &RistrettoPoint {
         // returning a dummy value as modulus does not apply to this backend
-        RistrettoPoint::default()
+        &DUMMY_POINT
     }
     #[inline(always)]
-    fn exp_modulus(&self) -> Scalar {
+    fn exp_modulus(&self) -> &Scalar {
         // returning a dummy value as modulus does not apply to this backend
-        Scalar::default()
+        &DUMMY_SCALAR
     }
     #[inline(always)]
     fn rnd(&self) -> RistrettoPoint {
@@ -241,6 +245,7 @@ impl FromByteTree for RistrettoPoint {
             .ok_or_else(|| ByteError::Msg(String::from("Failed constructing ristretto point")))
     }
 }
+
 
 impl ToByteTree for RistrettoCtx {
     fn to_byte_tree(&self) -> ByteTree {

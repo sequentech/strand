@@ -94,12 +94,12 @@ impl Ctx for BigintCtx {
         self.generator.modpow(other, &self.modulus())
     }
     #[inline(always)]
-    fn modulus(&self) -> BigUint {
-        self.modulus.clone()
+    fn modulus(&self) -> &BigUint {
+        &self.modulus
     }
     #[inline(always)]
-    fn exp_modulus(&self) -> BigUint {
-        self.modulus_exp.clone()
+    fn exp_modulus(&self) -> &BigUint {
+        &self.modulus_exp
     }
     #[inline(always)]
     fn rnd(&self) -> BigUint {

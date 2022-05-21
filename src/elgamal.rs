@@ -15,21 +15,21 @@ pub struct EncryptedPrivateKey {
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct Ciphertext<C: Ctx> {
-    pub a: C::E,
-    pub b: C::E,
+    pub(crate) a: C::E,
+    pub(crate) b: C::E,
 }
 
 #[derive(Eq, PartialEq)]
 pub struct PublicKey<C: Ctx> {
-    pub value: C::E,
-    pub ctx: C,
+    pub(crate) value: C::E,
+    pub(crate) ctx: C,
 }
 
 #[derive(Eq, PartialEq)]
 pub struct PrivateKey<C: Ctx> {
-    pub value: C::X,
-    pub public_value: C::E,
-    pub ctx: C,
+    pub(crate) value: C::X,
+    pub(crate) public_value: C::E,
+    pub(crate) ctx: C,
 }
 
 impl<C: Ctx> PublicKey<C> {

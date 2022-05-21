@@ -34,23 +34,23 @@ pub struct Commitments<C: Ctx> {
 
 #[derive(Clone)]
 pub struct Responses<C: Ctx> {
-    pub s1: C::X,
-    pub s2: C::X,
-    pub s3: C::X,
-    pub s4: C::X,
-    pub s_hats: Vec<C::X>,
-    pub s_primes: Vec<C::X>,
+    pub(crate) s1: C::X,
+    pub(crate) s2: C::X,
+    pub(crate) s3: C::X,
+    pub(crate) s4: C::X,
+    pub(crate) s_hats: Vec<C::X>,
+    pub(crate) s_primes: Vec<C::X>,
 }
 
 pub struct ShuffleProof<C: Ctx> {
     // proof commitment
-    pub t: Commitments<C>,
+    pub(crate) t: Commitments<C>,
     // proof response
-    pub s: Responses<C>,
+    pub(crate) s: Responses<C>,
     // permutation commitment
-    pub cs: Vec<C::E>,
+    pub(crate) cs: Vec<C::E>,
     // commitment chain
-    pub c_hats: Vec<C::E>,
+    pub(crate) c_hats: Vec<C::E>,
 }
 
 pub(super) struct PermutationData<'a, C: Ctx> {
@@ -60,8 +60,8 @@ pub(super) struct PermutationData<'a, C: Ctx> {
 }
 
 pub struct Shuffler<'a, C: Ctx> {
-    pub pk: &'a PublicKey<C>,
-    pub generators: &'a Vec<C::E>,
+    pub(crate) pk: &'a PublicKey<C>,
+    pub(crate) generators: &'a Vec<C::E>,
 }
 
 impl<'a, C: Ctx> Shuffler<'a, C> {

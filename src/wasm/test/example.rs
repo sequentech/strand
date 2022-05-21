@@ -18,7 +18,7 @@ struct ByteTreeBridge {
 }
 
 #[wasm_bindgen]
-pub fn ex(ciphertext: &[u8]) -> JsValue {
+pub fn ex(ciphertext: &[u8]) {
     // let ctx = BigintCtx::default();
     let one: BigUint = BigUint::from(23323235u32);
     // let rndb = rnd.to_bytes_be();
@@ -29,5 +29,4 @@ pub fn ex(ciphertext: &[u8]) -> JsValue {
 
     // one.to_bytes_be()
     let tree = one.to_byte_tree();
-    JsValue::from_serde(&tree).unwrap()
 }
