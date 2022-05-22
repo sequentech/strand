@@ -13,10 +13,7 @@ fn test_shuffle_generic<C: Ctx>(ctx: C, n: usize) {
     let es = util::random_ballots(n, &ctx);
     let seed = vec![];
     let hs = ctx.generators(es.len() + 1, 0, &seed);
-    let shuffler = Shuffler {
-        pk: &pk,
-        generators: &hs,
-    };
+    let shuffler = Shuffler::new(&pk, &hs);
 
     let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
     let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &vec![]);

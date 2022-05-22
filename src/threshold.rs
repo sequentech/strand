@@ -62,10 +62,10 @@ impl<C: Ctx> Keymaker<C> {
         let trustee_exp = ctx.exp_from_u64(trustee as u64);
 
         for coefficient in coefficients.iter().take(threshold).skip(1) {
-            power = power.mul(&trustee_exp).modulo(&ctx.exp_modulus());
-            sum = sum.add(&coefficient.mul(&power).modulo(&ctx.exp_modulus()));
+            power = power.mul(&trustee_exp).modulo(ctx.exp_modulus());
+            sum = sum.add(&coefficient.mul(&power).modulo(ctx.exp_modulus()));
         }
-        sum.modulo(&ctx.exp_modulus())
+        sum.modulo(ctx.exp_modulus())
     }
 
     fn add_external_share(
@@ -100,8 +100,8 @@ impl<C: Ctx> Keymaker<C> {
             let power_element = ctx.exp_from_u64(power as u64);
 
             accum = accum
-                .mul(&commitment.mod_pow(&power_element, &ctx.modulus()))
-                .modulo(&ctx.modulus());
+                .mul(&commitment.mod_pow(&power_element, ctx.modulus()))
+                .modulo(ctx.modulus());
         }
 
         accum
@@ -113,13 +113,13 @@ impl<C: Ctx> Keymaker<C> {
             sum = sum.add(&self.external_shares[i]);
         }
 
-        sum.modulo(&self.ctx.exp_modulus())
+        sum.modulo(self.ctx.exp_modulus())
     }
 
     fn decryption_factor(&self, b: &C::E, label: &[u8]) -> (C::E, ChaumPedersen<C>) {
         let share = self.secret_share();
         let v_key = self.verification_key();
-        let factor = b.mod_pow(&share, &self.ctx.modulus());
+        let factor = b.mod_pow(&share, self.ctx.modulus());
         let proof = self.ctx.cp_prove(&share, &v_key, &factor, None, b, label);
         // let ok = self.ctx.cp_verify(&v_key, &factor, None, b, &proof, &vec![]);
         // assert!(ok);
@@ -130,7 +130,7 @@ impl<C: Ctx> Keymaker<C> {
         assert_eq!(self.v_key_factors.len(), self.num_trustees);
         let mut key = C::E::mul_identity();
         for next in &self.v_key_factors {
-            key = key.mul(next).modulo(&self.ctx.modulus());
+            key = key.mul(next).modulo(self.ctx.modulus());
         }
 
         key
@@ -149,15 +149,15 @@ impl<C: Ctx> Keymaker<C> {
             // let diff_exp = present_exp.sub(&trustee_exp).modulo(&ctx.exp_modulus());
             // we add exp_modulus to prevent negative numbers not supported by bigint backend
             let diff_exp = present_exp
-                .add(&ctx.exp_modulus())
+                .add(ctx.exp_modulus())
                 .sub(&trustee_exp)
-                .modulo(&ctx.exp_modulus());
+                .modulo(ctx.exp_modulus());
 
-            numerator = numerator.mul(&present_exp).modulo(&ctx.exp_modulus());
-            denominator = denominator.mul(&diff_exp).modulo(&ctx.exp_modulus());
+            numerator = numerator.mul(&present_exp).modulo(ctx.exp_modulus());
+            denominator = denominator.mul(&diff_exp).modulo(ctx.exp_modulus());
         }
 
-        numerator.div(&denominator, &ctx.exp_modulus())
+        numerator.div(&denominator, ctx.exp_modulus())
         // .mul(&denominator.inv(&ctx.exp_modulus()))
         // .modulo(&ctx.exp_modulus())
     }
@@ -170,7 +170,7 @@ pub(crate) mod tests {
     use crate::threshold::*;
 
     pub(crate) fn test_threshold_generic<C: Ctx>(
-        ctx: C,
+        ctx: &C,
         num_trustees: usize,
         threshold: usize,
         data: C::P,
@@ -178,7 +178,7 @@ pub(crate) mod tests {
         let mut pk = C::E::mul_identity();
         let mut trustees = Vec::new();
         for _ in 0..num_trustees {
-            let trustee = Keymaker::gen(&ctx, num_trustees, threshold);
+            let trustee = Keymaker::gen(ctx, num_trustees, threshold);
             pk = pk.mul(&trustee.commitments[0]).modulo(&ctx.modulus());
             trustees.push(trustee);
         }
@@ -193,7 +193,7 @@ pub(crate) mod tests {
             }
         }
 
-        let pk = PublicKey::from(&pk, &ctx);
+        let pk = PublicKey::from(&pk, ctx);
         let plaintext = ctx.encode(&data);
 
         let c = pk.encrypt(&plaintext);
@@ -218,7 +218,7 @@ pub(crate) mod tests {
             let ok = ctx.cp_verify(&v_key, &base, None, &c.b, &proof, &vec![]);
             assert!(ok);
 
-            let lagrange = Keymaker::lagrange(present[i], &present, &ctx);
+            let lagrange = Keymaker::lagrange(present[i], &present, ctx);
 
             let next = base.mod_pow(&lagrange, &ctx.modulus());
             divider = divider.mul(&next).modulo(&ctx.modulus())
@@ -238,7 +238,7 @@ pub(crate) mod tests {
             let ok = ctx.cp_verify(&v_key, &base, None, &c.b, &proof, &vec![]);
             assert!(ok);
 
-            let lagrange = Keymaker::lagrange(present[i], &present, &ctx);
+            let lagrange = Keymaker::lagrange(present[i], &present, ctx);
 
             let next = base.mod_pow(&lagrange, &ctx.modulus());
             divider = divider.mul(&next).modulo(&ctx.modulus())

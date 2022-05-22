@@ -1,10 +1,10 @@
-use crate::context::Ctx;
 use crate::backend::num_bigint::BigintCtx;
 use crate::backend::ristretto::RistrettoCtx;
-use crate::zkp::ZKProver;
-use wasm_bindgen::prelude::*;
-use num_bigint::BigUint;
 use crate::byte_tree::{ByteTree, ToByteTree};
+use crate::context::Ctx;
+use crate::zkp::ZKProver;
+use num_bigint::BigUint;
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 extern "C" {
@@ -14,7 +14,7 @@ extern "C" {
 
 #[wasm_bindgen]
 struct ByteTreeBridge {
-    tree: ByteTree
+    tree: ByteTree,
 }
 
 #[wasm_bindgen]

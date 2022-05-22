@@ -3,13 +3,14 @@ use crate::elgamal::*;
 use crate::zkp::ZKProver;
 use std::marker::{Send, Sync};
 
-pub trait Ctx: Sized + Clone + Send + Sync + ToFromBTree + ZKProver<Self> {
+pub trait Ctx: 'static + Sized + Clone + Send + Sync + ToFromBTree + ZKProver<Self> {
     type E: Element<Self>;
     type X: Exponent<Self>;
     type P: Send + Sync + Eq + std::fmt::Debug;
 
     fn generator(&self) -> &Self::E;
     fn gmod_pow(&self, other: &Self::X) -> Self::E;
+    fn mod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E;
     fn modulus(&self) -> &Self::E;
     fn exp_modulus(&self) -> &Self::X;
 
@@ -22,6 +23,8 @@ pub trait Ctx: Sized + Clone + Send + Sync + ToFromBTree + ZKProver<Self> {
     fn decode(&self, element: &Self::E) -> Self::P;
     fn exp_from_u64(&self, value: u64) -> Self::X;
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E>;
+
+    fn get() -> &'static Self;
 }
 
 pub trait Element<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree {

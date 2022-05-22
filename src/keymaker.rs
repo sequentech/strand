@@ -30,7 +30,7 @@ impl<C: Ctx> Keymaker<C> {
     }
 
     pub fn share(&self, label: &[u8]) -> (PublicKey<C>, Schnorr<C>) {
-        let ctx = &self.sk.ctx;
+        let ctx = C::get();
 
         let pk = PublicKey::<C>::from(&self.pk.value, ctx);
         let proof = ctx.schnorr_prove(&self.sk.value, &pk.value, ctx.generator(), label);
@@ -50,14 +50,14 @@ impl<C: Ctx> Keymaker<C> {
         let mut acc: C::E = pks[0].value.clone();
 
         for pk in pks.iter().skip(1) {
-            acc = acc.mul(&pk.value).modulo(&ctx.modulus());
+            acc = acc.mul(&pk.value).modulo(ctx.modulus());
         }
 
         PublicKey::<C>::from(&acc, ctx)
     }
 
     pub fn decryption_factor(&self, c: &Ciphertext<C>, label: &[u8]) -> (C::E, ChaumPedersen<C>) {
-        let ctx = &self.sk.ctx;
+        let ctx = C::get();
         let dec_factor = self.sk.decryption_factor(c);
 
         let proof = ctx.cp_prove(
@@ -86,10 +86,10 @@ impl<C: Ctx> Keymaker<C> {
     pub fn joint_dec(ctx: &C, decs: Vec<C::E>, c: &Ciphertext<C>) -> C::E {
         let mut acc: C::E = decs[0].clone();
         for dec in decs.iter().skip(1) {
-            acc = acc.mul(dec).modulo(&ctx.modulus());
+            acc = acc.mul(dec).modulo(ctx.modulus());
         }
 
-        c.a.div(&acc, &ctx.modulus()).modulo(&ctx.modulus())
+        c.a.div(&acc, ctx.modulus()).modulo(ctx.modulus())
     }
 
     pub fn joint_dec_many(ctx: &C, decs: &[Vec<C::E>], cs: &[Ciphertext<C>]) -> Vec<C::E> {
@@ -101,9 +101,9 @@ impl<C: Ctx> Keymaker<C> {
                 let mut acc: C::E = decs[0][i].clone();
 
                 for dec in decs.iter().skip(1) {
-                    acc = acc.mul(&dec[i]).modulo(&modulus);
+                    acc = acc.mul(&dec[i]).modulo(modulus);
                 }
-                c.a.div(&acc, &modulus).modulo(&modulus)
+                c.a.div(&acc, modulus).modulo(modulus)
             })
             .collect();
 

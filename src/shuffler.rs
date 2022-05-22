@@ -65,6 +65,10 @@ pub struct Shuffler<'a, C: Ctx> {
 }
 
 impl<'a, C: Ctx> Shuffler<'a, C> {
+    pub fn new(pk: &'a PublicKey<C>, generators: &'a Vec<C::E>) -> Shuffler<'a, C> {
+        Shuffler { pk, generators }
+    }
+
     pub fn gen_shuffle(
         &self,
         ciphertexts: &[Ciphertext<C>],
@@ -85,7 +89,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         let rs_temp: Vec<Option<C::X>> = vec![None; ciphertexts.len()];
         let rs_mutex = Mutex::new(rs_temp);
-        let group = &self.pk.ctx;
+        let ctx = C::get();
         let length = perm.len();
 
         let e_primes = perm
@@ -93,12 +97,12 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             .map(|p| {
                 let c = &ciphertexts[*p];
 
-                let r = group.rnd_exp();
+                let r = ctx.rnd_exp();
 
                 let a =
-                    c.a.mul(&self.pk.value.mod_pow(&r, &group.modulus()))
-                        .modulo(&group.modulus());
-                let b = c.b.mul(&group.gmod_pow(&r)).modulo(&group.modulus());
+                    c.a.mul(&self.pk.value.mod_pow(&r, ctx.modulus()))
+                        .modulo(ctx.modulus());
+                let b = c.b.mul(&ctx.gmod_pow(&r)).modulo(ctx.modulus());
 
                 let c_ = Ciphertext { a, b };
                 rs_mutex.lock().unwrap()[*p] = Some(r);
@@ -146,7 +150,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         perm_data: &PermutationData<C>,
         label: &[u8],
     ) -> (ShuffleProof<C>, Vec<C::X>, C::X) {
-        let ctx = &self.pk.ctx;
+        let ctx = C::get();
 
         #[allow(non_snake_case)]
         let N = es.len();
@@ -159,8 +163,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         assert!(N == perm_data.permutation.len());
         assert!(N == h_generators.len());
 
-        let gmod = &ctx.modulus();
-        let xmod = &ctx.exp_modulus();
+        let gmod = ctx.modulus();
+        let xmod = ctx.exp_modulus();
 
         let (cs, rs) = (perm_data.commitments_c, perm_data.commitments_r);
         let perm = perm_data.permutation;
@@ -306,7 +310,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         e_primes: &[Ciphertext<C>],
         label: &[u8],
     ) -> bool {
-        let ctx = &self.pk.ctx;
+        let ctx = C::get();
 
         #[allow(non_snake_case)]
         let N = es.len();
@@ -317,8 +321,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         assert!(N == e_primes.len());
         assert!(N == h_generators.len());
 
-        let gmod = &ctx.modulus();
-        let xmod = &ctx.exp_modulus();
+        let gmod = ctx.modulus();
+        let xmod = ctx.exp_modulus();
 
         let us: Vec<C::X> = ctx.shuffle_proof_us(es, e_primes, &proof.cs, N, label);
 
@@ -399,29 +403,6 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             .mul(&t_tilde42_temp)
             .modulo(gmod);
 
-        /*let t_prime1 = (c_bar.mod_pow(&c.neg(), gmod))
-            .mul(&ctx.gmod_pow(&proof.s.s1))
-            .modulo(gmod);
-
-        let t_prime2 = (c_hat.mod_pow(&c.neg(), gmod))
-            .mul(&ctx.gmod_pow(&proof.s.s2))
-            .modulo(gmod);
-
-        let t_prime3 = (c_tilde.mod_pow(&c.neg(), gmod))
-            .mul(&ctx.gmod_pow(&proof.s.s3))
-            .mul(&t_tilde3_temp)
-            .modulo(gmod);
-
-        let t_prime41 = (a_prime.mod_pow(&c.neg(), gmod))
-            .mul(&self.pk.value.mod_pow(&proof.s.s4.neg(), gmod))
-            .mul(&t_tilde41_temp)
-            .modulo(gmod);
-
-        let t_prime42 = (b_prime.mod_pow(&c.neg(), gmod))
-            .mul(&ctx.gmod_pow(&proof.s.s4.neg()))
-            .mul(&t_tilde42_temp)
-            .modulo(gmod);*/
-
         // batch verification OPT 3a
         let t_hat_primes: Vec<C::E> = (0..N)
             .par()
@@ -472,7 +453,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             let r = ctx.rnd_exp();
             let c = generators[i]
                 .mul(&ctx.gmod_pow(&r))
-                .modulo(&ctx.modulus());
+                .modulo(ctx.modulus());
 
             rs_mutex.lock().unwrap()[*p] = Some(r);
             cs_mutex.lock().unwrap()[*p] = Some(c);
@@ -504,7 +485,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             .par()
             .map(|_| {
                 let r = ctx.rnd_exp();
-                let first = ctx.gmod_pow(&r).modulo(&ctx.modulus());
+                let first = ctx.gmod_pow(&r).modulo(ctx.modulus());
 
                 (first, r)
             })
@@ -513,8 +494,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         for i in 0..us.len() {
             let c_temp = if i == 0 { initial } else { &cs[i - 1] };
 
-            let second = c_temp.mod_pow(us[i], &ctx.modulus()).modulo(&ctx.modulus());
-            let c = firsts[i].mul(&second).modulo(&ctx.modulus());
+            let second = c_temp.mod_pow(us[i], ctx.modulus()).modulo(ctx.modulus());
+            let c = firsts[i].mul(&second).modulo(ctx.modulus());
 
             cs.push(c);
         }

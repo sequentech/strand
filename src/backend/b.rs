@@ -3,7 +3,6 @@ use num_integer::Integer;
 use num_traits::Num;
 use num_traits::{One, Zero};
 
-use crate::byte_tree::ByteTree::Leaf;
 use crate::byte_tree::*;
 use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::*;
@@ -22,34 +21,67 @@ const Q_STR_2048: &str = "5bf0a8b1457695355fb8ac404e7a79e3b1738b079c5a6d2b53c26c
 // const Q_STR_3072: &'static str = "5bf0a8b1457695355fb8ac404e7a79e3b1738b079c5a6d2b53c26c8228c867f799273b9c49367df2fa5fc6c6c618ebb1ed0364055d88c2f5a7be3dababfacac24867ea3ebe0cdda10ac6caaa7bda35e76aae26bcfeaf926b309e18e1c1cd16efc54d13b5e7dfd0e43be2b1426d5bce6a6159949e9074f2f5781563056649f6c3a21152976591c7f772d5b56ec1afe8d03a9e8547bc729be95caddbcec6e57632160f4f91dc14dae13c05f9c39befc5d98068099a50685ec322e5fd39d30b07ff1c9e2465dde5030787fc763698df5ae6776bf9785d84400b8b1de306fa2d07658de6944d8365dff510d68470c23f9fb9bc6ab676ca3206b77869e9bdf3380470c368df93adcd920ef5b23a4d23efefdcb31961f5830db2395dfc26130a2724e1682619277886f289e9fa88a5c5ae9ba6c9e5c43ce3ea97feb95d0557393bed3dd0da578a446c741b578a432f361bd5b43b7f3485ab88909c1579a0d7f4a7bbde783641dc7fab3af84bc83a56cd3c3de2dcdea5862c9be9f6f261d3c9cb20ce6b";
 
 lazy_static! {
-    static ref BCTX: BigintCtx = BigintCtx::default();
+    static ref BCTX2048: BigintCtx<P2048> = {
+        let params = P2048::new();
+        BigintCtx { params }
+    };
+}
+
+pub(crate) trait BigintCtxParams: Sized + Clone + Send + Sync {
+    fn generator(&self) -> &BigUint;
+    fn modulus(&self) -> &BigUint;
+    fn exp_modulus(&self) -> &BigUint;
+    fn co_factor(&self) -> &BigUint;
+
+    fn get_ctx() -> &'static BigintCtx<Self>;
+    fn new() -> Self;
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
-pub struct BigintCtx {
-    pub generator: BigUint,
-    pub modulus: BigUint,
-    pub modulus_exp: BigUint,
-    pub co_factor: BigUint,
+pub(crate) struct BigintCtx<P: BigintCtxParams> {
+    params: P,
 }
 
-impl BigintCtx {
-    pub fn default() -> BigintCtx {
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub struct P2048 {
+    pub generator: BigUint,
+    pub modulus: BigUint,
+    pub exp_modulus: BigUint,
+    pub co_factor: BigUint,
+}
+impl BigintCtxParams for P2048 {
+    fn generator(&self) -> &BigUint {
+        &self.generator
+    }
+    fn modulus(&self) -> &BigUint {
+        &self.modulus
+    }
+    fn exp_modulus(&self) -> &BigUint {
+        &self.exp_modulus
+    }
+    fn co_factor(&self) -> &BigUint {
+        &self.co_factor
+    }
+    fn get_ctx() -> &'static BigintCtx<P2048> {
+        &BCTX2048
+    }
+    fn new() -> P2048 {
         let p = BigUint::from_str_radix(P_STR_2048, 16).unwrap();
         let q = BigUint::from_str_radix(Q_STR_2048, 16).unwrap();
         let g = BigUint::from(3u32);
         let co_factor = BigUint::from(2u32);
-
         assert!(g.legendre(&p) == 1);
 
-        BigintCtx {
+        P2048 {
             generator: g,
             modulus: p,
-            modulus_exp: q,
+            exp_modulus: q,
             co_factor,
         }
     }
+}
 
+impl<P: 'static + BigintCtxParams> BigintCtx<P> {
     // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf A.2.3
     fn generators_fips(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<BigUint> {
         let mut ret = Vec::with_capacity(size);
@@ -70,7 +102,7 @@ impl BigintCtx {
                 next.extend(&index.to_le_bytes());
                 next.extend(&count.to_le_bytes());
                 let elem: BigUint = self.hash_to(&next);
-                let g = elem.modpow(&self.co_factor, self.modulus());
+                let g = elem.modpow(self.params.co_factor(), self.modulus());
                 if g >= two {
                     ret.push(g);
                     break;
@@ -82,30 +114,30 @@ impl BigintCtx {
     }
 }
 
-impl Ctx for BigintCtx {
+impl<P: 'static + BigintCtxParams> Ctx for BigintCtx<P> {
     type E = BigUint;
     type X = BigUint;
     type P = BigUint;
 
     #[inline(always)]
     fn generator(&self) -> &BigUint {
-        &self.generator
+        self.params.generator()
     }
     #[inline(always)]
     fn gmod_pow(&self, other: &BigUint) -> BigUint {
-        self.generator.modpow(other, self.modulus())
+        self.generator().modpow(other, self.modulus())
     }
     #[inline(always)]
-    fn mod_pow(&self, base: &BigUint, exponent: &BigUint) -> BigUint {
+    fn mod_pow(&self, base: &Self::E, exponent: &BigUint) -> BigUint {
         base.modpow(exponent, self.modulus())
     }
     #[inline(always)]
     fn modulus(&self) -> &BigUint {
-        &self.modulus
+        self.params.modulus()
     }
     #[inline(always)]
     fn exp_modulus(&self) -> &BigUint {
-        &self.modulus_exp
+        self.params.exp_modulus()
     }
     #[inline(always)]
     fn rnd(&self) -> BigUint {
@@ -124,7 +156,7 @@ impl Ctx for BigintCtx {
     }
     fn encode(&self, plaintext: &BigUint) -> BigUint {
         let one: BigUint = One::one();
-        assert!(plaintext < &(self.modulus_exp.clone() - one.clone()));
+        assert!(plaintext < &(self.exp_modulus() - &one));
         let notzero: BigUint = plaintext + one;
         let legendre = notzero.legendre(self.modulus());
         assert_ne!(legendre, 0);
@@ -146,7 +178,7 @@ impl Ctx for BigintCtx {
     fn exp_from_u64(&self, value: u64) -> BigUint {
         BigUint::from(value)
     }
-    fn gen_key(&self) -> PrivateKey<BigintCtx> {
+    fn gen_key(&self) -> PrivateKey<BigintCtx<P>> {
         let secret = self.rnd_exp();
         PrivateKey::from(&secret, self)
     }
@@ -155,12 +187,12 @@ impl Ctx for BigintCtx {
         self.generators_fips(size, contest, seed)
     }
     #[inline(always)]
-    fn get() -> &'static BigintCtx {
-        &BCTX
+    fn get() -> &'static BigintCtx<P> {
+        P::get_ctx()
     }
 }
 
-impl ZKProver<BigintCtx> for BigintCtx {
+impl<P: 'static + BigintCtxParams> ZKProver<BigintCtx<P>> for BigintCtx<P> {
     fn hash_to(&self, bytes: &[u8]) -> BigUint {
         let mut hasher = Sha512::new();
         hasher.update(bytes);
@@ -171,14 +203,14 @@ impl ZKProver<BigintCtx> for BigintCtx {
     }
 }
 
-impl Element<BigintCtx> for BigUint {
+impl<P: 'static + BigintCtxParams> Element<BigintCtx<P>> for BigUint {
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
         self * other
     }
     #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {
-        let inverse = Element::<BigintCtx>::inv(other, modulus);
+        let inverse = Element::<BigintCtx<P>>::inv(other, modulus);
         self * inverse
     }
     #[inline(always)]
@@ -198,7 +230,7 @@ impl Element<BigintCtx> for BigUint {
     }
 }
 
-impl Exponent<BigintCtx> for BigUint {
+impl<P: 'static + BigintCtxParams> Exponent<BigintCtx<P>> for BigUint {
     #[inline(always)]
     fn add(&self, other: &Self) -> Self {
         self + other
@@ -213,7 +245,7 @@ impl Exponent<BigintCtx> for BigUint {
     }
     #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {
-        let inverse = Exponent::<BigintCtx>::inv(other, modulus);
+        let inverse = Exponent::<BigintCtx<P>>::inv(other, modulus);
         self * inverse
     }
     #[inline(always)]
@@ -235,128 +267,98 @@ impl Exponent<BigintCtx> for BigUint {
     }
 }
 
-impl ToByteTree for BigintCtx {
+impl<P: BigintCtxParams> ToByteTree for BigintCtx<P> {
     fn to_byte_tree(&self) -> ByteTree {
-        let bytes: Vec<ByteTree> = vec![
-            self.generator.to_byte_tree(),
-            self.modulus.to_byte_tree(),
-            self.modulus_exp.to_byte_tree(),
-            self.co_factor.to_byte_tree(),
-        ];
-        ByteTree::Tree(bytes)
+        ByteTree::Leaf(ByteBuf::new())
     }
 }
 
-impl FromByteTree for BigintCtx {
-    fn from_byte_tree(tree: &ByteTree) -> Result<BigintCtx, ByteError> {
-        let trees = tree.tree(4)?;
-        let generator = BigUint::from_byte_tree(&trees[0])?;
-        let modulus = BigUint::from_byte_tree(&trees[1])?;
-        let modulus_exp = BigUint::from_byte_tree(&trees[2])?;
-        let co_factor = BigUint::from_byte_tree(&trees[3])?;
-
-        let ctx = BigintCtx {
-            generator,
-            modulus,
-            modulus_exp,
-            co_factor,
-        };
-
+impl<P: BigintCtxParams> FromByteTree for BigintCtx<P> {
+    fn from_byte_tree(tree: &ByteTree) -> Result<BigintCtx<P>, ByteError> {
+        let _leaf = tree.leaf()?;
+        let params = P::new();
+        let ctx = BigintCtx { params };
         Ok(ctx)
-    }
-}
-
-impl ToByteTree for BigUint {
-    fn to_byte_tree(&self) -> ByteTree {
-        Leaf(ByteBuf::from(self.to_bytes_be()))
-    }
-}
-
-impl FromByteTree for BigUint {
-    fn from_byte_tree(tree: &ByteTree) -> Result<BigUint, ByteError> {
-        let bytes = tree.leaf()?;
-        let ret = BigUint::from_bytes_be(bytes);
-        Ok(ret)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::backend::num_bigint::BigintCtx;
+    use crate::backend::b::*;
     use crate::backend::tests::*;
     use crate::context::Ctx;
     use crate::threshold::tests::test_threshold_generic;
 
     #[test]
     fn test_elgamal() {
-        let ctx = BigintCtx::default();
+        let ctx = BigintCtx::<P2048>::get();
         let plaintext = ctx.rnd_exp();
-        test_elgamal_generic(&ctx, plaintext);
+        test_elgamal_generic(ctx, plaintext);
     }
 
     #[test]
     fn test_schnorr() {
-        let ctx = BigintCtx::default();
-        test_schnorr_generic(&ctx);
+        let ctx = BigintCtx::<P2048>::get();
+        test_schnorr_generic(ctx);
     }
 
     #[test]
     fn test_chaumpedersen() {
-        let ctx = BigintCtx::default();
-        test_chaumpedersen_generic(&ctx);
+        let ctx = BigintCtx::<P2048>::get();
+        test_chaumpedersen_generic(ctx);
     }
 
     #[test]
     fn test_vdecryption() {
-        let ctx = BigintCtx::default();
+        let ctx = BigintCtx::<P2048>::get();
         let plaintext = ctx.rnd_exp();
-        test_vdecryption_generic(&ctx, plaintext);
+        test_vdecryption_generic(ctx, plaintext);
     }
 
     #[test]
     fn test_distributed() {
-        let ctx = BigintCtx::default();
+        let ctx = BigintCtx::<P2048>::get();
         let plaintext = ctx.rnd_exp();
-        test_distributed_generic(&ctx, plaintext);
+        test_distributed_generic(ctx, plaintext);
     }
 
     #[test]
     fn test_distributed_btserde() {
-        let ctx = BigintCtx::default();
+        let ctx = BigintCtx::<P2048>::get();
         let mut ps = vec![];
         for _ in 0..10 {
             let p = ctx.rnd_exp();
             ps.push(p);
         }
-        test_distributed_btserde_generic(&ctx, ps);
+        test_distributed_btserde_generic(ctx, ps);
     }
 
     #[test]
     fn test_shuffle() {
-        let ctx = BigintCtx::default();
-        test_shuffle_generic(&ctx);
+        let ctx = BigintCtx::<P2048>::get();
+        test_shuffle_generic(ctx);
     }
 
     #[test]
     fn test_shuffle_btserde() {
-        let ctx = BigintCtx::default();
-        test_shuffle_btserde_generic(&ctx);
+        let ctx = BigintCtx::<P2048>::get();
+        test_shuffle_btserde_generic(ctx);
     }
 
     #[test]
     fn test_encrypted_sk() {
-        let ctx = BigintCtx::default();
+        let ctx = BigintCtx::<P2048>::get();
         let plaintext = ctx.rnd_exp();
-        test_encrypted_sk_generic(&ctx, plaintext);
+        test_encrypted_sk_generic(ctx, plaintext);
     }
 
     #[test]
     fn test_threshold() {
         let trustees = 5usize;
         let threshold = 3usize;
-        let ctx = BigintCtx::default();
+        let ctx = BigintCtx::<P2048>::get();
         let plaintext = ctx.rnd_exp();
 
-        test_threshold_generic(&ctx, trustees, threshold, plaintext);
+        test_threshold_generic(ctx, trustees, threshold, plaintext);
     }
 }

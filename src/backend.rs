@@ -3,6 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 pub mod num_bigint;
+// broken
+pub mod b;
+// pub mod c;
 pub mod ristretto;
 // pub mod rug_b;
 
@@ -19,9 +22,9 @@ pub(crate) mod tests {
     use crate::util;
     use crate::zkp::{ChaumPedersen, Schnorr};
 
-    pub(crate) fn test_elgamal_generic<C: Ctx>(ctx: C, data: C::P) {
+    pub(crate) fn test_elgamal_generic<C: Ctx>(ctx: &C, data: C::P) {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, &ctx);
+        let pk = PublicKey::from(&sk.public_value, ctx);
 
         let plaintext = ctx.encode(&data);
 
@@ -32,7 +35,7 @@ pub(crate) mod tests {
         assert_eq!(data, recovered);
     }
 
-    pub(crate) fn test_schnorr_generic<C: Ctx>(ctx: C) {
+    pub(crate) fn test_schnorr_generic<C: Ctx>(ctx: &C) {
         let g = ctx.generator();
         let secret = ctx.rnd_exp();
         let public = g.mod_pow(&secret, &ctx.modulus());
@@ -44,7 +47,7 @@ pub(crate) mod tests {
         assert!(verified_false == false);
     }
 
-    pub(crate) fn test_chaumpedersen_generic<C: Ctx>(ctx: C) {
+    pub(crate) fn test_chaumpedersen_generic<C: Ctx>(ctx: &C) {
         let g1 = ctx.generator();
         let g2 = ctx.rnd();
         let secret = ctx.rnd_exp();
@@ -59,9 +62,9 @@ pub(crate) mod tests {
         assert!(verified_false == false);
     }
 
-    pub(crate) fn test_vdecryption_generic<C: Ctx>(ctx: C, data: C::P) {
+    pub(crate) fn test_vdecryption_generic<C: Ctx>(ctx: &C, data: C::P) {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, &ctx);
+        let pk = PublicKey::from(&sk.public_value, ctx);
 
         let plaintext = ctx.encode(&data);
 
@@ -76,9 +79,9 @@ pub(crate) mod tests {
         assert_eq!(data, recovered);
     }
 
-    pub(crate) fn test_distributed_generic<C: Ctx>(ctx: C, data: C::P) {
-        let km1 = Keymaker::gen(&ctx);
-        let km2 = Keymaker::gen(&ctx);
+    pub(crate) fn test_distributed_generic<C: Ctx>(ctx: &C, data: C::P) {
+        let km1 = Keymaker::gen(ctx);
+        let km2 = Keymaker::gen(ctx);
         let (pk1, proof1) = km1.share(&vec![]);
         let (pk2, proof2) = km2.share(&vec![]);
 
@@ -93,7 +96,7 @@ pub(crate) mod tests {
         let pk2_value = &pk2.value.clone();
         let pks = vec![pk1, pk2];
 
-        let pk_combined = Keymaker::combine_pks(&ctx, pks);
+        let pk_combined = Keymaker::combine_pks(ctx, pks);
         let c = pk_combined.encrypt(&plaintext);
 
         let (dec_f1, proof1) = km1.decryption_factor(&c, &vec![]);
@@ -105,14 +108,14 @@ pub(crate) mod tests {
         assert!(verified2);
 
         let decs = vec![dec_f1, dec_f2];
-        let d = Keymaker::joint_dec(&ctx, decs, &c);
+        let d = Keymaker::joint_dec(ctx, decs, &c);
         let recovered = ctx.decode(&d);
         assert_eq!(data, recovered);
     }
 
-    pub(crate) fn test_distributed_btserde_generic<C: Ctx>(ctx: C, data: Vec<C::P>) {
-        let km1 = Keymaker::gen(&ctx);
-        let km2 = Keymaker::gen(&ctx);
+    pub(crate) fn test_distributed_btserde_generic<C: Ctx>(ctx: &C, data: Vec<C::P>) {
+        let km1 = Keymaker::gen(ctx);
+        let km2 = Keymaker::gen(ctx);
         let (pk1, proof1) = km1.share(&vec![]);
         let (pk2, proof2) = km2.share(&vec![]);
         let sym1 = symmetric::gen_key();
@@ -136,8 +139,8 @@ pub(crate) mod tests {
         let share2_proof_d = Schnorr::<C>::deser(&share2_proof_b).unwrap();
         let _sk2_d = EncryptedPrivateKey::deser(&sk2_b).unwrap();
 
-        let verified1 = Keymaker::verify_share(&ctx, &share1_pk_d, &share1_proof_d, &vec![]);
-        let verified2 = Keymaker::verify_share(&ctx, &share2_pk_d, &share2_proof_d, &vec![]);
+        let verified1 = Keymaker::verify_share(ctx, &share1_pk_d, &share1_proof_d, &vec![]);
+        let verified2 = Keymaker::verify_share(ctx, &share2_pk_d, &share2_proof_d, &vec![]);
 
         assert!(verified1);
         assert!(verified2);
@@ -146,7 +149,7 @@ pub(crate) mod tests {
         let pk2_value = &share2_pk_d.value.clone();
         let pks = vec![share1_pk_d, share2_pk_d];
 
-        let pk_combined = Keymaker::combine_pks(&ctx, pks);
+        let pk_combined = Keymaker::combine_pks(ctx, pks);
         let mut cs = vec![];
 
         for plaintext in &data {
@@ -170,39 +173,27 @@ pub(crate) mod tests {
         let decs2_d = Vec::<C::E>::deser(&decs2_b).unwrap();
         let proofs2_d = Vec::<ChaumPedersen<C>>::deser(&proofs2_b).unwrap();
 
-        let verified1 = Keymaker::verify_decryption_factors(
-            &ctx,
-            pk1_value,
-            &cs,
-            &decs1_d,
-            &proofs1_d,
-            &vec![],
-        );
-        let verified2 = Keymaker::verify_decryption_factors(
-            &ctx,
-            pk2_value,
-            &cs,
-            &decs2_d,
-            &proofs2_d,
-            &vec![],
-        );
+        let verified1 =
+            Keymaker::verify_decryption_factors(ctx, pk1_value, &cs, &decs1_d, &proofs1_d, &vec![]);
+        let verified2 =
+            Keymaker::verify_decryption_factors(ctx, pk2_value, &cs, &decs2_d, &proofs2_d, &vec![]);
 
         assert!(verified1);
         assert!(verified2);
 
         let decs = vec![decs1_d, decs2_d];
-        let ds = Keymaker::joint_dec_many(&ctx, &decs, &cs);
+        let ds = Keymaker::joint_dec_many(ctx, &decs, &cs);
 
         let recovered: Vec<C::P> = ds.into_iter().map(|d| ctx.decode(&d)).collect();
 
         assert_eq!(data, recovered);
     }
 
-    pub(crate) fn test_shuffle_generic<C: Ctx>(ctx: C) {
+    pub(crate) fn test_shuffle_generic<C: Ctx>(ctx: &C) {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, &ctx);
+        let pk = PublicKey::from(&sk.public_value, ctx);
 
-        let es = util::random_ballots(10, &ctx);
+        let es = util::random_ballots(10, ctx);
         let seed = vec![];
         let hs = ctx.generators(es.len() + 1, 0, &seed);
         let shuffler = Shuffler {
@@ -217,11 +208,11 @@ pub(crate) mod tests {
         assert!(ok);
     }
 
-    pub(crate) fn test_shuffle_btserde_generic<C: Ctx>(ctx: C) {
+    pub(crate) fn test_shuffle_btserde_generic<C: Ctx>(ctx: &C) {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, &ctx);
+        let pk = PublicKey::from(&sk.public_value, ctx);
 
-        let es = util::random_ballots(10, &ctx);
+        let es = util::random_ballots(10, ctx);
         let seed = vec![];
         let hs = ctx.generators(es.len() + 1, 0, &seed);
         let shuffler = Shuffler {
@@ -253,9 +244,9 @@ pub(crate) mod tests {
         assert!(ok_d);
     }
 
-    pub(crate) fn test_encrypted_sk_generic<C: Ctx>(ctx: C, data: C::P) {
+    pub(crate) fn test_encrypted_sk_generic<C: Ctx>(ctx: &C, data: C::P) {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, &ctx);
+        let pk = PublicKey::from(&sk.public_value, ctx);
         let plaintext = ctx.encode(&data);
         let c = pk.encrypt(&plaintext);
         let sym_key = symmetric::gen_key();
@@ -264,7 +255,7 @@ pub(crate) mod tests {
         let enc_sk_b = enc_sk.ser();
         let enc_sk_d = EncryptedPrivateKey::deser(&enc_sk_b).unwrap();
 
-        let sk_d = PrivateKey::from_encrypted(sym_key, enc_sk_d, &ctx);
+        let sk_d = PrivateKey::from_encrypted(sym_key, enc_sk_d, ctx);
         let d = sk_d.decrypt(&c);
 
         let recovered = ctx.decode(&d);

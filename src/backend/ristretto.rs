@@ -1,5 +1,5 @@
-use curve25519_dalek::constants::RISTRETTO_BASEPOINT_POINT;
 use curve25519_dalek::constants::BASEPOINT_ORDER;
+use curve25519_dalek::constants::RISTRETTO_BASEPOINT_POINT;
 use curve25519_dalek::constants::RISTRETTO_BASEPOINT_TABLE;
 use curve25519_dalek::digest::{ExtendableOutputDirty, Update, XofReader};
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
@@ -59,6 +59,10 @@ impl Ctx for RistrettoCtx {
     #[inline(always)]
     fn gmod_pow(&self, other: &Scalar) -> RistrettoPoint {
         other * &RISTRETTO_BASEPOINT_TABLE
+    }
+    #[inline(always)]
+    fn mod_pow(&self, base: &RistrettoPoint, exponent: &Scalar) -> RistrettoPoint {
+        base * exponent
     }
     #[inline(always)]
     fn modulus(&self) -> &RistrettoPoint {
@@ -139,6 +143,10 @@ impl Ctx for RistrettoCtx {
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<RistrettoPoint> {
         self.generators_shake(size, contest, seed)
     }
+    #[inline(always)]
+    fn get() -> &'static RistrettoCtx {
+        &RistrettoCtx
+    }
 }
 
 impl ZKProver<RistrettoCtx> for RistrettoCtx {
@@ -147,9 +155,6 @@ impl ZKProver<RistrettoCtx> for RistrettoCtx {
         Digest::update(&mut hasher, bytes);
 
         Scalar::from_hash(hasher)
-    }
-    fn ctx(&self) -> &RistrettoCtx {
-        self
     }
 }
 
@@ -246,7 +251,6 @@ impl FromByteTree for RistrettoPoint {
     }
 }
 
-
 impl ToByteTree for RistrettoCtx {
     fn to_byte_tree(&self) -> ByteTree {
         ByteTree::Leaf(ByteBuf::new())
@@ -274,19 +278,19 @@ mod tests {
         let mut fill = [0u8; 30];
         csprng.fill_bytes(&mut fill);
         let plaintext = util::to_u8_30(&fill.to_vec());
-        test_elgamal_generic(ctx, plaintext);
+        test_elgamal_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_schnorr() {
         let ctx = RistrettoCtx;
-        test_schnorr_generic(ctx);
+        test_schnorr_generic(&ctx);
     }
 
     #[test]
     fn test_chaumpedersen() {
         let ctx = RistrettoCtx;
-        test_chaumpedersen_generic(ctx);
+        test_chaumpedersen_generic(&ctx);
     }
 
     #[test]
@@ -297,7 +301,7 @@ mod tests {
         let mut fill = [0u8; 30];
         csprng.fill_bytes(&mut fill);
         let plaintext = util::to_u8_30(&fill.to_vec());
-        test_vdecryption_generic(ctx, plaintext);
+        test_vdecryption_generic(&ctx, plaintext);
     }
 
     #[test]
@@ -308,7 +312,7 @@ mod tests {
         let mut fill = [0u8; 30];
         csprng.fill_bytes(&mut fill);
         let plaintext = util::to_u8_30(&fill.to_vec());
-        test_distributed_generic(ctx, plaintext);
+        test_distributed_generic(&ctx, plaintext);
     }
 
     #[test]
@@ -323,19 +327,19 @@ mod tests {
             let p = util::to_u8_30(&fill.to_vec());
             ps.push(p);
         }
-        test_distributed_btserde_generic(ctx, ps);
+        test_distributed_btserde_generic(&ctx, ps);
     }
 
     #[test]
     fn test_shuffle() {
         let ctx = RistrettoCtx;
-        test_shuffle_generic(ctx);
+        test_shuffle_generic(&ctx);
     }
 
     #[test]
     fn test_shuffle_btserde() {
         let ctx = RistrettoCtx;
-        test_shuffle_btserde_generic(ctx);
+        test_shuffle_btserde_generic(&ctx);
     }
 
     #[test]
@@ -346,7 +350,7 @@ mod tests {
         let mut fill = [0u8; 30];
         csprng.fill_bytes(&mut fill);
         let plaintext = util::to_u8_30(&fill.to_vec());
-        test_encrypted_sk_generic(ctx, plaintext);
+        test_encrypted_sk_generic(&ctx, plaintext);
     }
 
     #[test]
@@ -360,6 +364,6 @@ mod tests {
         let trustees = 5usize;
         let threshold = 3usize;
 
-        test_threshold_generic(ctx, trustees, threshold, plaintext);
+        test_threshold_generic(&ctx, trustees, threshold, plaintext);
     }
 }

@@ -10,16 +10,15 @@ use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::*;
 use crate::shuffler::{Commitments, YChallengeInput};
 
-pub trait ZKProver<C: Ctx> {
+pub trait ZKProver<C: 'static + Ctx> {
     fn hash_to(&self, bytes: &[u8]) -> C::X;
-    fn ctx(&self) -> &C;
 
     fn schnorr_prove(&self, secret: &C::X, public: &C::E, g: &C::E, label: &[u8]) -> Schnorr<C> {
-        let ctx = self.ctx();
+        let ctx = C::get();
         let r = ctx.rnd_exp();
-        let commitment = g.mod_pow(&r, &ctx.modulus());
+        let commitment = g.mod_pow(&r, ctx.modulus());
         let challenge: C::X = self.schnorr_proof_challenge(g, public, &commitment, label);
-        let response = r.add(&challenge.mul(secret)).modulo(&ctx.exp_modulus());
+        let response = r.add(&challenge.mul(secret)).modulo(ctx.exp_modulus());
         let phantom = PhantomData;
 
         Schnorr {
@@ -31,14 +30,14 @@ pub trait ZKProver<C: Ctx> {
     }
 
     fn schnorr_verify(&self, public: &C::E, g: &C::E, proof: &Schnorr<C>, label: &[u8]) -> bool {
-        let ctx = self.ctx();
+        let ctx = C::get();
         let challenge_ = self.schnorr_proof_challenge(g, public, &proof.commitment, label);
         let ok1 = challenge_.eq(&proof.challenge);
-        let lhs = g.mod_pow(&proof.response, &ctx.modulus());
+        let lhs = g.mod_pow(&proof.response, ctx.modulus());
         let rhs = proof
             .commitment
-            .mul(&public.mod_pow(&proof.challenge, &ctx.modulus()))
-            .modulo(&ctx.modulus());
+            .mul(&public.mod_pow(&proof.challenge, ctx.modulus()))
+            .modulo(ctx.modulus());
         let ok2 = lhs.eq(&rhs);
         ok1 && ok2
     }
@@ -52,15 +51,15 @@ pub trait ZKProver<C: Ctx> {
         g2: &C::E,
         label: &[u8],
     ) -> ChaumPedersen<C> {
-        let ctx = self.ctx();
+        let ctx = C::get();
 
         let r = ctx.rnd_exp();
         let commitment1 = if let Some(g1) = g1 {
-            g1.mod_pow(&r, &ctx.modulus())
+            g1.mod_pow(&r, ctx.modulus())
         } else {
             ctx.gmod_pow(&r)
         };
-        let commitment2 = g2.mod_pow(&r, &ctx.modulus());
+        let commitment2 = g2.mod_pow(&r, ctx.modulus());
         let challenge: C::X = ctx.cp_proof_challenge(
             g1.unwrap_or_else(|| ctx.generator()),
             g2,
@@ -70,7 +69,7 @@ pub trait ZKProver<C: Ctx> {
             &commitment2,
             label,
         );
-        let response = r.add(&challenge.mul(secret)).modulo(&ctx.exp_modulus());
+        let response = r.add(&challenge.mul(secret)).modulo(ctx.exp_modulus());
 
         ChaumPedersen {
             commitment1,
@@ -90,7 +89,7 @@ pub trait ZKProver<C: Ctx> {
         proof: &ChaumPedersen<C>,
         label: &[u8],
     ) -> bool {
-        let ctx = self.ctx();
+        let ctx = C::get();
 
         let challenge_ = self.cp_proof_challenge(
             g1.unwrap_or_else(|| ctx.generator()),
@@ -104,19 +103,19 @@ pub trait ZKProver<C: Ctx> {
         let ok1 = challenge_.eq(&proof.challenge);
 
         let lhs1 = if let Some(g1) = g1 {
-            g1.mod_pow(&proof.response, &ctx.modulus())
+            g1.mod_pow(&proof.response, ctx.modulus())
         } else {
             ctx.gmod_pow(&proof.response)
         };
         let rhs1 = proof
             .commitment1
-            .mul(&public1.mod_pow(&proof.challenge, &ctx.modulus()))
-            .modulo(&ctx.modulus());
-        let lhs2 = g2.mod_pow(&proof.response, &ctx.modulus());
+            .mul(&public1.mod_pow(&proof.challenge, ctx.modulus()))
+            .modulo(ctx.modulus());
+        let lhs2 = g2.mod_pow(&proof.response, ctx.modulus());
         let rhs2 = proof
             .commitment2
-            .mul(&public2.mod_pow(&proof.challenge, &ctx.modulus()))
-            .modulo(&ctx.modulus());
+            .mul(&public2.mod_pow(&proof.challenge, ctx.modulus()))
+            .modulo(ctx.modulus());
         let ok2 = lhs1.eq(&rhs1);
         let ok3 = lhs2.eq(&rhs2);
 

@@ -7,16 +7,10 @@ use crate::context::{Ctx, Element};
 use crate::symmetric;
 use crate::zkp::ChaumPedersen;
 
-#[derive(Eq, PartialEq)]
-pub struct EncryptedPrivateKey {
-    pub bytes: Vec<u8>,
-    pub iv: [u8; 16],
-}
-
 #[derive(Clone, Eq, PartialEq)]
 pub struct Ciphertext<C: Ctx> {
     pub(crate) a: C::E,
-    pub(crate) b: C::E,
+    pub b: C::E,
 }
 
 #[derive(Eq, PartialEq)]
@@ -28,8 +22,14 @@ pub struct PublicKey<C: Ctx> {
 #[derive(Eq, PartialEq)]
 pub struct PrivateKey<C: Ctx> {
     pub(crate) value: C::X,
-    pub(crate) public_value: C::E,
+    pub public_value: C::E,
     pub(crate) ctx: C,
+}
+
+#[derive(Eq, PartialEq)]
+pub struct EncryptedPrivateKey {
+    pub bytes: Vec<u8>,
+    pub iv: [u8; 16],
 }
 
 impl<C: Ctx> PublicKey<C> {
@@ -39,19 +39,16 @@ impl<C: Ctx> PublicKey<C> {
     }
     pub fn encrypt_exponential(&self, plaintext: &C::X, randomness: &C::X) -> Ciphertext<C> {
         self.encrypt_ext(
-            &self.ctx.generator().mod_pow(plaintext, &self.ctx.modulus()),
+            &self.ctx.generator().mod_pow(plaintext, self.ctx.modulus()),
             randomness,
         )
     }
     pub fn encrypt_ext(&self, plaintext: &C::E, randomness: &C::X) -> Ciphertext<C> {
         Ciphertext {
             a: plaintext
-                .mul(&self.value.mod_pow(randomness, &self.ctx.modulus()))
-                .modulo(&self.ctx.modulus()),
-            b: self
-                .ctx
-                .generator()
-                .mod_pow(randomness, &self.ctx.modulus()),
+                .mul(&self.value.mod_pow(randomness, self.ctx.modulus()))
+                .modulo(self.ctx.modulus()),
+            b: self.ctx.generator().mod_pow(randomness, self.ctx.modulus()),
         }
     }
     pub fn from(pk_value: &C::E, ctx: &C) -> PublicKey<C> {
@@ -64,13 +61,13 @@ impl<C: Ctx> PublicKey<C> {
 
 impl<C: Ctx> PrivateKey<C> {
     pub fn decrypt(&self, c: &Ciphertext<C>) -> C::E {
-        let modulus = &self.ctx.modulus();
+        let modulus = self.ctx.modulus();
 
         c.a.div(&c.b.mod_pow(&self.value, modulus), modulus)
             .modulo(modulus)
     }
     pub fn decrypt_and_prove(&self, c: &Ciphertext<C>, label: &[u8]) -> (C::E, ChaumPedersen<C>) {
-        let modulus = &self.ctx.modulus();
+        let modulus = self.ctx.modulus();
 
         let dec_factor = &c.b.mod_pow(&self.value, modulus);
 
@@ -88,7 +85,7 @@ impl<C: Ctx> PrivateKey<C> {
         (decrypted, proof)
     }
     pub fn decryption_factor(&self, c: &Ciphertext<C>) -> C::E {
-        let modulus = &self.ctx.modulus();
+        let modulus = self.ctx.modulus();
 
         c.b.mod_pow(&self.value, modulus)
     }
