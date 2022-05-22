@@ -96,7 +96,7 @@ impl Ctx for BigintCtx {
         self.generator.modpow(other, self.modulus())
     }
     #[inline(always)]
-    fn mod_pow(&self, base: &BigUint, exponent: &BigUint) -> BigUint {
+    fn emod_pow(&self, base: &BigUint, exponent: &BigUint) -> BigUint {
         base.modpow(exponent, self.modulus())
     }
     #[inline(always)]

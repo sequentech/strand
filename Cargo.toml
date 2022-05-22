@@ -41,7 +41,6 @@ rayon = { version = "1.5", optional = true }
 wasm-bindgen-rayon = {version = "1.0", features = ["no-bundler"], optional = true}
 wasm-bindgen = {version = "0.2", optional = true}
 lazy_static = "1.4.0"
-duplicate = "0.4.0"
 [dependencies.web-sys]
 version = "0.3.4"
 features = [

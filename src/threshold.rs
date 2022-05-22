@@ -166,7 +166,7 @@ impl<C: Ctx> Keymaker<C> {
 #[cfg(any(test, feature = "wasmtest"))]
 pub(crate) mod tests {
     use crate::context::{Ctx, Element};
-    use crate::elgamal::PublicKey;
+    use crate::elgamal::{Ciphertext, PublicKey};
     use crate::threshold::*;
 
     pub(crate) fn test_threshold_generic<C: Ctx>(
@@ -193,18 +193,18 @@ pub(crate) mod tests {
             }
         }
 
-        let pk = PublicKey::from(&pk, ctx);
+        let pk = PublicKey::from(&pk);
         let plaintext = ctx.encode(&data);
 
-        let c = pk.encrypt(&plaintext);
+        let c: Ciphertext<C> = pk.encrypt(&plaintext);
         // sanity check: all trustees present for decryption works
         let mut divider = C::E::mul_identity();
         for i in 0..num_trustees {
             divider = divider
-                .mul(&c.b.mod_pow(&trustees[i].coefficients[0], &ctx.modulus()))
+                .mul(&c.gr.mod_pow(&trustees[i].coefficients[0], &ctx.modulus()))
                 .modulo(&ctx.modulus());
         }
-        let decrypted = c.a.div(&divider, &ctx.modulus()).modulo(&ctx.modulus());
+        let decrypted = c.mhr.div(&divider, &ctx.modulus()).modulo(&ctx.modulus());
         let decoded = ctx.decode(&decrypted);
 
         assert_eq!(data, decoded);
@@ -214,8 +214,8 @@ pub(crate) mod tests {
 
         for i in 0..present.len() {
             let v_key = trustees[present[i] - 1].verification_key();
-            let (base, proof) = trustees[present[i] - 1].decryption_factor(&c.b, &[]);
-            let ok = ctx.cp_verify(&v_key, &base, None, &c.b, &proof, &vec![]);
+            let (base, proof) = trustees[present[i] - 1].decryption_factor(&c.gr, &[]);
+            let ok = ctx.cp_verify(&v_key, &base, None, &c.gr, &proof, &vec![]);
             assert!(ok);
 
             let lagrange = Keymaker::lagrange(present[i], &present, ctx);
@@ -224,7 +224,7 @@ pub(crate) mod tests {
             divider = divider.mul(&next).modulo(&ctx.modulus())
         }
 
-        let decrypted = c.a.div(&divider, &ctx.modulus()).modulo(&ctx.modulus());
+        let decrypted = c.mhr.div(&divider, &ctx.modulus()).modulo(&ctx.modulus());
         let decoded = ctx.decode(&decrypted);
 
         assert_eq!(data, decoded);
@@ -234,8 +234,8 @@ pub(crate) mod tests {
 
         for i in 0..present.len() {
             let v_key = trustees[present[i] - 1].verification_key();
-            let (base, proof) = trustees[present[i] - 1].decryption_factor(&c.b, &[]);
-            let ok = ctx.cp_verify(&v_key, &base, None, &c.b, &proof, &vec![]);
+            let (base, proof) = trustees[present[i] - 1].decryption_factor(&c.gr, &[]);
+            let ok = ctx.cp_verify(&v_key, &base, None, &c.gr, &proof, &vec![]);
             assert!(ok);
 
             let lagrange = Keymaker::lagrange(present[i], &present, ctx);
@@ -244,7 +244,7 @@ pub(crate) mod tests {
             divider = divider.mul(&next).modulo(&ctx.modulus())
         }
 
-        let decrypted = c.a.div(&divider, &ctx.modulus()).modulo(&ctx.modulus());
+        let decrypted = c.mhr.div(&divider, &ctx.modulus()).modulo(&ctx.modulus());
         let decoded = ctx.decode(&decrypted);
 
         assert_ne!(data, decoded);

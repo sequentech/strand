@@ -61,7 +61,7 @@ impl Ctx for RistrettoCtx {
         other * &RISTRETTO_BASEPOINT_TABLE
     }
     #[inline(always)]
-    fn mod_pow(&self, base: &RistrettoPoint, exponent: &Scalar) -> RistrettoPoint {
+    fn emod_pow(&self, base: &RistrettoPoint, exponent: &Scalar) -> RistrettoPoint {
         base * exponent
     }
     #[inline(always)]
@@ -268,6 +268,7 @@ impl FromByteTree for RistrettoCtx {
 mod tests {
     use crate::backend::ristretto::*;
     use crate::backend::tests::*;
+    use crate::byte_tree::tests::*;
     use crate::threshold::tests::test_threshold_generic;
 
     #[test]
@@ -365,5 +366,23 @@ mod tests {
         let threshold = 3usize;
 
         test_threshold_generic(&ctx, trustees, threshold, plaintext);
+    }
+
+    #[test]
+    fn test_ciphertext_bytes() {
+        let ctx = RistrettoCtx::get();
+        test_ciphertext_bytes_generic(ctx);
+    }
+
+    #[test]
+    fn test_key_bytes() {
+        let ctx = RistrettoCtx::get();
+        test_key_bytes_generic(ctx);
+    }
+
+    #[test]
+    fn test_schnorr_bytes() {
+        let ctx = RistrettoCtx::get();
+        test_schnorr_bytes_generic(ctx);
     }
 }

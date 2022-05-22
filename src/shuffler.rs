@@ -99,12 +99,13 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
                 let r = ctx.rnd_exp();
 
-                let a =
-                    c.a.mul(&self.pk.value.mod_pow(&r, ctx.modulus()))
-                        .modulo(ctx.modulus());
-                let b = c.b.mul(&ctx.gmod_pow(&r)).modulo(ctx.modulus());
+                let a = c
+                    .mhr
+                    .mul(&self.pk.value.mod_pow(&r, ctx.modulus()))
+                    .modulo(ctx.modulus());
+                let b = c.gr.mul(&ctx.gmod_pow(&r)).modulo(ctx.modulus());
 
-                let c_ = Ciphertext { a, b };
+                let c_ = Ciphertext { mhr: a, gr: b };
                 rs_mutex.lock().unwrap()[*p] = Some(r);
                 c_
             })
@@ -128,7 +129,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         perm: &[usize],
         label: &[u8],
     ) -> ShuffleProof<C> {
-        let (cs, rs) = self.gen_commitments(perm, &self.pk.ctx);
+        let ctx = C::get();
+        let (cs, rs) = self.gen_commitments(perm, ctx);
         let perm_data = PermutationData {
             permutation: perm,
             commitments_c: &cs,
@@ -219,8 +221,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             .map(|i| {
                 (
                     h_generators[i].mod_pow(&omega_primes[i], gmod),
-                    e_primes[i].a.mod_pow(&omega_primes[i], gmod),
-                    e_primes[i].b.mod_pow(&omega_primes[i], gmod),
+                    e_primes[i].mhr.mod_pow(&omega_primes[i], gmod),
+                    e_primes[i].gr.mod_pow(&omega_primes[i], gmod),
                 )
             })
             .collect();
@@ -342,11 +344,11 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             .map(|i| {
                 (
                     proof.cs[i].mod_pow(&us[i], gmod),
-                    es[i].a.mod_pow(&us[i], gmod),
-                    es[i].b.mod_pow(&us[i], gmod),
+                    es[i].mhr.mod_pow(&us[i], gmod),
+                    es[i].gr.mod_pow(&us[i], gmod),
                     h_generators[i].mod_pow(&proof.s.s_primes[i], gmod),
-                    e_primes[i].a.mod_pow(&proof.s.s_primes[i], gmod),
-                    e_primes[i].b.mod_pow(&proof.s.s_primes[i], gmod),
+                    e_primes[i].mhr.mod_pow(&proof.s.s_primes[i], gmod),
+                    e_primes[i].gr.mod_pow(&proof.s.s_primes[i], gmod),
                 )
             })
             .collect();

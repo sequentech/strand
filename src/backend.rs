@@ -2,10 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-pub mod num_bigint;
-// broken
 pub mod b;
-// pub mod c;
+pub mod num_bigint;
 pub mod ristretto;
 // pub mod rug_b;
 
@@ -24,7 +22,7 @@ pub(crate) mod tests {
 
     pub(crate) fn test_elgamal_generic<C: Ctx>(ctx: &C, data: C::P) {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, ctx);
+        let pk = PublicKey::from(&sk.public_value);
 
         let plaintext = ctx.encode(&data);
 
@@ -64,16 +62,16 @@ pub(crate) mod tests {
 
     pub(crate) fn test_vdecryption_generic<C: Ctx>(ctx: &C, data: C::P) {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, ctx);
+        let pk = PublicKey::from(&sk.public_value);
 
         let plaintext = ctx.encode(&data);
 
         let c = pk.encrypt(&plaintext);
         let (d, proof) = sk.decrypt_and_prove(&c, &vec![]);
 
-        let dec_factor = c.a.div(&d, &ctx.modulus()).modulo(&ctx.modulus());
+        let dec_factor = c.mhr.div(&d, &ctx.modulus()).modulo(&ctx.modulus());
 
-        let verified = ctx.cp_verify(&pk.value, &dec_factor, None, &c.b, &proof, &vec![]);
+        let verified = ctx.cp_verify(&pk.value, &dec_factor, None, &c.gr, &proof, &vec![]);
         let recovered = ctx.decode(&d);
         assert!(verified);
         assert_eq!(data, recovered);
@@ -102,8 +100,8 @@ pub(crate) mod tests {
         let (dec_f1, proof1) = km1.decryption_factor(&c, &vec![]);
         let (dec_f2, proof2) = km2.decryption_factor(&c, &vec![]);
 
-        let verified1 = ctx.cp_verify(pk1_value, &dec_f1, None, &c.b, &proof1, &vec![]);
-        let verified2 = ctx.cp_verify(pk2_value, &dec_f2, None, &c.b, &proof2, &vec![]);
+        let verified1 = ctx.cp_verify(pk1_value, &dec_f1, None, &c.gr, &proof1, &vec![]);
+        let verified2 = ctx.cp_verify(pk2_value, &dec_f2, None, &c.gr, &proof2, &vec![]);
         assert!(verified1);
         assert!(verified2);
 
@@ -191,7 +189,7 @@ pub(crate) mod tests {
 
     pub(crate) fn test_shuffle_generic<C: Ctx>(ctx: &C) {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, ctx);
+        let pk = PublicKey::from(&sk.public_value);
 
         let es = util::random_ballots(10, ctx);
         let seed = vec![];
@@ -210,7 +208,7 @@ pub(crate) mod tests {
 
     pub(crate) fn test_shuffle_btserde_generic<C: Ctx>(ctx: &C) {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, ctx);
+        let pk = PublicKey::from(&sk.public_value);
 
         let es = util::random_ballots(10, ctx);
         let seed = vec![];
@@ -246,7 +244,7 @@ pub(crate) mod tests {
 
     pub(crate) fn test_encrypted_sk_generic<C: Ctx>(ctx: &C, data: C::P) {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, ctx);
+        let pk = PublicKey::from(&sk.public_value);
         let plaintext = ctx.encode(&data);
         let c = pk.encrypt(&plaintext);
         let sym_key = symmetric::gen_key();

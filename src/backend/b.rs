@@ -12,7 +12,6 @@ use ed25519_dalek::{Digest, Sha512};
 use crate::rnd::StrandRng;
 use num_bigint::RandBigInt;
 use num_modular::{ModularSymbols, ModularUnaryOps};
-use serde_bytes::ByteBuf;
 
 // https://github.com/bfh-evg/unicrypt/blob/2c9b223c1abc6266aa56ace5562200a5050a0c2a/src/main/java/ch/bfh/unicrypt/helper/prime/SafePrime.java
 const P_STR_2048: &str = "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF324E7738926CFBE5F4BF8D8D8C31D763DA06C80ABB1185EB4F7C7B5757F5958490CFD47D7C19BB42158D9554F7B46BCED55C4D79FD5F24D6613C31C3839A2DDF8A9A276BCFBFA1C877C56284DAB79CD4C2B3293D20E9E5EAF02AC60ACC93ED874422A52ECB238FEEE5AB6ADD835FD1A0753D0A8F78E537D2B95BB79D8DCAEC642C1E9F23B829B5C2780BF38737DF8BB300D01334A0D0BD8645CBFA73A6160FFE393C48CBBBCA060F0FF8EC6D31BEB5CCEED7F2F0BB088017163BC60DF45A0ECB1BCD289B06CBBFEA21AD08E1847F3F7378D56CED94640D6EF0D3D37BE69D0063";
@@ -128,7 +127,7 @@ impl<P: 'static + BigintCtxParams> Ctx for BigintCtx<P> {
         self.generator().modpow(other, self.modulus())
     }
     #[inline(always)]
-    fn mod_pow(&self, base: &Self::E, exponent: &BigUint) -> BigUint {
+    fn emod_pow(&self, base: &Self::E, exponent: &BigUint) -> BigUint {
         base.modpow(exponent, self.modulus())
     }
     #[inline(always)]
@@ -267,16 +266,33 @@ impl<P: 'static + BigintCtxParams> Exponent<BigintCtx<P>> for BigUint {
     }
 }
 
-impl<P: BigintCtxParams> ToByteTree for BigintCtx<P> {
+impl<P: 'static + BigintCtxParams> ToByteTree for BigintCtx<P> {
     fn to_byte_tree(&self) -> ByteTree {
-        ByteTree::Leaf(ByteBuf::new())
+        let ctx = P::get_ctx();
+        let bytes: Vec<ByteTree> = vec![
+            ctx.params.generator().to_byte_tree(),
+            ctx.params.modulus().to_byte_tree(),
+            ctx.params.exp_modulus().to_byte_tree(),
+            ctx.params.co_factor().to_byte_tree(),
+        ];
+        ByteTree::Tree(bytes)
     }
 }
 
 impl<P: BigintCtxParams> FromByteTree for BigintCtx<P> {
     fn from_byte_tree(tree: &ByteTree) -> Result<BigintCtx<P>, ByteError> {
-        let _leaf = tree.leaf()?;
+        let trees = tree.tree(4)?;
+        let generator = BigUint::from_byte_tree(&trees[0])?;
+        let modulus = BigUint::from_byte_tree(&trees[1])?;
+        let exp_modulus = BigUint::from_byte_tree(&trees[2])?;
+        let co_factor = BigUint::from_byte_tree(&trees[3])?;
+
         let params = P::new();
+        assert_eq!(&generator, params.generator());
+        assert_eq!(&modulus, params.modulus());
+        assert_eq!(&exp_modulus, params.exp_modulus());
+        assert_eq!(&co_factor, params.co_factor());
+
         let ctx = BigintCtx { params };
         Ok(ctx)
     }
@@ -286,6 +302,7 @@ impl<P: BigintCtxParams> FromByteTree for BigintCtx<P> {
 mod tests {
     use crate::backend::b::*;
     use crate::backend::tests::*;
+    use crate::byte_tree::tests::*;
     use crate::context::Ctx;
     use crate::threshold::tests::test_threshold_generic;
 
@@ -361,4 +378,56 @@ mod tests {
 
         test_threshold_generic(ctx, trustees, threshold, plaintext);
     }
+
+    #[test]
+    fn test_ciphertext_bytes() {
+        let ctx = BigintCtx::<P2048>::get();
+        test_ciphertext_bytes_generic(ctx);
+    }
+
+    #[test]
+    fn test_key_bytes() {
+        let ctx = BigintCtx::<P2048>::get();
+        test_key_bytes_generic(ctx);
+    }
+
+    #[test]
+    fn test_schnorr_bytes() {
+        let ctx = BigintCtx::<P2048>::get();
+        test_schnorr_bytes_generic(ctx);
+    }
+
+    /*
+    #[test]
+    fn test_cp_bytes() {
+        let group = RugGroup::default();
+        test_cp_bytes_generic(group);
+
+        let group = RistrettoGroup;
+        test_cp_bytes_generic(group);
+    }
+
+    #[test]
+    fn test_epk_bytes() {
+        let mut csprng = OsRng;
+
+        let group = RugGroup::default();
+        let plaintext = group.rnd_exp();
+        test_epk_bytes_generic(group, plaintext);
+
+        let group = RistrettoGroup;
+        let mut fill = [0u8; 30];
+        csprng.fill_bytes(&mut fill);
+        let plaintext = util::to_u8_30(&fill.to_vec());
+        test_epk_bytes_generic(group, plaintext);
+    }
+
+    #[test]
+    fn test_share_bytes() {
+        let group = RugGroup::default();
+        test_share_bytes_generic(group);
+
+        let group = RistrettoGroup;
+        test_share_bytes_generic(group);
+    }*/
 }

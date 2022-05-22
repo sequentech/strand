@@ -60,8 +60,8 @@ pub fn random_ballots<C: Ctx>(n: usize, ctx: &C) -> Vec<Ciphertext<C>> {
     (0..n)
         .par()
         .map(|_| Ciphertext {
-            a: ctx.rnd(),
-            b: ctx.rnd(),
+            mhr: ctx.rnd(),
+            gr: ctx.rnd(),
         })
         .collect()
 }

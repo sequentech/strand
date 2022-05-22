@@ -18,13 +18,13 @@ pub struct Keymaker<C: Ctx> {
 impl<C: Ctx> Keymaker<C> {
     pub fn gen(ctx: &C) -> Keymaker<C> {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, ctx);
+        let pk = PublicKey::from(&sk.public_value);
 
         Keymaker { sk, pk }
     }
 
-    pub fn from_sk(sk: PrivateKey<C>, ctx: &C) -> Keymaker<C> {
-        let pk = PublicKey::from(&sk.public_value, ctx);
+    pub fn from_sk(sk: PrivateKey<C>) -> Keymaker<C> {
+        let pk = PublicKey::from(&sk.public_value);
 
         Keymaker { sk, pk }
     }
@@ -32,7 +32,7 @@ impl<C: Ctx> Keymaker<C> {
     pub fn share(&self, label: &[u8]) -> (PublicKey<C>, Schnorr<C>) {
         let ctx = C::get();
 
-        let pk = PublicKey::<C>::from(&self.pk.value, ctx);
+        let pk = PublicKey::<C>::from(&self.pk.value);
         let proof = ctx.schnorr_prove(&self.sk.value, &pk.value, ctx.generator(), label);
 
         (pk, proof)
@@ -53,7 +53,7 @@ impl<C: Ctx> Keymaker<C> {
             acc = acc.mul(&pk.value).modulo(ctx.modulus());
         }
 
-        PublicKey::<C>::from(&acc, ctx)
+        PublicKey::<C>::from(&acc)
     }
 
     pub fn decryption_factor(&self, c: &Ciphertext<C>, label: &[u8]) -> (C::E, ChaumPedersen<C>) {
@@ -65,7 +65,7 @@ impl<C: Ctx> Keymaker<C> {
             &self.pk.value,
             &dec_factor,
             None,
-            &c.b,
+            &c.gr,
             label,
         );
 
@@ -89,7 +89,7 @@ impl<C: Ctx> Keymaker<C> {
             acc = acc.mul(dec).modulo(ctx.modulus());
         }
 
-        c.a.div(&acc, ctx.modulus()).modulo(ctx.modulus())
+        c.mhr.div(&acc, ctx.modulus()).modulo(ctx.modulus())
     }
 
     pub fn joint_dec_many(ctx: &C, decs: &[Vec<C::E>], cs: &[Ciphertext<C>]) -> Vec<C::E> {
@@ -103,7 +103,7 @@ impl<C: Ctx> Keymaker<C> {
                 for dec in decs.iter().skip(1) {
                     acc = acc.mul(&dec[i]).modulo(modulus);
                 }
-                c.a.div(&acc, modulus).modulo(modulus)
+                c.mhr.div(&acc, modulus).modulo(modulus)
             })
             .collect();
 
@@ -128,7 +128,7 @@ impl<C: Ctx> Keymaker<C> {
                     pk_value,
                     &decs[i],
                     None,
-                    &ciphertexts[i].b,
+                    &ciphertexts[i].gr,
                     &proofs[i],
                     label,
                 )

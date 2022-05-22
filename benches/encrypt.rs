@@ -5,7 +5,6 @@ use strand::backend::num_bigint::BigintCtx;
 use strand::backend::ristretto::RistrettoCtx;
 use strand::context::Ctx;
 use strand::elgamal::*;
-use strand::shuffler::*;
 use strand::util;
 
 fn encrypt<C: Ctx>(ctx: &C, pk: &PublicKey<C>, data: C::P, n: usize) {
@@ -14,7 +13,7 @@ fn encrypt<C: Ctx>(ctx: &C, pk: &PublicKey<C>, data: C::P, n: usize) {
         let randomness = ctx.rnd_exp();
         let c = pk.encrypt_ext(&plaintext, &randomness);
 
-        let _proof = ctx.schnorr_prove(&randomness, &c.b, ctx.generator(), &vec![]);
+        let _proof = ctx.schnorr_prove(&randomness, &c.gr, ctx.generator(), &vec![]);
     }
 }
 
@@ -34,11 +33,11 @@ fn encrypt_bigint(ctx: &BigintCtx, pk: &PublicKey<BigintCtx>, n: usize) {
 fn bench_encrypt(c: &mut Criterion) {
     let rctx = RistrettoCtx;
     let rsk = rctx.gen_key();
-    let rpk = PublicKey::from(&rsk.public_value, &rctx);
+    let rpk = PublicKey::from(&rsk.public_value);
 
     let bctx = BigintCtx::default();
     let bsk = bctx.gen_key();
-    let bpk = PublicKey::from(&bsk.public_value, &bctx);
+    let bpk = PublicKey::from(&bsk.public_value);
 
     let mut group = c.benchmark_group("encrypt");
     group.sampling_mode(SamplingMode::Flat);
