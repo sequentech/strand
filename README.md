@@ -2,8 +2,8 @@
 
 ## wasm test
 * `wasm-pack build --release --target web --features=wasmtest`
-* `python3 src/wasm/serve.py`
-* http://localhost:8080/src/wasm/test.html
+* `python3 src/wasm/test/serve.py`
+* http://localhost:8080/src/wasm/test/test.html
 ### rayon (broken)
 * https://github.com/GoogleChromeLabs/wasm-bindgen-rayon
 *  .cargo/config
