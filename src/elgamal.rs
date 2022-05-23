@@ -100,7 +100,11 @@ impl<C: Ctx> PrivateKey<C> {
         let key_bytes = self.value.ser();
         let (b, iv) = symmetric::encrypt(key, &key_bytes);
         let phantom = PhantomData;
-        EncryptedPrivateKey { bytes: b, iv, phantom}
+        EncryptedPrivateKey {
+            bytes: b,
+            iv,
+            phantom,
+        }
     }
     pub fn from_encrypted(key: [u8; 32], encrypted: EncryptedPrivateKey<C>) -> PrivateKey<C> {
         let ctx = C::get();
