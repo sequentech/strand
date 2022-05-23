@@ -13,7 +13,7 @@ fn encrypt<C: Ctx>(ctx: &C, pk: &PublicKey<C>, data: C::P, n: usize) {
         let randomness = ctx.rnd_exp();
         let c = pk.encrypt_ext(&plaintext, &randomness);
 
-        let _proof = ctx.schnorr_prove(&randomness, &c.gr, ctx.generator(), &vec![]);
+        let _proof = ctx.schnorr_prove(&randomness, &c.gr(), ctx.generator(), &vec![]);
     }
 }
 

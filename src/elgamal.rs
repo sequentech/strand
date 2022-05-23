@@ -11,7 +11,15 @@ use std::marker::PhantomData;
 #[derive(Clone, Eq, PartialEq)]
 pub struct Ciphertext<C: Ctx> {
     pub(crate) mhr: C::E,
-    pub gr: C::E,
+    pub(crate) gr: C::E,
+}
+impl<C: Ctx> Ciphertext<C> {
+    pub fn mhr(&self) -> &C::E {
+        &self.mhr
+    }
+    pub fn gr(&self) -> &C::E {
+        &self.gr
+    }
 }
 
 #[derive(Eq, PartialEq)]

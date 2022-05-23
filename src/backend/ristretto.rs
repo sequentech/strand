@@ -143,6 +143,9 @@ impl Ctx for RistrettoCtx {
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<RistrettoPoint> {
         self.generators_shake(size, contest, seed)
     }
+    fn is_valid_element(&self, _element: &Self::E) -> bool {
+        true
+    }
     #[inline(always)]
     fn get() -> &'static RistrettoCtx {
         &RistrettoCtx

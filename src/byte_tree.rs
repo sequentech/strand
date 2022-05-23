@@ -243,9 +243,17 @@ where
 {
     fn from_byte_tree(tree: &ByteTree) -> Result<Ciphertext<C>, ByteError> {
         let trees = tree.tree(2)?;
-        let a = C::E::from_byte_tree(&trees[0])?;
-        let b = C::E::from_byte_tree(&trees[1])?;
-        Ok(Ciphertext { mhr: a, gr: b })
+        let mhr = C::E::from_byte_tree(&trees[0])?;
+        let gr = C::E::from_byte_tree(&trees[1])?;
+        let ctx = C::get();
+        let ok = ctx.is_valid_element(&mhr) && ctx.is_valid_element(&gr);
+        if ok {
+            Ok(Ciphertext { mhr, gr })
+        } else {
+            Err(ByteError::Msg(String::from(
+                "ByteTree: quadratic non-residue",
+            )))
+        }
     }
 }
 

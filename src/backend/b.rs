@@ -3,7 +3,6 @@ use num_integer::Integer;
 use num_traits::Num;
 use num_traits::{One, Zero};
 
-use crate::byte_tree::*;
 use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::*;
 use crate::zkp::ZKProver;
@@ -136,6 +135,10 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<BigUint> {
         self.generators_fips(size, contest, seed)
     }
+    fn is_valid_element(&self, element: &Self::E) -> bool {
+        element.legendre(self.modulus()) == 1
+    }
+
     #[inline(always)]
     fn get() -> &'static BigintCtx<P> {
         P::get_ctx()

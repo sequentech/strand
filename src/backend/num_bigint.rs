@@ -154,6 +154,10 @@ impl Ctx for BigintCtx {
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<BigUint> {
         self.generators_fips(size, contest, seed)
     }
+
+    fn is_valid_element(&self, element: &Self::E) -> bool {
+        element.legendre(self.modulus()) == 1
+    }
     #[inline(always)]
     fn get() -> &'static BigintCtx {
         &BCTX
