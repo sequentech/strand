@@ -131,11 +131,11 @@ pub(crate) mod tests {
 
         let share1_pk_d = PublicKey::<C>::deser(&share1_pk_b).unwrap();
         let share1_proof_d = Schnorr::<C>::deser(&share1_proof_b).unwrap();
-        let _sk1_d = EncryptedPrivateKey::deser(&sk1_b).unwrap();
+        let _sk1_d = EncryptedPrivateKey::<C>::deser(&sk1_b).unwrap();
 
         let share2_pk_d = PublicKey::<C>::deser(&share2_pk_b).unwrap();
         let share2_proof_d = Schnorr::<C>::deser(&share2_proof_b).unwrap();
-        let _sk2_d = EncryptedPrivateKey::deser(&sk2_b).unwrap();
+        let _sk2_d = EncryptedPrivateKey::<C>::deser(&sk2_b).unwrap();
 
         let verified1 = Keymaker::verify_share(ctx, &share1_pk_d, &share1_proof_d, &vec![]);
         let verified2 = Keymaker::verify_share(ctx, &share2_pk_d, &share2_proof_d, &vec![]);

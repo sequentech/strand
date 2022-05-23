@@ -181,7 +181,7 @@ impl<T: ToByteTree> ToByteTree for [T] {
     }
 }
 
-impl ToByteTree for EncryptedPrivateKey {
+impl<C: Ctx> ToByteTree for EncryptedPrivateKey<C> {
     fn to_byte_tree(&self) -> ByteTree {
         let trees: Vec<ByteTree> = vec![
             ByteTree::Leaf(ByteBuf::from(self.bytes.clone())),
@@ -191,14 +191,15 @@ impl ToByteTree for EncryptedPrivateKey {
     }
 }
 
-impl FromByteTree for EncryptedPrivateKey {
-    fn from_byte_tree(tree: &ByteTree) -> Result<EncryptedPrivateKey, ByteError> {
+impl<C: Ctx> FromByteTree for EncryptedPrivateKey<C> {
+    fn from_byte_tree(tree: &ByteTree) -> Result<EncryptedPrivateKey<C>, ByteError> {
         let trees = tree.tree(2)?;
         let bytes = trees[0].leaf()?.to_vec();
         let iv_vec = trees[1].leaf()?;
         let iv = util::to_u8_16(iv_vec);
+        let phantom = PhantomData;
 
-        let ret = EncryptedPrivateKey { bytes, iv };
+        let ret = EncryptedPrivateKey { bytes, iv, phantom };
 
         Ok(ret)
     }
@@ -434,8 +435,8 @@ impl<C: Ctx> FromByteTree for Responses<C> {
 #[cfg(test)]
 pub(crate) mod tests {
     use crate::context::{Ctx, Element};
-    /*use crate::keymaker::*;
-    use crate::shuffler::*;*/
+    use crate::keymaker::*;
+    /*use crate::shuffler::*;*/
     use crate::byte_tree::*;
     use crate::symmetric;
 
@@ -498,7 +499,7 @@ pub(crate) mod tests {
         assert!(verified);
     }
 
-    pub(crate) fn test_epk_bytes_generic<C: Ctx>(ctx: &C, plaintext: C::P) {
+    pub(crate) fn test_epk_bytes_generic<C: Ctx + Eq>(ctx: &C, plaintext: C::P) {
         let sk = ctx.gen_key();
         let pk: PublicKey<C> = PublicKey::from(&sk.public_value);
 
@@ -515,224 +516,4 @@ pub(crate) mod tests {
         let d = ctx.decode(&sk_d.decrypt(&c));
         assert_eq!(d, plaintext);
     }
-    /*
-    pub(crate) fn test_share_bytes_generic<E: Element, G: Group<E> + Eq>(group: G) {
-        let km = Keymaker::gen(&group);
-        let (pk, proof) = km.share(&vec![]);
-
-        let sym = symmetric::gen_key();
-        let esk = km.get_encrypted_sk(sym);
-
-        let share = Keyshare {
-            share: pk,
-            proof: proof,
-            encrypted_sk: esk,
-        };
-
-        let bytes = share.ser();
-        let back = Keyshare::<E, G>::deser(&bytes).unwrap();
-
-        assert!(share.share == back.share);
-        assert!(share.proof == back.proof);
-        assert!(share.encrypted_sk == back.encrypted_sk);
-    }*/
-
-    /*
-
-
-    #[test]
-    fn test_share_bytes() {
-        let group = RugGroup::default();
-        test_share_bytes_generic(group);
-
-        let group = RistrettoGroup;
-        test_share_bytes_generic(group);
-    }
-
-    #[test]
-    fn test_ballots_bytes() {
-        let group = RugGroup::default();
-        test_ballots_bytes_generic(group);
-
-        let group = RistrettoGroup;
-        test_ballots_bytes_generic(group);
-    }
-
-    #[test]
-    fn test_mix_bytes() {
-        let mut csprng = OsRng;
-
-        let group = RugGroup::default();
-        let mut ps = vec![];
-        for _ in 0..10 {
-            let p = group.rnd_exp();
-            ps.push(p);
-        }
-        test_mix_bytes_generic(group, ps);
-
-        let group = RistrettoGroup;
-        let mut ps = vec![];
-        for _ in 0..10 {
-            let mut fill = [0u8; 30];
-            csprng.fill_bytes(&mut fill);
-            let p = util::to_u8_30(&fill.to_vec());
-            ps.push(p);
-        }
-        test_mix_bytes_generic(group, ps);
-    }
-
-    #[test]
-    fn test_plaintexts_bytes() {
-        let mut csprng = OsRng;
-
-        let group = RugGroup::default();
-        let mut ps = vec![];
-        for _ in 0..10 {
-            let p = group.rnd_exp();
-            ps.push(p);
-        }
-        test_plaintexts_bytes_generic(group, ps);
-
-        let group = RistrettoGroup;
-        let mut ps = vec![];
-        for _ in 0..10 {
-            let mut fill = [0u8; 30];
-            csprng.fill_bytes(&mut fill);
-            let p = util::to_u8_30(&fill.to_vec());
-            ps.push(p);
-        }
-        test_plaintexts_bytes_generic(group, ps);
-    }
-
-    #[test]
-    fn test_statement_bytes() {
-        fn rnd32() -> Vec<u8> {
-            rand::thread_rng().gen::<[u8; 32]>().to_vec()
-        }
-
-        let mut csprng = OsRng;
-        let pk = Keypair::generate(&mut csprng);
-        let stmt = Statement::mix(rnd32(), rnd32(), rnd32(), Some(2), 0);
-        let bytes = stmt.ser();
-        let back = Statement::deser(&bytes).unwrap();
-
-        assert!(stmt == back);
-
-        let s_stmt = SignedStatement::mix(&[0u8; 64], &[0u8; 64], &[0u8; 64], Some(2), 0, &pk);
-
-        let bytes = s_stmt.ser();
-        let back = SignedStatement::deser(&bytes).unwrap();
-
-        assert!(s_stmt == back);
-    }
-
-    #[test]
-    fn test_size() {
-        let n = 1000;
-        let n_f = 1000 as f32;
-        let group1 = RistrettoGroup;
-        let exps1: Vec<Scalar> = (0..n).into_iter().map(|_| group1.rnd_exp()).collect();
-
-        let mut bytes = bincode::serialize(&exps1).unwrap();
-        println!(
-            "{} ristretto exps: {}, {}",
-            n,
-            bytes.len(),
-            (bytes.len() as f32 / n_f)
-        );
-        let elements1: Vec<RistrettoPoint> = (0..n).into_iter().map(|_| group1.rnd()).collect();
-        bytes = bincode::serialize(&elements1).unwrap();
-        println!(
-            "{} ristretto elements: {}, {}",
-            n,
-            bytes.len(),
-            (bytes.len() as f32 / n_f)
-        );
-        let es1 = util::random_ballots(n, &group1).ciphertexts;
-        bytes = bincode::serialize(&es1).unwrap();
-        println!(
-            "{} ristretto ciphertexts in Ballots: {}, {}",
-            n,
-            bytes.len(),
-            (bytes.len() as f32 / n_f)
-        );
-        // 100k = 100M
-        let group2 = RugGroup::default();
-        let exps2: Vec<Integer> = (0..n).into_iter().map(|_| group2.rnd_exp()).collect();
-        bytes = bincode::serialize(&exps2).unwrap();
-        println!(
-            "{} rug exps: {}, {}",
-            n,
-            bytes.len(),
-            (bytes.len() as f32 / n_f)
-        );
-        let elements2: Vec<Integer> = (0..n).into_iter().map(|_| group2.rnd()).collect();
-        bytes = bincode::serialize(&elements2).unwrap();
-        println!(
-            "{} rug elements: {}, {}",
-            n,
-            bytes.len(),
-            (bytes.len() as f32 / n_f)
-        );
-        let es2 = util::random_ballots(1000, &group2).ciphertexts;
-        bytes = bincode::serialize(&es2).unwrap();
-        println!(
-            "{} rug ciphertexts in Ballots: {}, {}",
-            n,
-            bytes.len(),
-            (bytes.len() as f32 / n_f)
-        );
-
-        println!("---------------------");
-
-        let mut bytes = bincode::serialize(&exps1).unwrap();
-        println!(
-            "{} ristretto exps (BT): {}, {}",
-            n,
-            bytes.len(),
-            (bytes.len() as f32 / n_f)
-        );
-        let elements1: Vec<RistrettoPoint> = (0..n).into_iter().map(|_| group1.rnd()).collect();
-        bytes = elements1.ser();
-        println!(
-            "{} ristretto elements (BT): {}, {}",
-            n,
-            bytes.len(),
-            (bytes.len() as f32 / n_f)
-        );
-        let es1 = util::random_ballots(n, &group1).ciphertexts;
-        bytes = es1.ser();
-        println!(
-            "{} ristretto ciphertexts in Ballots (BT): {}, {}",
-            n,
-            bytes.len(),
-            (bytes.len() as f32 / n_f)
-        );
-        // 100k = 100M
-        let group2 = RugGroup::default();
-        let exps2: Vec<Integer> = (0..n).into_iter().map(|_| group2.rnd_exp()).collect();
-        bytes = exps2.ser();
-        println!(
-            "{} rug exps (BT): {}, {}",
-            n,
-            bytes.len(),
-            (bytes.len() as f32 / n_f)
-        );
-        let elements2: Vec<Integer> = (0..n).into_iter().map(|_| group2.rnd()).collect();
-        bytes = elements2.ser();
-        println!(
-            "{} rug elements (BT): {}, {}",
-            n,
-            bytes.len(),
-            (bytes.len() as f32 / n_f)
-        );
-        let es2 = util::random_ballots(1000, &group2).ciphertexts;
-        bytes = es2.ser();
-        println!(
-            "{} rug ciphertexts in Ballots (BT): {}, {}",
-            n,
-            bytes.len(),
-            (bytes.len() as f32 / n_f)
-        );
-    }*/
 }

@@ -38,7 +38,7 @@ impl<C: Ctx> Keymaker<C> {
         (pk, proof)
     }
 
-    pub fn get_encrypted_sk(&self, symmetric: [u8; 32]) -> EncryptedPrivateKey {
+    pub fn get_encrypted_sk(&self, symmetric: [u8; 32]) -> EncryptedPrivateKey<C> {
         self.sk.to_encrypted(symmetric)
     }
 

@@ -3,7 +3,7 @@ use crate::elgamal::*;
 use crate::zkp::ZKProver;
 use std::marker::{Send, Sync};
 
-pub trait Ctx: 'static + Sized + Clone + Send + Sync + ToFromBTree + ZKProver<Self> {
+pub trait Ctx: 'static + Sized + Clone + Send + Sync + ZKProver<Self> {
     type E: Element<Self>;
     type X: Exponent<Self>;
     type P: Send + Sync + Eq + std::fmt::Debug;

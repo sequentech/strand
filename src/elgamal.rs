@@ -6,6 +6,7 @@ use crate::byte_tree::{BTreeDeser, BTreeSer};
 use crate::context::{Ctx, Element};
 use crate::symmetric;
 use crate::zkp::ChaumPedersen;
+use std::marker::PhantomData;
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct Ciphertext<C: Ctx> {
@@ -25,9 +26,10 @@ pub struct PrivateKey<C: Ctx> {
 }
 
 #[derive(Eq, PartialEq)]
-pub struct EncryptedPrivateKey {
+pub struct EncryptedPrivateKey<C: Ctx> {
     pub bytes: Vec<u8>,
     pub iv: [u8; 16],
+    pub phantom: PhantomData<C>,
 }
 
 impl<C: Ctx> PublicKey<C> {
@@ -94,12 +96,13 @@ impl<C: Ctx> PrivateKey<C> {
             public_value,
         }
     }
-    pub fn to_encrypted(&self, key: [u8; 32]) -> EncryptedPrivateKey {
+    pub fn to_encrypted(&self, key: [u8; 32]) -> EncryptedPrivateKey<C> {
         let key_bytes = self.value.ser();
         let (b, iv) = symmetric::encrypt(key, &key_bytes);
-        EncryptedPrivateKey { bytes: b, iv }
+        let phantom = PhantomData;
+        EncryptedPrivateKey { bytes: b, iv, phantom}
     }
-    pub fn from_encrypted(key: [u8; 32], encrypted: EncryptedPrivateKey) -> PrivateKey<C> {
+    pub fn from_encrypted(key: [u8; 32], encrypted: EncryptedPrivateKey<C>) -> PrivateKey<C> {
         let ctx = C::get();
         let key_bytes = symmetric::decrypt(key, encrypted.iv, &encrypted.bytes);
         let value = C::X::deser(&key_bytes).unwrap();

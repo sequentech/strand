@@ -16,8 +16,8 @@ use num_modular::{ModularSymbols, ModularUnaryOps};
 // https://github.com/bfh-evg/unicrypt/blob/2c9b223c1abc6266aa56ace5562200a5050a0c2a/src/main/java/ch/bfh/unicrypt/helper/prime/SafePrime.java
 const P_STR_2048: &str = "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF324E7738926CFBE5F4BF8D8D8C31D763DA06C80ABB1185EB4F7C7B5757F5958490CFD47D7C19BB42158D9554F7B46BCED55C4D79FD5F24D6613C31C3839A2DDF8A9A276BCFBFA1C877C56284DAB79CD4C2B3293D20E9E5EAF02AC60ACC93ED874422A52ECB238FEEE5AB6ADD835FD1A0753D0A8F78E537D2B95BB79D8DCAEC642C1E9F23B829B5C2780BF38737DF8BB300D01334A0D0BD8645CBFA73A6160FFE393C48CBBBCA060F0FF8EC6D31BEB5CCEED7F2F0BB088017163BC60DF45A0ECB1BCD289B06CBBFEA21AD08E1847F3F7378D56CED94640D6EF0D3D37BE69D0063";
 const Q_STR_2048: &str = "5bf0a8b1457695355fb8ac404e7a79e3b1738b079c5a6d2b53c26c8228c867f799273b9c49367df2fa5fc6c6c618ebb1ed0364055d88c2f5a7be3dababfacac24867ea3ebe0cdda10ac6caaa7bda35e76aae26bcfeaf926b309e18e1c1cd16efc54d13b5e7dfd0e43be2b1426d5bce6a6159949e9074f2f5781563056649f6c3a21152976591c7f772d5b56ec1afe8d03a9e8547bc729be95caddbcec6e57632160f4f91dc14dae13c05f9c39befc5d98068099a50685ec322e5fd39d30b07ff1c9e2465dde5030787fc763698df5ae6776bf9785d84400b8b1de306fa2d07658de6944d8365dff510d68470c23f9fb9bc6ab676ca3206b77869e9bdf34e8031";
-// const P_STR_3072: &'static str = "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF324E7738926CFBE5F4BF8D8D8C31D763DA06C80ABB1185EB4F7C7B5757F5958490CFD47D7C19BB42158D9554F7B46BCED55C4D79FD5F24D6613C31C3839A2DDF8A9A276BCFBFA1C877C56284DAB79CD4C2B3293D20E9E5EAF02AC60ACC93ED874422A52ECB238FEEE5AB6ADD835FD1A0753D0A8F78E537D2B95BB79D8DCAEC642C1E9F23B829B5C2780BF38737DF8BB300D01334A0D0BD8645CBFA73A6160FFE393C48CBBBCA060F0FF8EC6D31BEB5CCEED7F2F0BB088017163BC60DF45A0ECB1BCD289B06CBBFEA21AD08E1847F3F7378D56CED94640D6EF0D3D37BE67008E186D1BF275B9B241DEB64749A47DFDFB96632C3EB061B6472BBF84C26144E49C2D04C324EF10DE513D3F5114B8B5D374D93CB8879C7D52FFD72BA0AAE7277DA7BA1B4AF1488D8E836AF14865E6C37AB6876FE690B571121382AF341AFE94F77BCF06C83B8FF5675F0979074AD9A787BC5B9BD4B0C5937D3EDE4C3A79396419CD7";
-// const Q_STR_3072: &'static str = "5bf0a8b1457695355fb8ac404e7a79e3b1738b079c5a6d2b53c26c8228c867f799273b9c49367df2fa5fc6c6c618ebb1ed0364055d88c2f5a7be3dababfacac24867ea3ebe0cdda10ac6caaa7bda35e76aae26bcfeaf926b309e18e1c1cd16efc54d13b5e7dfd0e43be2b1426d5bce6a6159949e9074f2f5781563056649f6c3a21152976591c7f772d5b56ec1afe8d03a9e8547bc729be95caddbcec6e57632160f4f91dc14dae13c05f9c39befc5d98068099a50685ec322e5fd39d30b07ff1c9e2465dde5030787fc763698df5ae6776bf9785d84400b8b1de306fa2d07658de6944d8365dff510d68470c23f9fb9bc6ab676ca3206b77869e9bdf3380470c368df93adcd920ef5b23a4d23efefdcb31961f5830db2395dfc26130a2724e1682619277886f289e9fa88a5c5ae9ba6c9e5c43ce3ea97feb95d0557393bed3dd0da578a446c741b578a432f361bd5b43b7f3485ab88909c1579a0d7f4a7bbde783641dc7fab3af84bc83a56cd3c3de2dcdea5862c9be9f6f261d3c9cb20ce6b";
+// const P_STR_3072: &str = "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF324E7738926CFBE5F4BF8D8D8C31D763DA06C80ABB1185EB4F7C7B5757F5958490CFD47D7C19BB42158D9554F7B46BCED55C4D79FD5F24D6613C31C3839A2DDF8A9A276BCFBFA1C877C56284DAB79CD4C2B3293D20E9E5EAF02AC60ACC93ED874422A52ECB238FEEE5AB6ADD835FD1A0753D0A8F78E537D2B95BB79D8DCAEC642C1E9F23B829B5C2780BF38737DF8BB300D01334A0D0BD8645CBFA73A6160FFE393C48CBBBCA060F0FF8EC6D31BEB5CCEED7F2F0BB088017163BC60DF45A0ECB1BCD289B06CBBFEA21AD08E1847F3F7378D56CED94640D6EF0D3D37BE67008E186D1BF275B9B241DEB64749A47DFDFB96632C3EB061B6472BBF84C26144E49C2D04C324EF10DE513D3F5114B8B5D374D93CB8879C7D52FFD72BA0AAE7277DA7BA1B4AF1488D8E836AF14865E6C37AB6876FE690B571121382AF341AFE94F77BCF06C83B8FF5675F0979074AD9A787BC5B9BD4B0C5937D3EDE4C3A79396419CD7";
+// const Q_STR_3072: &str = "5bf0a8b1457695355fb8ac404e7a79e3b1738b079c5a6d2b53c26c8228c867f799273b9c49367df2fa5fc6c6c618ebb1ed0364055d88c2f5a7be3dababfacac24867ea3ebe0cdda10ac6caaa7bda35e76aae26bcfeaf926b309e18e1c1cd16efc54d13b5e7dfd0e43be2b1426d5bce6a6159949e9074f2f5781563056649f6c3a21152976591c7f772d5b56ec1afe8d03a9e8547bc729be95caddbcec6e57632160f4f91dc14dae13c05f9c39befc5d98068099a50685ec322e5fd39d30b07ff1c9e2465dde5030787fc763698df5ae6776bf9785d84400b8b1de306fa2d07658de6944d8365dff510d68470c23f9fb9bc6ab676ca3206b77869e9bdf3380470c368df93adcd920ef5b23a4d23efefdcb31961f5830db2395dfc26130a2724e1682619277886f289e9fa88a5c5ae9ba6c9e5c43ce3ea97feb95d0557393bed3dd0da578a446c741b578a432f361bd5b43b7f3485ab88909c1579a0d7f4a7bbde783641dc7fab3af84bc83a56cd3c3de2dcdea5862c9be9f6f261d3c9cb20ce6b";
 
 lazy_static! {
     static ref BCTX2048: BigintCtx<P2048> = {
@@ -31,7 +31,7 @@ pub(crate) struct BigintCtx<P: BigintCtxParams> {
     params: P,
 }
 
-impl<P: 'static + BigintCtxParams> BigintCtx<P> {
+impl<P: BigintCtxParams> BigintCtx<P> {
     // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf A.2.3
     fn generators_fips(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<BigUint> {
         let mut ret = Vec::with_capacity(size);
@@ -64,7 +64,7 @@ impl<P: 'static + BigintCtxParams> BigintCtx<P> {
     }
 }
 
-impl<P: 'static + BigintCtxParams> Ctx for BigintCtx<P> {
+impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     type E = BigUint;
     type X = BigUint;
     type P = BigUint;
@@ -142,7 +142,7 @@ impl<P: 'static + BigintCtxParams> Ctx for BigintCtx<P> {
     }
 }
 
-impl<P: 'static + BigintCtxParams> ZKProver<BigintCtx<P>> for BigintCtx<P> {
+impl<P: BigintCtxParams> ZKProver<BigintCtx<P>> for BigintCtx<P> {
     fn hash_to(&self, bytes: &[u8]) -> BigUint {
         let mut hasher = Sha512::new();
         hasher.update(bytes);
@@ -153,7 +153,7 @@ impl<P: 'static + BigintCtxParams> ZKProver<BigintCtx<P>> for BigintCtx<P> {
     }
 }
 
-impl<P: 'static + BigintCtxParams> Element<BigintCtx<P>> for BigUint {
+impl<P: BigintCtxParams> Element<BigintCtx<P>> for BigUint {
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
         self * other
@@ -180,7 +180,7 @@ impl<P: 'static + BigintCtxParams> Element<BigintCtx<P>> for BigUint {
     }
 }
 
-impl<P: 'static + BigintCtxParams> Exponent<BigintCtx<P>> for BigUint {
+impl<P: BigintCtxParams> Exponent<BigintCtx<P>> for BigUint {
     #[inline(always)]
     fn add(&self, other: &Self) -> Self {
         self + other
@@ -217,7 +217,7 @@ impl<P: 'static + BigintCtxParams> Exponent<BigintCtx<P>> for BigUint {
     }
 }
 
-pub(crate) trait BigintCtxParams: Sized + Clone + Send + Sync {
+pub(crate) trait BigintCtxParams: 'static + Clone + Send + Sync {
     fn generator(&self) -> &BigUint;
     fn modulus(&self) -> &BigUint;
     fn exp_modulus(&self) -> &BigUint;
@@ -229,10 +229,10 @@ pub(crate) trait BigintCtxParams: Sized + Clone + Send + Sync {
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct P2048 {
-    pub generator: BigUint,
-    pub modulus: BigUint,
-    pub exp_modulus: BigUint,
-    pub co_factor: BigUint,
+    generator: BigUint,
+    modulus: BigUint,
+    exp_modulus: BigUint,
+    co_factor: BigUint,
 }
 impl BigintCtxParams for P2048 {
     fn generator(&self) -> &BigUint {
@@ -265,8 +265,8 @@ impl BigintCtxParams for P2048 {
         }
     }
 }
-
-impl<P: 'static + BigintCtxParams> ToByteTree for BigintCtx<P> {
+/*
+impl<P: BigintCtxParams> ToByteTree for BigintCtx<P> {
     fn to_byte_tree(&self) -> ByteTree {
         let ctx = P::get_ctx();
         let bytes: Vec<ByteTree> = vec![
@@ -296,7 +296,7 @@ impl<P: BigintCtxParams> FromByteTree for BigintCtx<P> {
         let ctx = BigintCtx { params };
         Ok(ctx)
     }
-}
+}*/
 
 #[cfg(test)]
 mod tests {

@@ -10,7 +10,7 @@ use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::*;
 use crate::shuffler::{Commitments, YChallengeInput};
 
-pub trait ZKProver<C: 'static + Ctx> {
+pub trait ZKProver<C: Ctx> {
     fn hash_to(&self, bytes: &[u8]) -> C::X;
 
     fn schnorr_prove(&self, secret: &C::X, public: &C::E, g: &C::E, label: &[u8]) -> Schnorr<C> {
