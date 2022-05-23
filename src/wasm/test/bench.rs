@@ -83,7 +83,7 @@ pub fn bench_enc_pok() {
 
 fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
     let sk = ctx.gen_key();
-    let pk = PublicKey::from(&sk.public_value, &ctx);
+    let pk = PublicKey::from(&sk.public_value);
 
     log("gen ballots..");
     let es = util::random_ballots(n, &ctx);
@@ -140,7 +140,7 @@ fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
 
 fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P) {
     let sk = ctx.gen_key();
-    let pk = PublicKey::from(&sk.public_value, &ctx);
+    let pk: PublicKey<C> = PublicKey::from(&sk.public_value);
 
     log("encode..");
     let now = performance.now();
@@ -156,7 +156,7 @@ fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P) {
         log(&format!("{}", performance.now() - now));
         log("prove..");
         let now = performance.now();
-        let _proof = ctx.schnorr_prove(&randomness, &c.b, ctx.generator(), &vec![]);
+        let _proof = ctx.schnorr_prove(&randomness, &c.gr, ctx.generator(), &vec![]);
         log(&format!("{}", performance.now() - now));
     }
     postMessage(&format!(

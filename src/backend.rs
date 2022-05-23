@@ -244,7 +244,7 @@ pub(crate) mod tests {
 
     pub(crate) fn test_encrypted_sk_generic<C: Ctx>(ctx: &C, data: C::P) {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value);
+        let pk: PublicKey<C> = PublicKey::from(&sk.public_value);
         let plaintext = ctx.encode(&data);
         let c = pk.encrypt(&plaintext);
         let sym_key = symmetric::gen_key();
@@ -253,7 +253,7 @@ pub(crate) mod tests {
         let enc_sk_b = enc_sk.ser();
         let enc_sk_d = EncryptedPrivateKey::deser(&enc_sk_b).unwrap();
 
-        let sk_d = PrivateKey::from_encrypted(sym_key, enc_sk_d, ctx);
+        let sk_d = PrivateKey::from_encrypted(sym_key, enc_sk_d);
         let d = sk_d.decrypt(&c);
 
         let recovered = ctx.decode(&d);

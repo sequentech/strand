@@ -99,7 +99,8 @@ impl<C: Ctx> PrivateKey<C> {
         let (b, iv) = symmetric::encrypt(key, &key_bytes);
         EncryptedPrivateKey { bytes: b, iv }
     }
-    pub fn from_encrypted(key: [u8; 32], encrypted: EncryptedPrivateKey, ctx: &C) -> PrivateKey<C> {
+    pub fn from_encrypted(key: [u8; 32], encrypted: EncryptedPrivateKey) -> PrivateKey<C> {
+        let ctx = C::get();
         let key_bytes = symmetric::decrypt(key, encrypted.iv, &encrypted.bytes);
         let value = C::X::deser(&key_bytes).unwrap();
         let public_value = ctx.gmod_pow(&value);

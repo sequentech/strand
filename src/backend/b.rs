@@ -26,58 +26,9 @@ lazy_static! {
     };
 }
 
-pub(crate) trait BigintCtxParams: Sized + Clone + Send + Sync {
-    fn generator(&self) -> &BigUint;
-    fn modulus(&self) -> &BigUint;
-    fn exp_modulus(&self) -> &BigUint;
-    fn co_factor(&self) -> &BigUint;
-
-    fn get_ctx() -> &'static BigintCtx<Self>;
-    fn new() -> Self;
-}
-
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub(crate) struct BigintCtx<P: BigintCtxParams> {
     params: P,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub struct P2048 {
-    pub generator: BigUint,
-    pub modulus: BigUint,
-    pub exp_modulus: BigUint,
-    pub co_factor: BigUint,
-}
-impl BigintCtxParams for P2048 {
-    fn generator(&self) -> &BigUint {
-        &self.generator
-    }
-    fn modulus(&self) -> &BigUint {
-        &self.modulus
-    }
-    fn exp_modulus(&self) -> &BigUint {
-        &self.exp_modulus
-    }
-    fn co_factor(&self) -> &BigUint {
-        &self.co_factor
-    }
-    fn get_ctx() -> &'static BigintCtx<P2048> {
-        &BCTX2048
-    }
-    fn new() -> P2048 {
-        let p = BigUint::from_str_radix(P_STR_2048, 16).unwrap();
-        let q = BigUint::from_str_radix(Q_STR_2048, 16).unwrap();
-        let g = BigUint::from(3u32);
-        let co_factor = BigUint::from(2u32);
-        assert!(g.legendre(&p) == 1);
-
-        P2048 {
-            generator: g,
-            modulus: p,
-            exp_modulus: q,
-            co_factor,
-        }
-    }
 }
 
 impl<P: 'static + BigintCtxParams> BigintCtx<P> {
@@ -266,6 +217,55 @@ impl<P: 'static + BigintCtxParams> Exponent<BigintCtx<P>> for BigUint {
     }
 }
 
+pub(crate) trait BigintCtxParams: Sized + Clone + Send + Sync {
+    fn generator(&self) -> &BigUint;
+    fn modulus(&self) -> &BigUint;
+    fn exp_modulus(&self) -> &BigUint;
+    fn co_factor(&self) -> &BigUint;
+
+    fn get_ctx() -> &'static BigintCtx<Self>;
+    fn new() -> Self;
+}
+
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub struct P2048 {
+    pub generator: BigUint,
+    pub modulus: BigUint,
+    pub exp_modulus: BigUint,
+    pub co_factor: BigUint,
+}
+impl BigintCtxParams for P2048 {
+    fn generator(&self) -> &BigUint {
+        &self.generator
+    }
+    fn modulus(&self) -> &BigUint {
+        &self.modulus
+    }
+    fn exp_modulus(&self) -> &BigUint {
+        &self.exp_modulus
+    }
+    fn co_factor(&self) -> &BigUint {
+        &self.co_factor
+    }
+    fn get_ctx() -> &'static BigintCtx<P2048> {
+        &BCTX2048
+    }
+    fn new() -> P2048 {
+        let p = BigUint::from_str_radix(P_STR_2048, 16).unwrap();
+        let q = BigUint::from_str_radix(Q_STR_2048, 16).unwrap();
+        let g = BigUint::from(3u32);
+        let co_factor = BigUint::from(2u32);
+        assert!(g.legendre(&p) == 1);
+
+        P2048 {
+            generator: g,
+            modulus: p,
+            exp_modulus: q,
+            co_factor,
+        }
+    }
+}
+
 impl<P: 'static + BigintCtxParams> ToByteTree for BigintCtx<P> {
     fn to_byte_tree(&self) -> ByteTree {
         let ctx = P::get_ctx();
@@ -397,31 +397,19 @@ mod tests {
         test_schnorr_bytes_generic(ctx);
     }
 
-    /*
     #[test]
     fn test_cp_bytes() {
-        let group = RugGroup::default();
-        test_cp_bytes_generic(group);
-
-        let group = RistrettoGroup;
-        test_cp_bytes_generic(group);
+        let ctx = BigintCtx::<P2048>::get();
+        test_cp_bytes_generic(ctx);
     }
 
     #[test]
     fn test_epk_bytes() {
-        let mut csprng = OsRng;
-
-        let group = RugGroup::default();
-        let plaintext = group.rnd_exp();
-        test_epk_bytes_generic(group, plaintext);
-
-        let group = RistrettoGroup;
-        let mut fill = [0u8; 30];
-        csprng.fill_bytes(&mut fill);
-        let plaintext = util::to_u8_30(&fill.to_vec());
-        test_epk_bytes_generic(group, plaintext);
+        let ctx = BigintCtx::<P2048>::get();
+        let plaintext = ctx.rnd_exp();
+        test_epk_bytes_generic(ctx, plaintext);
     }
-
+    /*
     #[test]
     fn test_share_bytes() {
         let group = RugGroup::default();

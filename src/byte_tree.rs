@@ -435,9 +435,9 @@ impl<C: Ctx> FromByteTree for Responses<C> {
 pub(crate) mod tests {
     use crate::context::{Ctx, Element};
     /*use crate::keymaker::*;
-    use crate::shuffler::*;
-    use crate::symmetric;*/
+    use crate::shuffler::*;*/
     use crate::byte_tree::*;
+    use crate::symmetric;
 
     // use ed25519_dalek::Keypair;
 
@@ -479,30 +479,30 @@ pub(crate) mod tests {
         let verified = ctx.schnorr_verify(&public, &g, &back, &vec![]);
         assert!(verified);
     }
-    /*
-    fn test_cp_bytes_generic<E: Element, G: Group<E>>(group: G) {
-        let g1 = group.generator();
-        let g2 = group.rnd();
-        let secret = group.rnd_exp();
-        let public1 = g1.mod_pow(&secret, &group.modulus());
-        let public2 = g2.mod_pow(&secret, &group.modulus());
-        let proof = group.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
-        let verified = group.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
+
+    pub(crate) fn test_cp_bytes_generic<C: Ctx + Eq>(ctx: &C) {
+        let g1 = ctx.generator();
+        let g2 = ctx.rnd();
+        let secret = ctx.rnd_exp();
+        let public1 = g1.mod_pow(&secret, &ctx.modulus());
+        let public2 = g2.mod_pow(&secret, &ctx.modulus());
+        let proof = ctx.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
+        let verified = ctx.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
         assert!(verified);
 
         let bytes = proof.ser();
-        let back = ChaumPedersen::<E>::deser(&bytes).unwrap();
+        let back = ChaumPedersen::<C>::deser(&bytes).unwrap();
         assert!(proof == back);
 
-        let verified = group.cp_verify(&public1, &public2, None, &g2, &back, &vec![]);
+        let verified = ctx.cp_verify(&public1, &public2, None, &g2, &back, &vec![]);
         assert!(verified);
     }
 
-    fn test_epk_bytes_generic<E: Element, G: Group<E>>(group: G, plaintext: E::Plaintext) {
-        let sk = group.gen_key();
-        let pk = PublicKey::from(&sk.public_value, &group);
+    pub(crate) fn test_epk_bytes_generic<C: Ctx>(ctx: &C, plaintext: C::P) {
+        let sk = ctx.gen_key();
+        let pk: PublicKey<C> = PublicKey::from(&sk.public_value);
 
-        let encoded = group.encode(&plaintext);
+        let encoded = ctx.encode(&plaintext);
         let c = pk.encrypt(&encoded);
 
         let sym_key = symmetric::gen_key();
@@ -511,12 +511,12 @@ pub(crate) mod tests {
         let back = EncryptedPrivateKey::deser(&enc_sk_b).unwrap();
         assert!(enc_sk == back);
 
-        let sk_d = PrivateKey::from_encrypted(sym_key, back, &group);
-        let d = group.decode(&sk_d.decrypt(&c));
+        let sk_d = PrivateKey::from_encrypted(sym_key, back);
+        let d = ctx.decode(&sk_d.decrypt(&c));
         assert_eq!(d, plaintext);
     }
-
-    fn test_share_bytes_generic<E: Element, G: Group<E> + Eq>(group: G) {
+    /*
+    pub(crate) fn test_share_bytes_generic<E: Element, G: Group<E> + Eq>(group: G) {
         let km = Keymaker::gen(&group);
         let (pk, proof) = km.share(&vec![]);
 
@@ -539,65 +539,6 @@ pub(crate) mod tests {
 
     /*
 
-    #[test]
-    fn test_ciphertext_bytes() {
-        let group = RugGroup::default();
-        test_ciphertext_bytes_generic(group);
-
-        let group = RistrettoGroup;
-        test_ciphertext_bytes_generic(group);
-    }
-
-    #[test]
-    fn test_config_bytes() {
-        let group = RugGroup::default();
-        test_config_bytes_generic(group);
-
-        let group = RistrettoGroup;
-        test_config_bytes_generic(group);
-    }
-
-    #[test]
-    fn test_key_bytes() {
-        let group = RugGroup::default();
-        test_key_bytes_generic(group);
-
-        let group = RistrettoGroup;
-        test_key_bytes_generic(group);
-    }
-
-    #[test]
-    fn test_schnorr_bytes() {
-        let group = RugGroup::default();
-        test_schnorr_bytes_generic(group);
-
-        let group = RistrettoGroup;
-        test_schnorr_bytes_generic(group);
-    }
-
-    #[test]
-    fn test_cp_bytes() {
-        let group = RugGroup::default();
-        test_cp_bytes_generic(group);
-
-        let group = RistrettoGroup;
-        test_cp_bytes_generic(group);
-    }
-
-    #[test]
-    fn test_epk_bytes() {
-        let mut csprng = OsRng;
-
-        let group = RugGroup::default();
-        let plaintext = group.rnd_exp();
-        test_epk_bytes_generic(group, plaintext);
-
-        let group = RistrettoGroup;
-        let mut fill = [0u8; 30];
-        csprng.fill_bytes(&mut fill);
-        let plaintext = util::to_u8_30(&fill.to_vec());
-        test_epk_bytes_generic(group, plaintext);
-    }
 
     #[test]
     fn test_share_bytes() {

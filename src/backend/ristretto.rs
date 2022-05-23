@@ -385,4 +385,21 @@ mod tests {
         let ctx = RistrettoCtx::get();
         test_schnorr_bytes_generic(ctx);
     }
+
+    #[test]
+    fn test_cp_bytes() {
+        let ctx = RistrettoCtx::get();
+        test_cp_bytes_generic(ctx);
+    }
+
+    #[test]
+    fn test_epk_bytes() {
+        let mut csprng = StrandRng;
+
+        let ctx = RistrettoCtx::get();
+        let mut fill = [0u8; 30];
+        csprng.fill_bytes(&mut fill);
+        let plaintext = util::to_u8_30(&fill.to_vec());
+        test_epk_bytes_generic(ctx, plaintext);
+    }
 }
