@@ -17,3 +17,5 @@
 ```
 * rust-toolchain `nightly-2022-04-07`
 * `wasm-pack build --release --target web --features=wasmrayon,wasmtest`
+* `python3 src/wasm/test/serve.py`
+* http://localhost:8080/src/wasm/test/test.html
