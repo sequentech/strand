@@ -13,27 +13,36 @@ use rayon::prelude::*;
 pub struct Keymaker<C: Ctx> {
     sk: PrivateKey<C>,
     pk: PublicKey<C>,
+    ctx: C,
 }
 
 impl<C: Ctx> Keymaker<C> {
     pub fn gen(ctx: &C) -> Keymaker<C> {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value);
+        let pk = PublicKey::from(&sk.public_value, ctx);
 
-        Keymaker { sk, pk }
+        Keymaker {
+            sk,
+            pk,
+            ctx: (*ctx).clone(),
+        }
     }
 
-    pub fn from_sk(sk: PrivateKey<C>) -> Keymaker<C> {
-        let pk = PublicKey::from(&sk.public_value);
+    pub fn from_sk(sk: PrivateKey<C>, ctx: &C) -> Keymaker<C> {
+        let pk = PublicKey::from(&sk.public_value, ctx);
 
-        Keymaker { sk, pk }
+        Keymaker {
+            sk,
+            pk,
+            ctx: (*ctx).clone(),
+        }
     }
 
     pub fn share(&self, label: &[u8]) -> (PublicKey<C>, Schnorr<C>) {
-        let ctx = C::get();
-
-        let pk = PublicKey::<C>::from(&self.pk.value);
-        let proof = ctx.schnorr_prove(&self.sk.value, &pk.value, ctx.generator(), label);
+        let pk = PublicKey::from(&self.pk.value, &self.ctx);
+        let proof = self
+            .ctx
+            .schnorr_prove(&self.sk.value, &pk.value, self.ctx.generator(), label);
 
         (pk, proof)
     }
@@ -53,14 +62,13 @@ impl<C: Ctx> Keymaker<C> {
             acc = acc.mul(&pk.value).modulo(ctx.modulus());
         }
 
-        PublicKey::<C>::from(&acc)
+        PublicKey::from(&acc, ctx)
     }
 
     pub fn decryption_factor(&self, c: &Ciphertext<C>, label: &[u8]) -> (C::E, ChaumPedersen<C>) {
-        let ctx = C::get();
         let dec_factor = self.sk.decryption_factor(c);
 
-        let proof = ctx.cp_prove(
+        let proof = self.ctx.cp_prove(
             &self.sk.value,
             &self.pk.value,
             &dec_factor,

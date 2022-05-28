@@ -102,7 +102,7 @@ impl Ctx for RistrettoCtx {
         PrivateKey::from(&secret, self)
     }
     // see https://github.com/ruescasd/braid-mg/issues/4
-    fn encode(&self, data: &[u8; 30]) -> RistrettoPoint {
+    fn encode(&self, data: &[u8; 30]) -> Result<RistrettoPoint, &'static str> {
         let mut bytes = [0u8; 32];
         bytes[1..1 + data.len()].copy_from_slice(data);
         for j in 0..64 {
@@ -110,11 +110,11 @@ impl Ctx for RistrettoCtx {
             for i in 0..128 {
                 bytes[0] = 2 * i as u8;
                 if let Some(point) = CompressedRistretto(bytes).decompress() {
-                    return point;
+                    return Ok(point);
                 }
             }
         }
-        panic!("Failed to encode into ristretto point");
+        Err("Failed to encode into ristretto point")
     }
     fn decode(&self, element: &RistrettoPoint) -> [u8; 30] {
         let compressed = element.compress();
@@ -146,9 +146,13 @@ impl Ctx for RistrettoCtx {
     fn is_valid_element(&self, _element: &Self::E) -> bool {
         true
     }
-    #[inline(always)]
+    /*#[inline(always)]
     fn get() -> &'static RistrettoCtx {
         &RistrettoCtx
+    }*/
+
+    fn new() -> RistrettoCtx {
+        RistrettoCtx
     }
 }
 
@@ -158,6 +162,10 @@ impl ZKProver<RistrettoCtx> for RistrettoCtx {
         Digest::update(&mut hasher, bytes);
 
         Scalar::from_hash(hasher)
+    }
+
+    fn ctx(&self) -> &RistrettoCtx {
+        &RistrettoCtx
     }
 }
 
@@ -225,7 +233,7 @@ impl Exponent<RistrettoCtx> for Scalar {
 
 impl ToByteTree for Scalar {
     fn to_byte_tree(&self) -> ByteTree {
-        Leaf(ByteBuf::from(self.as_bytes().to_vec()))
+        Leaf(ByteBuf::from(self.to_bytes()))
     }
 }
 
@@ -240,7 +248,7 @@ impl FromByteTree for Scalar {
 
 impl ToByteTree for RistrettoPoint {
     fn to_byte_tree(&self) -> ByteTree {
-        Leaf(ByteBuf::from(self.compress().as_bytes().to_vec()))
+        Leaf(ByteBuf::from(self.compress().to_bytes()))
     }
 }
 
@@ -335,7 +343,7 @@ mod tests {
     }
 
     #[test]
-    fn test_shuffle() {
+    fn test_shufflez() {
         let ctx = RistrettoCtx;
         test_shuffle_generic(&ctx);
     }
@@ -373,36 +381,36 @@ mod tests {
 
     #[test]
     fn test_ciphertext_bytes() {
-        let ctx = RistrettoCtx::get();
-        test_ciphertext_bytes_generic(ctx);
+        let ctx = RistrettoCtx::new();
+        test_ciphertext_bytes_generic(&ctx);
     }
 
     #[test]
     fn test_key_bytes() {
-        let ctx = RistrettoCtx::get();
-        test_key_bytes_generic(ctx);
+        let ctx = RistrettoCtx::new();
+        test_key_bytes_generic(&ctx);
     }
 
     #[test]
     fn test_schnorr_bytes() {
-        let ctx = RistrettoCtx::get();
-        test_schnorr_bytes_generic(ctx);
+        let ctx = RistrettoCtx::new();
+        test_schnorr_bytes_generic(&ctx);
     }
 
     #[test]
     fn test_cp_bytes() {
-        let ctx = RistrettoCtx::get();
-        test_cp_bytes_generic(ctx);
+        let ctx = RistrettoCtx::new();
+        test_cp_bytes_generic(&ctx);
     }
 
     #[test]
     fn test_epk_bytes() {
         let mut csprng = StrandRng;
 
-        let ctx = RistrettoCtx::get();
+        let ctx = RistrettoCtx::new();
         let mut fill = [0u8; 30];
         csprng.fill_bytes(&mut fill);
         let plaintext = util::to_u8_30(&fill.to_vec());
-        test_epk_bytes_generic(ctx, plaintext);
+        test_epk_bytes_generic(&ctx, plaintext);
     }
 }

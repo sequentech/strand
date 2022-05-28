@@ -156,13 +156,14 @@ pub fn test_distributed_btserde() {
     test_distributed_btserde_generic(&ctx, ps);
 
     postMessage("* BC2048 distributed btserde..");
-    let ctx = BC::<P2048>::get();
+    let ctx = BC::<P2048>::new();
+    // let ctx = BC::<P2048>::new();
     let mut ps = vec![];
     for _ in 0..10 {
         let p = ctx.rnd_exp();
         ps.push(p);
     }
-    test_distributed_btserde_generic(ctx, ps);
+    test_distributed_btserde_generic(&ctx, ps);
 }
 
 pub fn test_threshold() {

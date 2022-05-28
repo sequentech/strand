@@ -3,7 +3,7 @@ use crate::elgamal::*;
 use crate::zkp::ZKProver;
 use std::marker::{Send, Sync};
 
-pub trait Ctx: 'static + Sized + Clone + Send + Sync + ZKProver<Self> {
+pub trait Ctx: 'static + Sync + Sized + Clone + ZKProver<Self> {
     type E: Element<Self>;
     type X: Exponent<Self>;
     type P: Send + Sync + Eq + std::fmt::Debug;
@@ -19,14 +19,15 @@ pub trait Ctx: 'static + Sized + Clone + Send + Sync + ZKProver<Self> {
     fn rnd_plaintext(&self) -> Self::P;
 
     fn gen_key(&self) -> PrivateKey<Self>;
-    fn encode(&self, plaintext: &Self::P) -> Self::E;
+    fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str>;
     fn decode(&self, element: &Self::E) -> Self::P;
     fn exp_from_u64(&self, value: u64) -> Self::X;
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E>;
 
     fn is_valid_element(&self, element: &Self::E) -> bool;
-
-    fn get() -> &'static Self;
+    // fn zkp(&self) -> Self::Z;
+    // fn get() -> &'static Self;
+    fn new() -> Self;
 }
 
 pub trait Element<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree {

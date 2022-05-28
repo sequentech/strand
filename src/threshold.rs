@@ -11,7 +11,6 @@ use crate::context::{Ctx, Element, Exponent};
 use crate::zkp::ChaumPedersen;
 
 pub struct Keymaker<C: Ctx> {
-    ctx: C,
     num_trustees: usize,
     threshold: usize,
     coefficients: Vec<C::X>,
@@ -19,10 +18,11 @@ pub struct Keymaker<C: Ctx> {
     shares: Vec<C::X>,
     external_shares: Vec<C::X>,
     v_key_factors: Vec<C::E>,
+    ctx: C,
 }
 
 impl<C: Ctx> Keymaker<C> {
-    pub fn gen(ctx: &C, num_trustees: usize, threshold: usize) -> Keymaker<C> {
+    pub fn gen(num_trustees: usize, threshold: usize, ctx: &C) -> Keymaker<C> {
         let mut coefficients = vec![];
         let mut commitments = vec![];
         let mut shares = vec![];
@@ -45,7 +45,6 @@ impl<C: Ctx> Keymaker<C> {
         }
 
         Keymaker {
-            ctx: ctx.clone(),
             num_trustees,
             threshold,
             coefficients,
@@ -53,6 +52,7 @@ impl<C: Ctx> Keymaker<C> {
             shares,
             external_shares,
             v_key_factors,
+            ctx: (*ctx).clone(),
         }
     }
 
@@ -178,7 +178,7 @@ pub(crate) mod tests {
         let mut pk = C::E::mul_identity();
         let mut trustees = Vec::new();
         for _ in 0..num_trustees {
-            let trustee = Keymaker::gen(ctx, num_trustees, threshold);
+            let trustee = Keymaker::gen(num_trustees, threshold, ctx);
             pk = pk.mul(&trustee.commitments[0]).modulo(&ctx.modulus());
             trustees.push(trustee);
         }
@@ -193,8 +193,8 @@ pub(crate) mod tests {
             }
         }
 
-        let pk = PublicKey::from(&pk);
-        let plaintext = ctx.encode(&data);
+        let pk = PublicKey::from(&pk, ctx);
+        let plaintext = ctx.encode(&data).unwrap();
 
         let c: Ciphertext<C> = pk.encrypt(&plaintext);
         // sanity check: all trustees present for decryption works

@@ -9,6 +9,10 @@ use crate::shuffler::{Commitments, Responses, ShuffleProof};
 use crate::util;
 use crate::zkp::{ChaumPedersen, Schnorr};
 
+use crate::util::Par;
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
+
 quick_error! {
     #[derive(Debug)]
     pub enum ByteError {
@@ -97,22 +101,20 @@ pub trait FromByteTree {
         Self: Sized;
 }
 
-impl<T: ToByteTree> ToByteTree for Vec<T> {
+impl<T: ToByteTree + Sync> ToByteTree for Vec<T> {
     fn to_byte_tree(&self) -> ByteTree {
-        let tree = self.iter().map(|e| e.to_byte_tree()).collect();
+        let tree = self.par().map(|e| e.to_byte_tree()).collect();
         ByteTree::Tree(tree)
     }
 }
 
-impl<T: FromByteTree> FromByteTree for Vec<T> {
+impl<T: FromByteTree + Send> FromByteTree for Vec<T> {
     fn from_byte_tree(tree: &ByteTree) -> Result<Vec<T>, ByteError> {
         if let Tree(trees) = tree {
-            let elements = trees
-                .iter()
+            trees
+                .par()
                 .map(|b| T::from_byte_tree(b))
-                .collect::<Result<Vec<T>, ByteError>>();
-
-            elements
+                .collect::<Result<Vec<T>, ByteError>>()
         } else {
             Err(ByteError::Msg(String::from(
                 "ByteTree: unexpected Leaf constructing Vec<T: FromByteTree>",
@@ -174,9 +176,9 @@ impl<T: FromByteTree> BTreeDeser for T {
     }
 }
 
-impl<T: ToByteTree> ToByteTree for [T] {
+impl<T: ToByteTree + Sync> ToByteTree for [T] {
     fn to_byte_tree(&self) -> ByteTree {
-        let tree = self.iter().map(|e| e.to_byte_tree()).collect();
+        let tree = self.par().map(|e| e.to_byte_tree()).collect();
         ByteTree::Tree(tree)
     }
 }
@@ -218,9 +220,11 @@ impl<C: Ctx> FromByteTree for PrivateKey<C> {
         let trees = tree.tree(2)?;
         let value = C::X::from_byte_tree(&trees[0])?;
         let public_value = C::E::from_byte_tree(&trees[1])?;
+        let ctx = C::new();
         let ret = PrivateKey {
             value,
             public_value,
+            ctx,
         };
 
         Ok(ret)
@@ -245,7 +249,8 @@ where
         let trees = tree.tree(2)?;
         let mhr = C::E::from_byte_tree(&trees[0])?;
         let gr = C::E::from_byte_tree(&trees[1])?;
-        let ctx = C::get();
+        Ok(Ciphertext { mhr, gr })
+        /* let ctx = C::get();
         let ok = ctx.is_valid_element(&mhr) && ctx.is_valid_element(&gr);
         if ok {
             Ok(Ciphertext { mhr, gr })
@@ -253,7 +258,7 @@ where
             Err(ByteError::Msg(String::from(
                 "ByteTree: quadratic non-residue",
             )))
-        }
+        }*/
     }
 }
 
@@ -270,7 +275,8 @@ impl<C: Ctx> FromByteTree for PublicKey<C> {
         let trees = tree.tree(1)?;
         let value = C::E::from_byte_tree(&trees[0])?;
         // let ret = PublicKey { value, ctx };
-        let ret = PublicKey { value };
+        let ctx = C::new();
+        let ret = PublicKey { value, ctx };
 
         Ok(ret)
     }
@@ -294,12 +300,10 @@ impl<C: Ctx> FromByteTree for Schnorr<C> {
         let commitment = C::E::from_byte_tree(&trees[0])?;
         let challenge = C::X::from_byte_tree(&trees[1])?;
         let response = C::X::from_byte_tree(&trees[2])?;
-        let phantom = PhantomData;
         let ret = Schnorr {
             commitment,
             challenge,
             response,
-            phantom,
         };
 
         Ok(ret)
@@ -326,13 +330,11 @@ impl<C: Ctx> FromByteTree for ChaumPedersen<C> {
         let commitment2 = C::E::from_byte_tree(&trees[1])?;
         let challenge = C::X::from_byte_tree(&trees[2])?;
         let response = C::X::from_byte_tree(&trees[3])?;
-        let phantom = PhantomData;
         let ret = ChaumPedersen {
             commitment1,
             commitment2,
             challenge,
             response,
-            phantom,
         };
 
         Ok(ret)
@@ -460,7 +462,7 @@ pub(crate) mod tests {
 
     pub(crate) fn test_key_bytes_generic<C: Ctx + Eq>(ctx: &C) {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value);
+        let pk = PublicKey::from(&sk.public_value, ctx);
 
         let bytes = sk.ser();
         let back = PrivateKey::<C>::deser(&bytes).unwrap();
@@ -509,9 +511,9 @@ pub(crate) mod tests {
 
     pub(crate) fn test_epk_bytes_generic<C: Ctx + Eq>(ctx: &C, plaintext: C::P) {
         let sk = ctx.gen_key();
-        let pk: PublicKey<C> = PublicKey::from(&sk.public_value);
+        let pk: PublicKey<C> = PublicKey::from(&sk.public_value, ctx);
 
-        let encoded = ctx.encode(&plaintext);
+        let encoded = ctx.encode(&plaintext).unwrap();
         let c = pk.encrypt(&encoded);
 
         let sym_key = symmetric::gen_key();
@@ -520,7 +522,7 @@ pub(crate) mod tests {
         let back = EncryptedPrivateKey::deser(&enc_sk_b).unwrap();
         assert!(enc_sk == back);
 
-        let sk_d = PrivateKey::from_encrypted(sym_key, back);
+        let sk_d = PrivateKey::from_encrypted(sym_key, back, ctx);
         let d = ctx.decode(&sk_d.decrypt(&c));
         assert_eq!(d, plaintext);
     }

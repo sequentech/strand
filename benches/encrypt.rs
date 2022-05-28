@@ -9,7 +9,7 @@ use strand::util;
 
 fn encrypt<C: Ctx>(ctx: &C, pk: &PublicKey<C>, data: C::P, n: usize) {
     for _ in 0..n {
-        let plaintext = ctx.encode(&data);
+        let plaintext = ctx.encode(&data).unwrap();
         let randomness = ctx.rnd_exp();
         let c = pk.encrypt_ext(&plaintext, &randomness);
 
@@ -33,11 +33,11 @@ fn encrypt_bigint(ctx: &BigintCtx, pk: &PublicKey<BigintCtx>, n: usize) {
 fn bench_encrypt(c: &mut Criterion) {
     let rctx = RistrettoCtx;
     let rsk = rctx.gen_key();
-    let rpk = PublicKey::from(&rsk.public_value);
+    let rpk = PublicKey::from(&rsk.public_value, &rctx);
 
     let bctx = BigintCtx::default();
     let bsk = bctx.gen_key();
-    let bpk = PublicKey::from(&bsk.public_value);
+    let bpk = PublicKey::from(&bsk.public_value, &bctx);
 
     let mut group = c.benchmark_group("encrypt");
     group.sampling_mode(SamplingMode::Flat);

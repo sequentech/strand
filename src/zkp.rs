@@ -1,7 +1,9 @@
 #![allow(clippy::too_many_arguments)]
+use crate::util::Par;
 use ed25519_dalek::{Digest, Sha512};
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
 use serde_bytes::ByteBuf;
-use std::marker::PhantomData;
 
 use crate::byte_tree::ByteTree;
 use crate::byte_tree::ByteTree::*;
@@ -10,27 +12,26 @@ use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::*;
 use crate::shuffler::{Commitments, YChallengeInput};
 
-pub trait ZKProver<C: Ctx> {
+pub trait ZKProver<C: Ctx>: Sized + Sync {
     fn hash_to(&self, bytes: &[u8]) -> C::X;
+    fn ctx(&self) -> &C;
 
     fn schnorr_prove(&self, secret: &C::X, public: &C::E, g: &C::E, label: &[u8]) -> Schnorr<C> {
-        let ctx = C::get();
+        let ctx = self.ctx();
         let r = ctx.rnd_exp();
         let commitment = g.mod_pow(&r, ctx.modulus());
         let challenge: C::X = self.schnorr_proof_challenge(g, public, &commitment, label);
         let response = r.add(&challenge.mul(secret)).modulo(ctx.exp_modulus());
-        let phantom = PhantomData;
 
         Schnorr {
             commitment,
             challenge,
             response,
-            phantom,
         }
     }
 
     fn schnorr_verify(&self, public: &C::E, g: &C::E, proof: &Schnorr<C>, label: &[u8]) -> bool {
-        let ctx = C::get();
+        let ctx = self.ctx();
         let challenge_ = self.schnorr_proof_challenge(g, public, &proof.commitment, label);
         let ok1 = challenge_.eq(&proof.challenge);
         let lhs = g.mod_pow(&proof.response, ctx.modulus());
@@ -51,7 +52,7 @@ pub trait ZKProver<C: Ctx> {
         g2: &C::E,
         label: &[u8],
     ) -> ChaumPedersen<C> {
-        let ctx = C::get();
+        let ctx = self.ctx();
 
         let r = ctx.rnd_exp();
         let commitment1 = if let Some(g1) = g1 {
@@ -76,7 +77,6 @@ pub trait ZKProver<C: Ctx> {
             commitment2,
             challenge,
             response,
-            phantom: PhantomData,
         }
     }
 
@@ -89,7 +89,7 @@ pub trait ZKProver<C: Ctx> {
         proof: &ChaumPedersen<C>,
         label: &[u8],
     ) -> bool {
-        let ctx = C::get();
+        let ctx = self.ctx();
 
         let challenge_ = self.cp_proof_challenge(
             g1.unwrap_or_else(|| ctx.generator()),
@@ -180,8 +180,7 @@ pub trait ZKProver<C: Ctx> {
         let mut hasher = Sha512::new();
         hasher.update(prefix_bytes);
         let prefix_hash = hasher.finalize().to_vec();
-        let mut ret = Vec::with_capacity(n);
-
+        /* let mut ret = Vec::with_capacity(n);
         for i in 0..n {
             let next: Vec<ByteTree> = vec![
                 Leaf(ByteBuf::from(prefix_hash.clone())),
@@ -191,9 +190,19 @@ pub trait ZKProver<C: Ctx> {
 
             let u: C::X = self.hash_to(&bytes);
             ret.push(u);
-        }
+        }*/
+        (0..n)
+            .par()
+            .map(|i| {
+                let next: Vec<ByteTree> = vec![
+                    Leaf(ByteBuf::from(prefix_hash.clone())),
+                    Leaf(ByteBuf::from(i.to_le_bytes())),
+                ];
+                let bytes = ByteTree::Tree(next).to_hashable_bytes();
 
-        ret
+                self.hash_to(&bytes)
+            })
+            .collect()
     }
 
     fn shuffle_proof_challenge(
@@ -227,7 +236,6 @@ pub struct Schnorr<C: Ctx> {
     pub(crate) commitment: C::E,
     pub(crate) challenge: C::X,
     pub(crate) response: C::X,
-    pub(crate) phantom: PhantomData<C>,
 }
 
 #[derive(Eq, PartialEq)]
@@ -236,5 +244,4 @@ pub struct ChaumPedersen<C: Ctx> {
     pub(crate) commitment2: C::E,
     pub(crate) challenge: C::X,
     pub(crate) response: C::X,
-    pub(crate) phantom: PhantomData<C>,
 }

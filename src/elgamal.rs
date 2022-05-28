@@ -25,12 +25,14 @@ impl<C: Ctx> Ciphertext<C> {
 #[derive(Eq, PartialEq)]
 pub struct PublicKey<C: Ctx> {
     pub(crate) value: C::E,
+    pub(crate) ctx: C,
 }
 
 #[derive(Eq, PartialEq)]
 pub struct PrivateKey<C: Ctx> {
     pub(crate) value: C::X,
-    pub public_value: C::E,
+    pub(crate) public_value: C::E,
+    pub(crate) ctx: C,
 }
 
 #[derive(Eq, PartialEq)]
@@ -42,15 +44,14 @@ pub struct EncryptedPrivateKey<C: Ctx> {
 
 impl<C: Ctx> PublicKey<C> {
     pub fn encrypt(&self, plaintext: &C::E) -> Ciphertext<C> {
-        let randomness = C::get().rnd_exp();
+        let randomness = self.ctx.rnd_exp();
         self.encrypt_ext(plaintext, &randomness)
     }
     pub fn encrypt_exponential(&self, plaintext: &C::X, randomness: &C::X) -> Ciphertext<C> {
-        let ctx = C::get();
-        self.encrypt_ext(&ctx.gmod_pow(plaintext), randomness)
+        self.encrypt_ext(&self.ctx.gmod_pow(plaintext), randomness)
     }
     pub fn encrypt_ext(&self, plaintext: &C::E, randomness: &C::X) -> Ciphertext<C> {
-        let ctx = C::get();
+        let ctx = &self.ctx;
         Ciphertext {
             mhr: plaintext
                 .mul(&ctx.emod_pow(&self.value, randomness))
@@ -58,23 +59,24 @@ impl<C: Ctx> PublicKey<C> {
             gr: ctx.gmod_pow(randomness),
         }
     }
-    pub fn from(pk_value: &C::E) -> PublicKey<C> {
+    pub fn from(pk_value: &C::E, ctx: &C) -> PublicKey<C> {
         PublicKey {
             value: pk_value.clone(),
+            ctx: (*ctx).clone(),
         }
     }
 }
 
 impl<C: Ctx> PrivateKey<C> {
     pub fn decrypt(&self, c: &Ciphertext<C>) -> C::E {
-        let modulus = C::get().modulus();
+        let modulus = self.ctx.modulus();
 
         c.mhr
             .div(&c.gr.mod_pow(&self.value, modulus), modulus)
             .modulo(modulus)
     }
     pub fn decrypt_and_prove(&self, c: &Ciphertext<C>, label: &[u8]) -> (C::E, ChaumPedersen<C>) {
-        let ctx = C::get();
+        let ctx = &self.ctx;
         let modulus = ctx.modulus();
 
         let dec_factor = &c.gr.mod_pow(&self.value, modulus);
@@ -93,7 +95,7 @@ impl<C: Ctx> PrivateKey<C> {
         (decrypted, proof)
     }
     pub fn decryption_factor(&self, c: &Ciphertext<C>) -> C::E {
-        let modulus = C::get().modulus();
+        let modulus = self.ctx.modulus();
 
         c.gr.mod_pow(&self.value, modulus)
     }
@@ -102,6 +104,7 @@ impl<C: Ctx> PrivateKey<C> {
         PrivateKey {
             value: secret.clone(),
             public_value,
+            ctx: (*ctx).clone(),
         }
     }
     pub fn to_encrypted(&self, key: [u8; 32]) -> EncryptedPrivateKey<C> {
@@ -114,8 +117,11 @@ impl<C: Ctx> PrivateKey<C> {
             phantom,
         }
     }
-    pub fn from_encrypted(key: [u8; 32], encrypted: EncryptedPrivateKey<C>) -> PrivateKey<C> {
-        let ctx = C::get();
+    pub fn from_encrypted(
+        key: [u8; 32],
+        encrypted: EncryptedPrivateKey<C>,
+        ctx: &C,
+    ) -> PrivateKey<C> {
         let key_bytes = symmetric::decrypt(key, encrypted.iv, &encrypted.bytes);
         let value = C::X::deser(&key_bytes).unwrap();
         let public_value = ctx.gmod_pow(&value);
@@ -123,6 +129,7 @@ impl<C: Ctx> PrivateKey<C> {
         PrivateKey {
             value,
             public_value,
+            ctx: (*ctx).clone(),
         }
     }
 }

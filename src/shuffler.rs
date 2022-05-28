@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 use rand::Rng;
 use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 use crate::rnd::StrandRng;
 
@@ -62,11 +63,16 @@ pub(super) struct PermutationData<'a, C: Ctx> {
 pub struct Shuffler<'a, C: Ctx> {
     pub(crate) pk: &'a PublicKey<C>,
     pub(crate) generators: &'a Vec<C::E>,
+    pub(crate) ctx: C,
 }
 
 impl<'a, C: Ctx> Shuffler<'a, C> {
-    pub fn new(pk: &'a PublicKey<C>, generators: &'a Vec<C::E>) -> Shuffler<'a, C> {
-        Shuffler { pk, generators }
+    pub fn new(pk: &'a PublicKey<C>, generators: &'a Vec<C::E>, ctx: &C) -> Shuffler<'a, C> {
+        Shuffler {
+            pk,
+            generators,
+            ctx: (*ctx).clone(),
+        }
     }
 
     pub fn gen_shuffle(
@@ -74,7 +80,6 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         ciphertexts: &[Ciphertext<C>],
     ) -> (Vec<Ciphertext<C>>, Vec<C::X>, Vec<usize>) {
         let perm: Vec<usize> = gen_permutation(ciphertexts.len());
-
         let (result, rs) = self.apply_permutation(&perm, ciphertexts);
 
         (result, rs, perm)
@@ -89,7 +94,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         let rs_temp: Vec<Option<C::X>> = vec![None; ciphertexts.len()];
         let rs_mutex = Mutex::new(rs_temp);
-        let ctx = C::get();
+        let ctx = &self.ctx;
         let length = perm.len();
 
         let e_primes = perm
@@ -113,8 +118,9 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         let mut rs = Vec::with_capacity(ciphertexts.len());
 
+        let mut rs_ = rs_mutex.lock().unwrap();
         for _ in 0..length {
-            let r = rs_mutex.lock().unwrap().remove(0);
+            let r = rs_.remove(0);
             rs.push(r.unwrap());
         }
 
@@ -129,15 +135,20 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         perm: &[usize],
         label: &[u8],
     ) -> ShuffleProof<C> {
-        let ctx = C::get();
-        let (cs, rs) = self.gen_commitments(perm, ctx);
+        // let now = Instant::now();
+        let (cs, rs) = self.gen_commitments(perm, &self.ctx);
+        // println!("gen_commitments {}", now.elapsed().as_millis());
+
         let perm_data = PermutationData {
             permutation: perm,
             commitments_c: &cs,
             commitments_r: &rs,
         };
 
+        // let now = Instant::now();
         let transcript = self.gen_proof_ext(es, e_primes, r_primes, &perm_data, label);
+        // println!("gen_proof_ext {}", now.elapsed().as_millis());
+
         transcript.0
     }
 
@@ -152,7 +163,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         perm_data: &PermutationData<C>,
         label: &[u8],
     ) -> (ShuffleProof<C>, Vec<C::X>, C::X) {
-        let ctx = C::get();
+        let ctx = &self.ctx;
 
         #[allow(non_snake_case)]
         let N = es.len();
@@ -171,16 +182,24 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         let (cs, rs) = (perm_data.commitments_c, perm_data.commitments_r);
         let perm = perm_data.permutation;
 
+        // COST
+        // let now = Instant::now();
         let us = ctx.shuffle_proof_us(es, e_primes, cs, N, label);
+        // println!("shuffle proof us {}", now.elapsed().as_millis());
 
         let mut u_primes: Vec<&C::X> = Vec::with_capacity(N);
         for &i in perm.iter() {
             u_primes.push(&us[i]);
         }
 
+        // COST
+        // let now = Instant::now();
+
         let (c_hats, r_hats) = self.gen_commitment_chain(h_initial, &u_primes, ctx);
 
-        // 0 cost
+        // println!("gen commitment chain {}", now.elapsed().as_millis());
+
+        // 0 cost *
         let mut vs = vec![C::X::mul_identity(); N];
         for i in (0..N - 1).rev() {
             vs[i] = u_primes[i + 1].mul(&vs[i + 1]).modulo(xmod);
@@ -191,6 +210,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         let mut r_tilde: C::X = C::X::add_identity();
         let mut r_prime: C::X = C::X::add_identity();
 
+        // let now = Instant::now();
         // 0 cost
         for i in 0..N {
             r_bar = r_bar.add(&rs[i]);
@@ -198,6 +218,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             r_tilde = r_tilde.add(&rs[i].mul(&us[i]));
             r_prime = r_prime.add(&r_primes[i].mul(&us[i]));
         }
+
+        // println!("v4 {}", now.elapsed().as_millis());
 
         r_bar = r_bar.modulo(xmod);
         r_hat = r_hat.modulo(xmod);
@@ -227,7 +249,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             })
             .collect();
 
-        // ~0 cost
+        // ~0 cost *
         for value in values.iter().take(N) {
             t3_temp = t3_temp.mul(&value.0).modulo(gmod);
             t4_1_temp = t4_1_temp.mul(&value.1).modulo(gmod);
@@ -271,8 +293,12 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             t_hats,
         };
 
+        // COST
+        // let now = Instant::now();
         // ~0 cost
         let c: C::X = ctx.shuffle_proof_challenge(&y, &t, label);
+
+        // println!("shuffle proof challenge {}", now.elapsed().as_millis());
 
         let s1 = omegas[0].add(&c.mul(&r_bar)).modulo(xmod);
         let s2 = omegas[1].add(&c.mul(&r_hat)).modulo(xmod);
@@ -312,7 +338,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         e_primes: &[Ciphertext<C>],
         label: &[u8],
     ) -> bool {
-        let ctx = C::get();
+        let ctx = &self.ctx;
 
         #[allow(non_snake_case)]
         let N = es.len();
@@ -353,6 +379,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             })
             .collect();
 
+        // let now = Instant::now();
+
         for i in 0..N {
             c_bar_num = c_bar_num.mul(&proof.cs[i]).modulo(gmod);
             c_bar_den = c_bar_den.mul(&h_generators[i]).modulo(gmod);
@@ -365,6 +393,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             t_tilde41_temp = t_tilde41_temp.mul(&values[i].4).modulo(gmod);
             t_tilde42_temp = t_tilde42_temp.mul(&values[i].5).modulo(gmod);
         }
+
+        // println!("v1 {}", now.elapsed().as_millis());
 
         let c_bar = c_bar_num.div(&c_bar_den, gmod).modulo(gmod);
 
@@ -434,7 +464,6 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         for (i, t_hat) in proof.t.t_hats.iter().enumerate().take(N) {
             checks.push(t_hat.eq(&t_hat_primes[i]));
         }
-
         !checks.contains(&false)
     }
 
@@ -448,14 +477,9 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         let rs_mutex = Mutex::new(rs);
         let cs_mutex = Mutex::new(cs);
 
-        perm.
-        // iter().
-        par().
-        enumerate().for_each(|(i, p)| {
+        perm.par().enumerate().for_each(|(i, p)| {
             let r = ctx.rnd_exp();
-            let c = generators[i]
-                .mul(&ctx.gmod_pow(&r))
-                .modulo(ctx.modulus());
+            let c = generators[i].mul(&ctx.gmod_pow(&r)).modulo(ctx.modulus());
 
             rs_mutex.lock().unwrap()[*p] = Some(r);
             cs_mutex.lock().unwrap()[*p] = Some(c);
@@ -463,7 +487,6 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         let mut ret1: Vec<C::E> = Vec::with_capacity(perm.len());
         let mut ret2: Vec<C::X> = Vec::with_capacity(perm.len());
-
         for _ in 0..perm.len() {
             let c = cs_mutex.lock().unwrap().remove(0);
             let r = rs_mutex.lock().unwrap().remove(0);
@@ -493,14 +516,18 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             })
             .unzip();
 
+        // let now = Instant::now();
+
         for i in 0..us.len() {
             let c_temp = if i == 0 { initial } else { &cs[i - 1] };
 
-            let second = c_temp.mod_pow(us[i], ctx.modulus()).modulo(ctx.modulus());
+            let second = c_temp.mod_pow(us[i], ctx.modulus());
             let c = firsts[i].mul(&second).modulo(ctx.modulus());
 
             cs.push(c);
         }
+
+        // println!("v9 {}", now.elapsed().as_millis());
 
         (cs, rs)
     }

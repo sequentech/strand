@@ -21,9 +21,15 @@ const Q_STR_2048: &str = "5bf0a8b1457695355fb8ac404e7a79e3b1738b079c5a6d2b53c26c
 // const P_STR_3072: &str = "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF324E7738926CFBE5F4BF8D8D8C31D763DA06C80ABB1185EB4F7C7B5757F5958490CFD47D7C19BB42158D9554F7B46BCED55C4D79FD5F24D6613C31C3839A2DDF8A9A276BCFBFA1C877C56284DAB79CD4C2B3293D20E9E5EAF02AC60ACC93ED874422A52ECB238FEEE5AB6ADD835FD1A0753D0A8F78E537D2B95BB79D8DCAEC642C1E9F23B829B5C2780BF38737DF8BB300D01334A0D0BD8645CBFA73A6160FFE393C48CBBBCA060F0FF8EC6D31BEB5CCEED7F2F0BB088017163BC60DF45A0ECB1BCD289B06CBBFEA21AD08E1847F3F7378D56CED94640D6EF0D3D37BE67008E186D1BF275B9B241DEB64749A47DFDFB96632C3EB061B6472BBF84C26144E49C2D04C324EF10DE513D3F5114B8B5D374D93CB8879C7D52FFD72BA0AAE7277DA7BA1B4AF1488D8E836AF14865E6C37AB6876FE690B571121382AF341AFE94F77BCF06C83B8FF5675F0979074AD9A787BC5B9BD4B0C5937D3EDE4C3A79396419CD7";
 // const Q_STR_3072: &str = "5bf0a8b1457695355fb8ac404e7a79e3b1738b079c5a6d2b53c26c8228c867f799273b9c49367df2fa5fc6c6c618ebb1ed0364055d88c2f5a7be3dababfacac24867ea3ebe0cdda10ac6caaa7bda35e76aae26bcfeaf926b309e18e1c1cd16efc54d13b5e7dfd0e43be2b1426d5bce6a6159949e9074f2f5781563056649f6c3a21152976591c7f772d5b56ec1afe8d03a9e8547bc729be95caddbcec6e57632160f4f91dc14dae13c05f9c39befc5d98068099a50685ec322e5fd39d30b07ff1c9e2465dde5030787fc763698df5ae6776bf9785d84400b8b1de306fa2d07658de6944d8365dff510d68470c23f9fb9bc6ab676ca3206b77869e9bdf3380470c368df93adcd920ef5b23a4d23efefdcb31961f5830db2395dfc26130a2724e1682619277886f289e9fa88a5c5ae9ba6c9e5c43ce3ea97feb95d0557393bed3dd0da578a446c741b578a432f361bd5b43b7f3485ab88909c1579a0d7f4a7bbde783641dc7fab3af84bc83a56cd3c3de2dcdea5862c9be9f6f261d3c9cb20ce6b";
 
-lazy_static! {
+/* lazy_static! {
     static ref BCTX: BigintCtx = BigintCtx::default();
-}
+}*/
+/*
+use static_init::{dynamic};
+
+#[dynamic]
+static BCTX: BigintCtx = BigintCtx::default();
+*/
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct BigintCtx {
@@ -110,9 +116,10 @@ impl Ctx for BigintCtx {
     #[inline(always)]
     fn rnd(&self) -> BigUint {
         let mut gen = StrandRng;
-        let unencoded = gen.gen_biguint_below(self.exp_modulus());
+        let one: BigUint = One::one();
+        let unencoded = gen.gen_biguint_below(&(self.exp_modulus() - one));
 
-        self.encode(&unencoded)
+        self.encode(&unencoded).unwrap()
     }
     #[inline(always)]
     fn rnd_exp(&self) -> BigUint {
@@ -122,18 +129,22 @@ impl Ctx for BigintCtx {
     fn rnd_plaintext(&self) -> BigUint {
         self.rnd_exp()
     }
-    fn encode(&self, plaintext: &BigUint) -> BigUint {
+    fn encode(&self, plaintext: &BigUint) -> Result<BigUint, &'static str> {
         let one: BigUint = One::one();
-        assert!(plaintext < &(self.modulus_exp.clone() - one.clone()));
+        if plaintext >= &(self.exp_modulus() - &one) {
+            return Err("Failed to encode, out of range");
+        }
         let notzero: BigUint = plaintext + one;
         let legendre = notzero.legendre(self.modulus());
-        assert_ne!(legendre, 0);
+        if legendre == 0 {
+            return Err("Failed to encode, legendre = 0");
+        }
         let result = if legendre == 1 {
             notzero
         } else {
             self.modulus() - notzero
         };
-        BigUint::mod_floor(&result, self.modulus())
+        Ok(BigUint::mod_floor(&result, self.modulus()))
     }
     fn decode(&self, element: &BigUint) -> BigUint {
         let one: BigUint = One::one();
@@ -158,9 +169,13 @@ impl Ctx for BigintCtx {
     fn is_valid_element(&self, element: &Self::E) -> bool {
         element.legendre(self.modulus()) == 1
     }
-    #[inline(always)]
+    /* #[inline(always)]
     fn get() -> &'static BigintCtx {
         &BCTX
+    }*/
+
+    fn new() -> BigintCtx {
+        BigintCtx::default()
     }
 }
 
@@ -172,6 +187,10 @@ impl ZKProver<BigintCtx> for BigintCtx {
 
         let num = BigUint::from_bytes_be(&hashed);
         num.mod_floor(self.modulus())
+    }
+
+    fn ctx(&self) -> &BigintCtx {
+        self
     }
 }
 

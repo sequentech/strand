@@ -5,7 +5,8 @@
 pub mod b;
 pub mod num_bigint;
 pub mod ristretto;
-// pub mod rug_b;
+#[cfg(feature = "rug")]
+pub mod rug;
 
 #[cfg(any(test, feature = "wasmtest"))]
 pub(crate) mod tests {
@@ -15,6 +16,7 @@ pub(crate) mod tests {
     use crate::keymaker::*;
     use crate::shuffler::{ShuffleProof, Shuffler};
     use crate::symmetric;
+    use std::time::{Duration, Instant};
 
     use crate::byte_tree::*;
     use crate::util;
@@ -22,9 +24,9 @@ pub(crate) mod tests {
 
     pub(crate) fn test_elgamal_generic<C: Ctx>(ctx: &C, data: C::P) {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value);
+        let pk = PublicKey::from(&sk.public_value, ctx);
 
-        let plaintext = ctx.encode(&data);
+        let plaintext = ctx.encode(&data).unwrap();
 
         let c = pk.encrypt(&plaintext);
         let d = sk.decrypt(&c);
@@ -62,9 +64,9 @@ pub(crate) mod tests {
 
     pub(crate) fn test_vdecryption_generic<C: Ctx>(ctx: &C, data: C::P) {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value);
+        let pk = PublicKey::from(&sk.public_value, ctx);
 
-        let plaintext = ctx.encode(&data);
+        let plaintext = ctx.encode(&data).unwrap();
 
         let c = pk.encrypt(&plaintext);
         let (d, proof) = sk.decrypt_and_prove(&c, &vec![]);
@@ -88,7 +90,7 @@ pub(crate) mod tests {
         assert!(verified1);
         assert!(verified2);
 
-        let plaintext = ctx.encode(&data);
+        let plaintext = ctx.encode(&data).unwrap();
 
         let pk1_value = &pk1.value.clone();
         let pk2_value = &pk2.value.clone();
@@ -151,7 +153,7 @@ pub(crate) mod tests {
         let mut cs = vec![];
 
         for plaintext in &data {
-            let encoded = ctx.encode(&plaintext);
+            let encoded = ctx.encode(&plaintext).unwrap();
             let c = pk_combined.encrypt(&encoded);
             cs.push(c);
         }
@@ -189,7 +191,7 @@ pub(crate) mod tests {
 
     pub(crate) fn test_shuffle_generic<C: Ctx>(ctx: &C) {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value);
+        let pk = PublicKey::from(&sk.public_value, ctx);
 
         let es = util::random_ballots(10, ctx);
         let seed = vec![];
@@ -197,18 +199,29 @@ pub(crate) mod tests {
         let shuffler = Shuffler {
             pk: &pk,
             generators: &hs,
+            ctx: (*ctx).clone(),
         };
 
         let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
+
+        let now = Instant::now();
+
         let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &vec![]);
+
+        println!("gen proof {}", now.elapsed().as_millis());
+
+        let now = Instant::now();
+
         let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
+
+        println!("check proof {}", now.elapsed().as_millis());
 
         assert!(ok);
     }
 
     pub(crate) fn test_shuffle_btserde_generic<C: Ctx>(ctx: &C) {
         let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value);
+        let pk = PublicKey::from(&sk.public_value, ctx);
 
         let es = util::random_ballots(10, ctx);
         let seed = vec![];
@@ -216,6 +229,7 @@ pub(crate) mod tests {
         let shuffler = Shuffler {
             pk: &pk,
             generators: &hs,
+            ctx: (*ctx).clone(),
         };
         let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
         let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &vec![]);
@@ -236,6 +250,7 @@ pub(crate) mod tests {
         let shuffler_d = Shuffler {
             pk: &pk_d,
             generators: &hs,
+            ctx: (*ctx).clone(),
         };
         let ok_d = shuffler_d.check_proof(&proof_d, &es_d, &eprimes_d, &vec![]);
 
@@ -244,8 +259,8 @@ pub(crate) mod tests {
 
     pub(crate) fn test_encrypted_sk_generic<C: Ctx>(ctx: &C, data: C::P) {
         let sk = ctx.gen_key();
-        let pk: PublicKey<C> = PublicKey::from(&sk.public_value);
-        let plaintext = ctx.encode(&data);
+        let pk: PublicKey<C> = PublicKey::from(&sk.public_value, ctx);
+        let plaintext = ctx.encode(&data).unwrap();
         let c = pk.encrypt(&plaintext);
         let sym_key = symmetric::gen_key();
         let enc_sk = sk.to_encrypted(sym_key);
@@ -253,7 +268,7 @@ pub(crate) mod tests {
         let enc_sk_b = enc_sk.ser();
         let enc_sk_d = EncryptedPrivateKey::deser(&enc_sk_b).unwrap();
 
-        let sk_d = PrivateKey::from_encrypted(sym_key, enc_sk_d);
+        let sk_d = PrivateKey::from_encrypted(sym_key, enc_sk_d, ctx);
         let d = sk_d.decrypt(&c);
 
         let recovered = ctx.decode(&d);

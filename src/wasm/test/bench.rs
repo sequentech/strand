@@ -31,7 +31,7 @@ pub fn bench() {
     postMessage(">> strand wasm build NO rayon");
     bench_enc_pok();
     bench_modpow(10);
-    bench_shuffle(1000);
+    bench_shuffle(5000);
 }
 
 #[wasm_bindgen]
@@ -42,7 +42,7 @@ pub fn bench_shuffle(n: usize) {
 
     postMessage("> Bigint shuffle");
     let ctx = BigintCtx::default();
-    bench_shuffle_btserde_generic(ctx, n / 10);
+    bench_shuffle_btserde_generic(ctx, n / 50);
 }
 
 #[wasm_bindgen]
@@ -83,7 +83,7 @@ pub fn bench_enc_pok() {
 
 fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
     let sk = ctx.gen_key();
-    let pk = PublicKey::from(&sk.public_value);
+    let pk = PublicKey::from(&sk.public_value, &ctx);
 
     log("gen ballots..");
     let es = util::random_ballots(n, &ctx);
@@ -95,6 +95,7 @@ fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
     let shuffler = Shuffler {
         pk: &pk,
         generators: &hs,
+        ctx: ctx.clone()
     };
     log(&format!("{}", performance.now() - now));
 
@@ -127,6 +128,20 @@ fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
         n as f64 / ((performance.now() - now) / 1000.0)
     ));
 
+    log(&format!("serialization raw"));
+    let mut v = vec![];
+    for _ in 0..n {
+        v.push(ctx.rnd());
+    }
+    let now = performance.now();
+    for next in v {
+        next.ser();
+    }
+    postMessage(&format!(
+        "serialization raw {:.3} c / s",
+        n as f64 / ((performance.now() - now) / 1000.0)
+    ));
+
     /*
     log(&format!("deserialization.."));
     let now = performance.now();
@@ -140,11 +155,11 @@ fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
 
 fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P) {
     let sk = ctx.gen_key();
-    let pk: PublicKey<C> = PublicKey::from(&sk.public_value);
+    let pk: PublicKey<C> = PublicKey::from(&sk.public_value, &ctx);
 
     log("encode..");
     let now = performance.now();
-    let plaintext = ctx.encode(&data);
+    let plaintext = ctx.encode(&data).unwrap();
     log(&format!("{}", performance.now() - now));
 
     let total = performance.now();
