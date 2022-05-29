@@ -95,7 +95,7 @@ fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
     let shuffler = Shuffler {
         pk: &pk,
         generators: &hs,
-        ctx: ctx.clone()
+        ctx: ctx.clone(),
     };
     log(&format!("{}", performance.now() - now));
 

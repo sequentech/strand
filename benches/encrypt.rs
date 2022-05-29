@@ -33,11 +33,11 @@ fn encrypt_bigint(ctx: &BigintCtx, pk: &PublicKey<BigintCtx>, n: usize) {
 fn bench_encrypt(c: &mut Criterion) {
     let rctx = RistrettoCtx;
     let rsk = rctx.gen_key();
-    let rpk = PublicKey::from(&rsk.public_value, &rctx);
+    let rpk = PublicKey::from(rsk.public_value(), &rctx);
 
     let bctx = BigintCtx::default();
     let bsk = bctx.gen_key();
-    let bpk = PublicKey::from(&bsk.public_value, &bctx);
+    let bpk = PublicKey::from(bsk.public_value(), &bctx);
 
     let mut group = c.benchmark_group("encrypt");
     group.sampling_mode(SamplingMode::Flat);

@@ -6,18 +6,17 @@ use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
 use curve25519_dalek::traits::Identity;
 use ed25519_dalek::{Digest, Sha512};
+use rand::RngCore;
 use serde_bytes::ByteBuf;
+use sha3::Shake256;
 
 use crate::byte_tree::ByteTree::Leaf;
 use crate::byte_tree::*;
 use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::*;
+use crate::rnd::StrandRng;
 use crate::util;
 use crate::zkp::ZKProver;
-
-use crate::rnd::StrandRng;
-use rand::RngCore;
-use sha3::Shake256;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct RistrettoCtx;

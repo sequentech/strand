@@ -132,4 +132,8 @@ impl<C: Ctx> PrivateKey<C> {
             ctx: (*ctx).clone(),
         }
     }
+
+    pub fn public_value(&self) -> &C::E {
+        &self.public_value
+    }
 }
