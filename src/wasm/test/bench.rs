@@ -1,4 +1,7 @@
-use crate::backend::num_bigint::BigintCtx;
+use rand::RngCore;
+use wasm_bindgen::prelude::*;
+
+use crate::backend::numb::{BigintCtx, P2048};
 use crate::backend::ristretto::RistrettoCtx;
 use crate::byte_tree::BTreeSer;
 use crate::context::{Ctx, Element};
@@ -7,8 +10,6 @@ use crate::rnd::StrandRng;
 use crate::shuffler::Shuffler;
 use crate::util;
 use crate::zkp::ZKProver;
-use rand::RngCore;
-use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 extern "C" {
@@ -41,7 +42,7 @@ pub fn bench_shuffle(n: usize) {
     bench_shuffle_btserde_generic(ctx, n);
 
     postMessage("> Bigint shuffle");
-    let ctx = BigintCtx::default();
+    let ctx = BigintCtx::<P2048>::new();
     bench_shuffle_btserde_generic(ctx, n / 50);
 }
 
@@ -55,7 +56,7 @@ pub fn bench_modpow(n: u32) {
         "modpow {:.3} ms",
         (performance.now() - now) / n as f64
     ));
-    let ctx = BigintCtx::default();
+    let ctx = BigintCtx::<P2048>::new();
     postMessage(&format!("> Bigint modpow n = {}", n));
     let now = performance.now();
     bench_modpow_generic(ctx, n);
@@ -67,7 +68,7 @@ pub fn bench_modpow(n: u32) {
 
 #[wasm_bindgen]
 pub fn bench_enc_pok() {
-    let ctx = BigintCtx::default();
+    let ctx = BigintCtx::<P2048>::new();
     let plaintext = ctx.rnd_exp();
     postMessage("> Bigint enc_pok");
     bench_enc_pok_generic(ctx, plaintext);

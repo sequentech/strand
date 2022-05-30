@@ -216,7 +216,7 @@ impl<P: BigintCtxParams> ZKProver<BigintCtx<P>> for BigintCtx<P> {
     }
 }
 
-pub(crate) trait BigintCtxParams: 'static + Clone + Send + Sync {
+pub(crate) trait BigintCtxParams: Clone + Send + Sync {
     fn generator(&self) -> &BigUint;
     fn modulus(&self) -> &BigUint;
     fn exp_modulus(&self) -> &BigUint;
@@ -264,9 +264,27 @@ impl BigintCtxParams for P2048 {
     }
 }
 
+use crate::byte_tree::ByteTree::Leaf;
+use crate::byte_tree::*;
+use serde_bytes::ByteBuf;
+
+impl ToByteTree for BigUint {
+    fn to_byte_tree(&self) -> ByteTree {
+        Leaf(ByteBuf::from(self.to_bytes_be()))
+    }
+}
+
+impl FromByteTree for BigUint {
+    fn from_byte_tree(tree: &ByteTree) -> Result<BigUint, ByteError> {
+        let bytes = tree.leaf()?;
+        let ret = BigUint::from_bytes_be(bytes);
+        Ok(ret)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::backend::b::*;
+    use crate::backend::numb::*;
     use crate::backend::tests::*;
     use crate::byte_tree::tests::*;
     use crate::context::Ctx;
@@ -417,74 +435,3 @@ impl<P: BigintCtxParams> FromByteTree for BigintCtx<P> {
         Ok(&ctx)
     }
 }*/
-
-/*
-lazy_static! {
-    static ref BBCTX2048: BCT<BB2048> = {
-        let wparams = BB2048::new();
-        BCT { params: wparams }
-    };
-}
-
-struct BCT<P: ParamW> {
-    params: P,
-}
-trait GetParams {
-    fn get_params(&self) -> &InnerP;
-}
-
-struct BB2048(InnerP);
-impl GetParams for BB2048 {
-    fn get_params(&self) -> &InnerP {
-        &self.0
-    }
-}
-impl ParamW for BB2048 {
-    fn get_ctx() -> &'static BCT<Self> {
-        &BBCTX2048
-    }
-    fn new() -> Self {
-
-        let p = BigUint::from_str_radix(P_STR_2048, 16).unwrap();
-        let q = BigUint::from_str_radix(Q_STR_2048, 16).unwrap();
-        let g = BigUint::from(3u32);
-        let co_factor = BigUint::from(2u32);
-        assert!(g.legendre(&p) == 1);
-
-        let inner = InnerP {
-            generator: g,
-            modulus: p,
-            exp_modulus: q,
-            co_factor,
-        };
-
-        BB2048(inner)
-    }
-}
-
-struct InnerP {
-    generator: BigUint,
-    modulus: BigUint,
-    exp_modulus: BigUint,
-    co_factor: BigUint,
-}
-
-trait ParamW: GetParams + Sized{
-    fn generator(&self) -> &BigUint {
-        &self.get_params().generator
-    }
-    fn modulus(&self) -> &BigUint {
-        &self.get_params().modulus
-    }
-    fn exp_modulus(&self) -> &BigUint {
-        &self.get_params().exp_modulus
-    }
-    fn co_factor(&self) -> &BigUint {
-        &self.get_params().co_factor
-    }
-
-    fn get_ctx() -> &'static BCT<Self>;
-    fn new() -> Self;
-}
-
-*/

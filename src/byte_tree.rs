@@ -445,7 +445,6 @@ impl<C: Ctx> FromByteTree for Responses<C> {
 #[cfg(test)]
 pub(crate) mod tests {
     use crate::context::{Ctx, Element};
-    use crate::keymaker::*;
     /*use crate::shuffler::*;*/
     use crate::byte_tree::*;
     use crate::symmetric;

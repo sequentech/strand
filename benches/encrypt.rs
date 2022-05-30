@@ -3,6 +3,8 @@ use rand::rngs::OsRng;
 use rand::RngCore;
 use strand::backend::num_bigint::BigintCtx;
 use strand::backend::ristretto::RistrettoCtx;
+#[cfg(feature = "rug")]
+use strand::backend::rug::RugCtx;
 use strand::context::Ctx;
 use strand::elgamal::*;
 use strand::util;
@@ -30,6 +32,12 @@ fn encrypt_bigint(ctx: &BigintCtx, pk: &PublicKey<BigintCtx>, n: usize) {
     encrypt(ctx, pk, plaintext, n);
 }
 
+#[cfg(feature = "rug")]
+fn encrypt_rug(ctx: &RugCtx, pk: &PublicKey<RugCtx>, n: usize) {
+    let plaintext = ctx.rnd_exp();
+    encrypt(ctx, pk, plaintext, n);
+}
+
 fn bench_encrypt(c: &mut Criterion) {
     let rctx = RistrettoCtx;
     let rsk = rctx.gen_key();
@@ -39,16 +47,27 @@ fn bench_encrypt(c: &mut Criterion) {
     let bsk = bctx.gen_key();
     let bpk = PublicKey::from(bsk.public_value(), &bctx);
 
+    #[cfg(feature = "rug")]
+    let gctx = RugCtx::default();
+    #[cfg(feature = "rug")]
+    let gsk = gctx.gen_key();
+    #[cfg(feature = "rug")]
+    let gpk = PublicKey::from(gsk.public_value(), &gctx);
+
     let mut group = c.benchmark_group("encrypt");
     group.sampling_mode(SamplingMode::Flat);
     group.sample_size(10);
 
     for i in [10usize].iter() {
-        group.bench_with_input(BenchmarkId::new("Ristretto", i), i, |b, i| {
+        group.bench_with_input(BenchmarkId::new("ristretto", i), i, |b, i| {
             b.iter(|| encrypt_ristretto(&rctx, &rpk, *i))
         });
-        group.bench_with_input(BenchmarkId::new("Bigint", i), i, |b, i| {
+        group.bench_with_input(BenchmarkId::new("bigint", i), i, |b, i| {
             b.iter(|| encrypt_bigint(&bctx, &bpk, *i))
+        });
+        #[cfg(feature = "rug")]
+        group.bench_with_input(BenchmarkId::new("rug", i), i, |b, i| {
+            b.iter(|| encrypt_rug(&gctx, &gpk, *i))
         });
     }
     group.finish();

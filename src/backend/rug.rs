@@ -23,7 +23,6 @@ impl Element<RugCtx> for Integer {
         Integer::from(self * other)
     }
     fn div(&self, other: &Self, modulus: &Self) -> Self {
-        // let second = other.clone().invert(modulus).unwrap();
         let inverse = Element::inv(other, modulus);
         self * inverse
     }
@@ -268,6 +267,114 @@ impl FromByteTree for Integer {
 #[cfg(test)]
 mod tests {
     use crate::backend::rug::*;
+    use crate::backend::tests::*;
+    use crate::byte_tree::tests::*;
+    use crate::context::Ctx;
+    use crate::threshold::tests::test_threshold_generic;
+
+    #[test]
+    fn test_elgamal() {
+        let ctx = RugCtx::default();
+        let plaintext = ctx.rnd_exp();
+        test_elgamal_generic(&ctx, plaintext);
+    }
+
+    #[test]
+    fn test_schnorr() {
+        let ctx = RugCtx::default();
+        test_schnorr_generic(&ctx);
+    }
+
+    #[test]
+    fn test_chaumpedersen() {
+        let ctx = RugCtx::default();
+        test_chaumpedersen_generic(&ctx);
+    }
+
+    #[test]
+    fn test_vdecryption() {
+        let ctx = RugCtx::default();
+        let plaintext = ctx.rnd_exp();
+        test_vdecryption_generic(&ctx, plaintext);
+    }
+
+    #[test]
+    fn test_distributed() {
+        let ctx = RugCtx::default();
+        let plaintext = ctx.rnd_exp();
+        test_distributed_generic(&ctx, plaintext);
+    }
+
+    #[test]
+    fn test_distributed_btserde() {
+        let ctx = RugCtx::default();
+        let mut ps = vec![];
+        for _ in 0..10 {
+            let p = ctx.rnd_exp();
+            ps.push(p);
+        }
+        test_distributed_btserde_generic(&ctx, ps);
+    }
+
+    #[test]
+    fn test_shuffle() {
+        let ctx = RugCtx::default();
+        test_shuffle_generic(&ctx);
+    }
+
+    #[test]
+    fn test_shuffle_btserde() {
+        let ctx = RugCtx::default();
+        test_shuffle_btserde_generic(&ctx);
+    }
+
+    #[test]
+    fn test_encrypted_sk() {
+        let ctx = RugCtx::default();
+        let plaintext = ctx.rnd_exp();
+        test_encrypted_sk_generic(&ctx, plaintext);
+    }
+
+    #[test]
+    fn test_threshold() {
+        let trustees = 5usize;
+        let threshold = 3usize;
+        let ctx = RugCtx::default();
+        let plaintext = ctx.rnd_exp();
+
+        test_threshold_generic(&ctx, trustees, threshold, plaintext);
+    }
+
+    #[test]
+    fn test_ciphertext_bytes() {
+        let ctx = RugCtx::default();
+        test_ciphertext_bytes_generic(&ctx);
+    }
+
+    #[test]
+    fn test_key_bytes() {
+        let ctx = RugCtx::default();
+        test_key_bytes_generic(&ctx);
+    }
+
+    #[test]
+    fn test_schnorr_bytes() {
+        let ctx = RugCtx::default();
+        test_schnorr_bytes_generic(&ctx);
+    }
+
+    #[test]
+    fn test_cp_bytes() {
+        let ctx = RugCtx::default();
+        test_cp_bytes_generic(&ctx);
+    }
+
+    #[test]
+    fn test_epk_bytes() {
+        let ctx = RugCtx::default();
+        let plaintext = ctx.rnd_exp();
+        test_epk_bytes_generic(&ctx, plaintext);
+    }
 
     #[test]
     fn test_encode_err() {

@@ -145,11 +145,6 @@ impl Ctx for RistrettoCtx {
     fn is_valid_element(&self, _element: &Self::E) -> bool {
         true
     }
-    /*#[inline(always)]
-    fn get() -> &'static RistrettoCtx {
-        &RistrettoCtx
-    }*/
-
     fn new() -> RistrettoCtx {
         RistrettoCtx
     }

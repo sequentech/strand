@@ -1,7 +1,7 @@
 #[cfg(feature = "wasmtest")]
 pub mod bench;
 #[cfg(feature = "wasm")]
-pub mod example;
+// pub mod example;
 #[cfg(feature = "wasmtest")]
 pub mod test;
 

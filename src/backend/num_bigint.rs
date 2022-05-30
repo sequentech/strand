@@ -269,20 +269,6 @@ impl FromByteTree for BigintCtx {
     }
 }
 
-impl ToByteTree for BigUint {
-    fn to_byte_tree(&self) -> ByteTree {
-        Leaf(ByteBuf::from(self.to_bytes_be()))
-    }
-}
-
-impl FromByteTree for BigUint {
-    fn from_byte_tree(tree: &ByteTree) -> Result<BigUint, ByteError> {
-        let bytes = tree.leaf()?;
-        let ret = BigUint::from_bytes_be(bytes);
-        Ok(ret)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::backend::num_bigint::BigintCtx;

@@ -37,9 +37,9 @@ pub struct PrivateKey<C: Ctx> {
 
 #[derive(Eq, PartialEq)]
 pub struct EncryptedPrivateKey<C: Ctx> {
-    pub bytes: Vec<u8>,
-    pub iv: [u8; 16],
-    pub phantom: PhantomData<C>,
+    pub(crate) bytes: Vec<u8>,
+    pub(crate) iv: [u8; 16],
+    pub(crate) phantom: PhantomData<C>,
 }
 
 impl<C: Ctx> PublicKey<C> {

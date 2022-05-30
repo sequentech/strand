@@ -3,7 +3,7 @@ use crate::elgamal::*;
 use crate::zkp::ZKProver;
 use std::marker::{Send, Sync};
 
-pub trait Ctx: 'static + Sync + Sized + Clone + ZKProver<Self> {
+pub trait Ctx: Sync + Sized + Clone + ZKProver<Self> {
     type E: Element<Self>;
     type X: Exponent<Self>;
     type P: Send + Sync + Eq + std::fmt::Debug;
@@ -25,8 +25,6 @@ pub trait Ctx: 'static + Sync + Sized + Clone + ZKProver<Self> {
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E>;
 
     fn is_valid_element(&self, element: &Self::E) -> bool;
-    // fn zkp(&self) -> Self::Z;
-    // fn get() -> &'static Self;
     fn new() -> Self;
 }
 
