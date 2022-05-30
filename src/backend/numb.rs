@@ -6,14 +6,14 @@ use num_modular::{ModularSymbols, ModularUnaryOps};
 use num_traits::Num;
 use num_traits::{One, Zero};
 
-use crate::backend::{P_STR_2048, Q_STR_2048};
+use crate::backend::constants::*;
 use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::*;
 use crate::rnd::StrandRng;
 use crate::zkp::ZKProver;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
-pub(crate) struct BigintCtx<P: BigintCtxParams> {
+pub struct BigintCtx<P: BigintCtxParams> {
     params: P,
 }
 
@@ -216,13 +216,11 @@ impl<P: BigintCtxParams> ZKProver<BigintCtx<P>> for BigintCtx<P> {
     }
 }
 
-pub(crate) trait BigintCtxParams: Clone + Send + Sync {
+pub trait BigintCtxParams: Clone + Send + Sync {
     fn generator(&self) -> &BigUint;
     fn modulus(&self) -> &BigUint;
     fn exp_modulus(&self) -> &BigUint;
     fn co_factor(&self) -> &BigUint;
-
-    // fn get_ctx() -> &'static BigintCtx<Self>;
     fn new() -> Self;
 }
 #[derive(Eq, PartialEq, Clone, Debug)]
@@ -233,26 +231,28 @@ pub struct P2048 {
     co_factor: BigUint,
 }
 impl BigintCtxParams for P2048 {
+    #[inline(always)]
     fn generator(&self) -> &BigUint {
         &self.generator
     }
+    #[inline(always)]
     fn modulus(&self) -> &BigUint {
         &self.modulus
     }
+    #[inline(always)]
     fn exp_modulus(&self) -> &BigUint {
         &self.exp_modulus
     }
+    #[inline(always)]
     fn co_factor(&self) -> &BigUint {
         &self.co_factor
     }
-    /*fn get_ctx() -> &'static BigintCtx<P2048> {
-        &BCTX2048
-    }*/
     fn new() -> P2048 {
         let p = BigUint::from_str_radix(P_STR_2048, 16).unwrap();
         let q = BigUint::from_str_radix(Q_STR_2048, 16).unwrap();
-        let g = BigUint::from(3u32);
-        let co_factor = BigUint::from(2u32);
+        let g = BigUint::from_str_radix(G_STR_2048, 16).unwrap();
+        let co_factor = BigUint::from_str_radix(SAFEPRIME_COFACTOR, 16).unwrap();
+
         assert!(g.legendre(&p) == 1);
 
         P2048 {

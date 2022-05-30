@@ -4,7 +4,7 @@ pkg.default().then(_ => {
     postMessage(`Initialized wasm`);
     postMessage('Cross origin isolated: ' + self.crossOriginIsolated);
     var go = function() {
-        // pkg.test();
+        pkg.test();
         postMessage(' ');
         pkg.bench();
         postMessage(' ');
@@ -12,7 +12,7 @@ pkg.default().then(_ => {
     }
     wasmFeatureDetect.threads().then(threads => {
         if (threads && pkg.initThreadPool) {
-            postMessage('initThreadPool with conc = ' + navigator.hardwareConcurrency + '..');
+            postMessage('Thread pool supported, initThreadPool with conc = ' + navigator.hardwareConcurrency + '..');
             pkg.initThreadPool(navigator.hardwareConcurrency).then(_ => {
                 postMessage('Thread pool initialized');
                 go();

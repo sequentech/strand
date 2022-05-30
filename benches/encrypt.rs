@@ -1,13 +1,14 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode};
 use rand::rngs::OsRng;
 use rand::RngCore;
-use strand::backend::num_bigint::BigintCtx;
-use strand::backend::ristretto::RistrettoCtx;
-#[cfg(feature = "rug")]
-use strand::backend::rug::RugCtx;
 use strand::context::Ctx;
 use strand::elgamal::*;
 use strand::util;
+use strand::backend::numb::{BigintCtx, P2048};
+use strand::backend::ristretto::RistrettoCtx;
+#[cfg(feature = "rug")]
+use strand::backend::rug::RugCtx;
+
 
 fn encrypt<C: Ctx>(ctx: &C, pk: &PublicKey<C>, data: C::P, n: usize) {
     for _ in 0..n {
@@ -27,7 +28,7 @@ fn encrypt_ristretto(ctx: &RistrettoCtx, pk: &PublicKey<RistrettoCtx>, n: usize)
     encrypt(ctx, pk, plaintext, n);
 }
 
-fn encrypt_bigint(ctx: &BigintCtx, pk: &PublicKey<BigintCtx>, n: usize) {
+fn encrypt_bigint(ctx: &BigintCtx<P2048>, pk: &PublicKey<BigintCtx<P2048>>, n: usize) {
     let plaintext = ctx.rnd_exp();
     encrypt(ctx, pk, plaintext, n);
 }
@@ -43,7 +44,7 @@ fn bench_encrypt(c: &mut Criterion) {
     let rsk = rctx.gen_key();
     let rpk = PublicKey::from(rsk.public_value(), &rctx);
 
-    let bctx = BigintCtx::default();
+    let bctx = BigintCtx::<P2048>::new();
     let bsk = bctx.gen_key();
     let bpk = PublicKey::from(bsk.public_value(), &bctx);
 

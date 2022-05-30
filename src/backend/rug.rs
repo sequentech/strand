@@ -10,7 +10,7 @@ use rug::{
 };
 use serde_bytes::ByteBuf;
 
-use crate::backend::{P_STR_2048, Q_STR_2048};
+use crate::backend::constants::*;
 use crate::byte_tree::ByteTree::Leaf;
 use crate::byte_tree::*;
 use crate::context::{Ctx, Element, Exponent};
@@ -156,9 +156,11 @@ impl Ctx for RugCtx {
     type X = Integer;
     type P = Integer;
 
+    #[inline(always)]
     fn generator(&self) -> &Integer {
         &self.generator
     }
+    #[inline(always)]
     fn gmod_pow(&self, other: &Integer) -> Integer {
         self.generator.mod_pow(other, &self.modulus())
     }
@@ -166,12 +168,15 @@ impl Ctx for RugCtx {
     fn emod_pow(&self, base: &Integer, exponent: &Integer) -> Integer {
         base.mod_pow(exponent, self.modulus())
     }
+    #[inline(always)]
     fn modulus(&self) -> &Integer {
         &self.modulus
     }
+    #[inline(always)]
     fn exp_modulus(&self) -> &Integer {
         &self.modulus_exp
     }
+    #[inline(always)]
     fn rnd(&self) -> Integer {
         let mut gen = StrandRandgen(StrandRng);
         let mut state = RandState::new_custom(&mut gen);
@@ -179,6 +184,7 @@ impl Ctx for RugCtx {
         self.encode(&self.modulus_exp.clone().random_below(&mut state))
             .unwrap()
     }
+    #[inline(always)]
     fn rnd_exp(&self) -> Integer {
         let mut gen = StrandRandgen(StrandRng);
         let mut state = RandState::new_custom(&mut gen);
@@ -247,6 +253,53 @@ impl ZKProver<RugCtx> for RugCtx {
 
     fn ctx(&self) -> &RugCtx {
         self
+    }
+}
+
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub struct P2048 {
+    generator: Integer,
+    modulus: Integer,
+    exp_modulus: Integer,
+    co_factor: Integer,
+}
+pub trait RugCtxParams: Clone + Send + Sync {
+    fn generator(&self) -> &Integer;
+    fn modulus(&self) -> &Integer;
+    fn exp_modulus(&self) -> &Integer;
+    fn co_factor(&self) -> &Integer;
+    fn new() -> Self;
+}
+impl RugCtxParams for P2048 {
+    #[inline(always)]
+    fn generator(&self) -> &Integer {
+        &self.generator
+    }
+    #[inline(always)]
+    fn modulus(&self) -> &Integer {
+        &self.modulus
+    }
+    #[inline(always)]
+    fn exp_modulus(&self) -> &Integer {
+        &self.exp_modulus
+    }
+    #[inline(always)]
+    fn co_factor(&self) -> &Integer {
+        &self.co_factor
+    }
+    fn new() -> P2048 {
+        let p = Integer::from_str_radix(P_STR_2048, 16).unwrap();
+        let q = Integer::from_str_radix(Q_STR_2048, 16).unwrap();
+        let g = Integer::from_str_radix(G_STR_2048, 16).unwrap();
+        let co_factor = Integer::from_str_radix(SAFEPRIME_COFACTOR, 16).unwrap();
+        assert!(g.legendre(&p) == 1);
+
+        P2048 {
+            generator: g,
+            modulus: p,
+            exp_modulus: q,
+            co_factor,
+        }
     }
 }
 
