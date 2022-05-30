@@ -26,7 +26,7 @@ The library supports pluggable [discrete log](https://en.wikipedia.org/wiki/Deci
 
 * Curve25519 using the [ristretto group](https://ristretto.group/) via the [curve25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek) library.
 * [Standard multiplicative groups](https://en.wikipedia.org/wiki/Schnorr_group) via the [rug](https://crates.io/crates/rug) arbitrary-precision library, backed by [gmp](https://gmplib.org/).
-[Standard multiplicative groups](https://en.wikipedia.org/wiki/Schnorr_group) via the pure rust [num-bigint](https://crates.io/crates/num-bigint) arbitrary-precision library.
+* [Standard multiplicative groups](https://en.wikipedia.org/wiki/Schnorr_group) via the pure rust [num-bigint](https://crates.io/crates/num-bigint) arbitrary-precision library.
 
 Other significant dependencies:
 
