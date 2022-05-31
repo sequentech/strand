@@ -6,32 +6,32 @@ Strand is a cryptographic library for use in secure online voting protocols.
 
 The following primitives are implemented
 
-* ElGamal and exponential ElGamal
+* ElGamal and exponential ElGamal encryption.
 
-* [Threshold distributed ElGamal](https://members.loria.fr/VCortier/files/Papers/WPES2013.pdf)
+* [Threshold distributed ElGamal](https://members.loria.fr/VCortier/files/Papers/WPES2013.pdf).
 
-* [Proofs of Restricted Shuffles](http://www.csc.kth.se/~terelius/TeWi10Full.pdf)
+* [Wikstrom](http://www.csc.kth.se/~terelius/TeWi10Full.pdf) [shuffle](https://eprint.iacr.org/2011/168.pdf) [proofs](https://www.ifca.ai/fc17/voting/papers/voting17_HLKD17.pdf).
 
-* [A Commitment-Consistent Proof of a Shuffle](https://eprint.iacr.org/2011/168.pdf)
-
-* [Pseudo-Code Algorithms for Verifiable Re-Encryption Mix-Nets](https://www.ifca.ai/fc17/voting/papers/voting17_HLKD17.pdf)
+* Schnorr and Chaum-Pedersen zero knowledge proofs.
 
 Shuffle proofs have been independently verified
 
 * [Did you mix me? Formally Verifying Verifiable Mix Nets in Electronic Voting](https://eprint.iacr.org/2020/1114.pdf) using [this](https://github.com/nvotes/secure-e-voting-with-coq/tree/master/OCamlBraid).
 
-## Dependencies
+## Group backends
 
 The library supports pluggable [discrete log](https://en.wikipedia.org/wiki/Decisional_Diffie%E2%80%93Hellman_assumption) backends, there are currently three:
 
 * Curve25519 using the [ristretto group](https://ristretto.group/) via the [curve25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek) library.
 * [Standard multiplicative groups](https://en.wikipedia.org/wiki/Schnorr_group) via the [rug](https://crates.io/crates/rug) arbitrary-precision library, backed by [gmp](https://gmplib.org/).
-[Standard multiplicative groups](https://en.wikipedia.org/wiki/Schnorr_group) via the pure rust [num-bigint](https://crates.io/crates/num-bigint) arbitrary-precision library.
+[Standard multiplicative groups](https://en.wikipedia.org/wiki/Schnorr_group) via the [num-bigint](https://crates.io/crates/num-bigint) arbitrary-precision library, in pure rust.
 
-Other significant dependencies:
+## Significant dependencies
 
 * Compute intensive portions are parallelized using [rayon](https://github.com/rayon-rs/rayon).
-* Symmetric encryption is provided by [RustCrypto](https://github.com/RustCrypto/block-ciphers).
+* Symmetric encryption using [RustCrypto](https://github.com/RustCrypto/block-ciphers).
+* Serialization of intermediate byte trees using [bincode](https://crates.io/crates/bincode) and serde.
+* Randomness is sourced from [rand::rngs::OsRng](https://docs.rs/rand/latest/rand/rngs/struct.OsRng.html), in wasm builds [getrandom](https://crates.io/crates/getrandom) is backed by [Crypto.getRandomValues](https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues)
 
 ## wasm test
 

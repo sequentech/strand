@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 use rand::Rng;
 use std::sync::Mutex;
-use std::time::{Duration, Instant};
+// use std::time::{Duration, Instant};
 
 use crate::rnd::StrandRng;
 
@@ -55,9 +55,9 @@ pub struct ShuffleProof<C: Ctx> {
 }
 
 pub(super) struct PermutationData<'a, C: Ctx> {
-    permutation: &'a [usize],
-    commitments_c: &'a [C::E],
-    commitments_r: &'a [C::X],
+    pub(crate) permutation: &'a [usize],
+    pub(crate) commitments_c: &'a [C::E],
+    pub(crate) commitments_r: &'a [C::X],
 }
 
 pub struct Shuffler<'a, C: Ctx> {
@@ -467,7 +467,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         !checks.contains(&false)
     }
 
-    fn gen_commitments(&self, perm: &[usize], ctx: &C) -> (Vec<C::E>, Vec<C::X>) {
+    pub(crate) fn gen_commitments(&self, perm: &[usize], ctx: &C) -> (Vec<C::E>, Vec<C::X>) {
         let generators = &self.generators[1..];
 
         assert!(generators.len() == perm.len());
@@ -533,7 +533,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
     }
 }
 
-fn gen_permutation(size: usize) -> Vec<usize> {
+pub(crate) fn gen_permutation(size: usize) -> Vec<usize> {
     let mut ret = Vec::with_capacity(size);
 
     let mut rng = StrandRng;

@@ -1,14 +1,13 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode};
 use rand::rngs::OsRng;
 use rand::RngCore;
-use strand::context::Ctx;
-use strand::elgamal::*;
-use strand::util;
 use strand::backend::numb::{BigintCtx, P2048};
 use strand::backend::ristretto::RistrettoCtx;
 #[cfg(feature = "rug")]
 use strand::backend::rug::RugCtx;
-
+use strand::context::Ctx;
+use strand::elgamal::*;
+use strand::util;
 
 fn encrypt<C: Ctx>(ctx: &C, pk: &PublicKey<C>, data: C::P, n: usize) {
     for _ in 0..n {

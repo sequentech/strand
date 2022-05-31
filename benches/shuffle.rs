@@ -1,12 +1,12 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode};
 use strand::backend::numb::{BigintCtx, P2048};
 use strand::backend::ristretto::RistrettoCtx;
+#[cfg(feature = "rug")]
+use strand::backend::rug::RugCtx;
 use strand::context::Ctx;
 use strand::elgamal::*;
 use strand::shuffler::*;
 use strand::util;
-#[cfg(feature = "rug")]
-use strand::backend::rug::RugCtx;
 
 fn test_shuffle_generic<C: Ctx>(ctx: C, n: usize) {
     let sk = ctx.gen_key();

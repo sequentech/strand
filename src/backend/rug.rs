@@ -162,7 +162,7 @@ impl Ctx for RugCtx {
     }
     #[inline(always)]
     fn gmod_pow(&self, other: &Integer) -> Integer {
-        self.generator.mod_pow(other, &self.modulus())
+        self.generator.mod_pow(other, self.modulus())
     }
     #[inline(always)]
     fn emod_pow(&self, base: &Integer, exponent: &Integer) -> Integer {
@@ -195,7 +195,7 @@ impl Ctx for RugCtx {
         self.rnd_exp()
     }
     fn encode(&self, plaintext: &Integer) -> Result<Integer, &'static str> {
-        if !(plaintext < &(self.modulus_exp.clone() - 1)) {
+        if plaintext >= &(self.modulus_exp.clone() - 1) {
             return Err("Failed to encode, out of range");
         }
         if plaintext < &0 {
@@ -203,13 +203,13 @@ impl Ctx for RugCtx {
         }
 
         let notzero: Integer = plaintext.clone() + 1;
-        let legendre = notzero.legendre(&self.modulus());
+        let legendre = notzero.legendre(self.modulus());
         if legendre == 0 {
             return Err("Failed to encode, legendre = 0");
         }
         let product = legendre * notzero;
 
-        Ok(Element::modulo(&product, &self.modulus()))
+        Ok(Element::modulo(&product, self.modulus()))
     }
     fn decode(&self, element: &Integer) -> Integer {
         if element > self.exp_modulus() {
@@ -323,7 +323,12 @@ mod tests {
     use crate::backend::tests::*;
     use crate::byte_tree::tests::*;
     use crate::context::Ctx;
+    use crate::elgamal::{Ciphertext, PublicKey};
+    use crate::shuffler::gen_permutation;
+    use crate::shuffler::PermutationData;
+    use crate::shuffler::Shuffler;
     use crate::threshold::tests::test_threshold_generic;
+    use serde::Serialize;
 
     #[test]
     fn test_elgamal() {
@@ -434,5 +439,149 @@ mod tests {
         let rg = RugCtx::default();
         let result = rg.encode(&(rg.exp_modulus() - 1i32).complete());
         assert!(result.is_err())
+    }
+
+    #[derive(Serialize)]
+    struct CoqVerifierTranscript {
+        group: Vec<String>,
+        pk: Vec<String>,
+        hs: Vec<Vec<String>>,
+        us: Vec<String>,
+        permutation_commitment: Vec<String>,
+        proof_commitment: Vec<Vec<String>>,
+        challenge: Vec<String>,
+        proof_reply: Vec<Vec<String>>,
+        ciphers_in: Vec<Vec<String>>,
+        ciphers_out: Vec<Vec<String>>,
+    }
+
+    // cargo test --features=rug coq -- --ignored
+    #[ignore]
+    #[test]
+    fn test_gen_coq_data() {
+        let ctx = RugCtx::new();
+
+        let sk = ctx.gen_key();
+        let pk = PublicKey::from(&sk.public_value, &ctx);
+
+        let n = 100;
+        let mut es: Vec<Ciphertext<RugCtx>> = Vec::with_capacity(n);
+
+        for _ in 0..n {
+            let plaintext: Integer = ctx.rnd_plaintext();
+            let c = pk.encrypt(&plaintext);
+            es.push(c);
+        }
+        let seed = vec![];
+        let hs = ctx.generators(es.len() + 1, 0, &seed);
+
+        let shuffler = Shuffler {
+            pk: &pk,
+            generators: &hs,
+            ctx: ctx.clone(),
+        };
+
+        let perm: Vec<usize> = gen_permutation(n);
+        let (cs, c_rs) = shuffler.gen_commitments(&perm, &ctx);
+        let (e_primes, rs) = shuffler.apply_permutation(&perm, &es);
+        let perm_data = PermutationData {
+            permutation: &perm,
+            commitments_c: &cs,
+            commitments_r: &c_rs,
+        };
+        let (proof, us, c) = shuffler.gen_proof_ext(&es, &e_primes, &rs, &perm_data, &vec![]);
+        let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
+
+        assert!(ok);
+
+        let pk_list = vec![
+            ctx.generator.to_string_radix(16),
+            pk.value.to_string_radix(16),
+        ];
+
+        let hs_list: Vec<String> = hs.iter().map(|h| h.to_string_radix(16)).collect();
+        let h_list = vec![vec![hs_list[0].clone()], hs_list[1..].to_vec()];
+
+        let cs = proof.cs;
+        let cs_list: Vec<String> = cs.iter().map(|c| c.to_string_radix(16)).collect();
+
+        let c_hats: Vec<String> = proof.c_hats.iter().map(|c| c.to_string_radix(16)).collect();
+        let t3 = proof.t.t3.to_string_radix(16);
+        let t_hats: Vec<String> = proof
+            .t
+            .t_hats
+            .iter()
+            .map(|c| c.to_string_radix(16))
+            .collect();
+        let t1 = proof.t.t1.to_string_radix(16);
+        let t2 = proof.t.t2.to_string_radix(16);
+        let t4_1 = proof.t.t4_1.to_string_radix(16);
+        let t4_2 = proof.t.t4_2.to_string_radix(16);
+
+        let t_list = vec![
+            c_hats,
+            vec![t3],
+            t_hats,
+            vec![t1],
+            vec![t2],
+            vec![t4_1, t4_2],
+        ];
+
+        let ciphers_in_a: Vec<String> = es.iter().map(|c| c.mhr.to_string_radix(16)).collect();
+        let ciphers_in_b: Vec<String> = es.iter().map(|c| c.gr.to_string_radix(16)).collect();
+
+        let ciphers_out_a: Vec<String> =
+            e_primes.iter().map(|c| c.mhr.to_string_radix(16)).collect();
+        let ciphers_out_b: Vec<String> =
+            e_primes.iter().map(|c| c.gr.to_string_radix(16)).collect();
+
+        let ciphers_in = vec![ciphers_in_a, ciphers_in_b];
+        let ciphers_out = vec![ciphers_out_a, ciphers_out_b];
+
+        let s1 = proof.s.s1.to_string_radix(16);
+        let s2 = proof.s.s2.to_string_radix(16);
+        let s3 = proof.s.s3.to_string_radix(16);
+        let s4 = proof.s.s4.to_string_radix(16);
+        let s_hats: Vec<String> = proof
+            .s
+            .s_hats
+            .iter()
+            .map(|c| c.to_string_radix(16))
+            .collect();
+        let s_primes: Vec<String> = proof
+            .s
+            .s_primes
+            .iter()
+            .map(|c| c.to_string_radix(16))
+            .collect();
+
+        let s_list = vec![vec![s3], s_hats, vec![s1], vec![s2], s_primes, vec![s4]];
+
+        let us_list: Vec<String> = us.iter().map(|u| u.to_string_radix(16)).collect();
+        let challenge: Vec<String> = vec![c.to_string_radix(16)];
+
+        let group = vec![
+            ctx.modulus.to_string_radix(16),
+            ctx.modulus_exp.to_string_radix(16),
+        ];
+
+        let transcript = CoqVerifierTranscript {
+            group: group,
+            pk: pk_list,
+            hs: h_list,
+            us: us_list,
+            permutation_commitment: cs_list,
+            proof_commitment: t_list,
+            challenge: challenge,
+            proof_reply: s_list,
+            ciphers_in: ciphers_in,
+            ciphers_out: ciphers_out,
+        };
+
+        serde_json::to_writer_pretty(
+            std::fs::File::create("transcript_serde.json").unwrap(),
+            &transcript,
+        )
+        .unwrap();
     }
 }
