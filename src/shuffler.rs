@@ -175,6 +175,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         assert!(N == r_primes.len());
         assert!(N == perm_data.permutation.len());
         assert!(N == h_generators.len());
+        assert!(N > 0, "cannot shuffle 0 ciphertexts");
 
         let gmod = ctx.modulus();
         let xmod = ctx.exp_modulus();

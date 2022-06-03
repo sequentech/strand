@@ -24,26 +24,26 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn bench() {
-    postMessage("--- wasm::bench.rs");
+pub fn bench(n: u32) {
+    postMessage(&format!("--- wasm::bench.rs (n = {})", n));
     #[cfg(feature = "rayon")]
     postMessage(">> strand wasm build WITH rayon");
     #[cfg(not(feature = "rayon"))]
     postMessage(">> strand wasm build NO rayon");
-    bench_enc_pok();
-    bench_modpow(10);
-    bench_shuffle(5000);
+    bench_enc_pok(n);
+    bench_modpow(n);
+    bench_shuffle(n as usize);
 }
 
 #[wasm_bindgen]
 pub fn bench_shuffle(n: usize) {
     postMessage("> Ristretto shuffle");
     let ctx = RistrettoCtx;
-    bench_shuffle_btserde_generic(ctx, n);
+    bench_shuffle_btserde_generic(ctx, n * 10);
 
     postMessage("> Bigint shuffle");
     let ctx = BigintCtx::<P2048>::new();
-    bench_shuffle_btserde_generic(ctx, n / 50);
+    bench_shuffle_btserde_generic(ctx, n);
 }
 
 #[wasm_bindgen]
@@ -67,11 +67,11 @@ pub fn bench_modpow(n: u32) {
 }
 
 #[wasm_bindgen]
-pub fn bench_enc_pok() {
+pub fn bench_enc_pok(n: u32) {
     let ctx = BigintCtx::<P2048>::new();
     let plaintext = ctx.rnd_exp();
     postMessage("> Bigint enc_pok");
-    bench_enc_pok_generic(ctx, plaintext);
+    bench_enc_pok_generic(ctx, plaintext, n);
 
     let ctx = RistrettoCtx;
     let mut csprng = StrandRng;
@@ -79,7 +79,7 @@ pub fn bench_enc_pok() {
     csprng.fill_bytes(&mut fill);
     let plaintext = util::to_u8_30(&fill.to_vec());
     postMessage("> Ristretto enc_pok");
-    bench_enc_pok_generic(ctx, plaintext);
+    bench_enc_pok_generic(ctx, plaintext, n);
 }
 
 fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
@@ -154,7 +154,7 @@ fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
     */
 }
 
-fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P) {
+fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P, n: u32) {
     let sk = ctx.gen_key();
     let pk: PublicKey<C> = PublicKey::from(&sk.public_value, &ctx);
 
@@ -164,7 +164,7 @@ fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P) {
     log(&format!("{}", performance.now() - now));
 
     let total = performance.now();
-    for _ in 0..10 {
+    for _ in 0..n {
         log("encrypt..");
         let now = performance.now();
         let randomness = ctx.rnd_exp();
@@ -177,7 +177,7 @@ fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P) {
     }
     postMessage(&format!(
         "total enc + pok = {:.3} ms",
-        (performance.now() - total) / 10.0
+        (performance.now() - total) / n as f64
     ));
 }
 

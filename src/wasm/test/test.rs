@@ -31,7 +31,7 @@ pub fn test() {
     test_distributed_btserde();
     test_threshold();
     test_encrypted_sk();
-    test_shuffle();
+    // test_shuffle();
     test_shuffle_btserde();
 }
 
@@ -147,7 +147,7 @@ pub fn test_distributed_btserde() {
     let mut csprng = StrandRng;
     let ctx = RistrettoCtx;
     let mut ps = vec![];
-    for _ in 0..10 {
+    for _ in 0..1 {
         let mut fill = [0u8; 30];
         csprng.fill_bytes(&mut fill);
         let p = util::to_u8_30(&fill.to_vec());
@@ -155,11 +155,10 @@ pub fn test_distributed_btserde() {
     }
     test_distributed_btserde_generic(&ctx, ps);
 
-    postMessage("* BC2048 distributed btserde..");
+    postMessage("* BigInt distributed btserde..");
     let ctx = BigintCtx::<P2048>::new();
-    // let ctx = BC::<P2048>::new();
     let mut ps = vec![];
-    for _ in 0..10 {
+    for _ in 0..1 {
         let p = ctx.rnd_exp();
         ps.push(p);
     }
