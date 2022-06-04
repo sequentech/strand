@@ -579,7 +579,7 @@ mod tests {
         };
 
         serde_json::to_writer_pretty(
-            std::fs::File::create("transcript_serde.json").unwrap(),
+            std::fs::File::create("transcript_strand.json").unwrap(),
             &transcript,
         )
         .unwrap();

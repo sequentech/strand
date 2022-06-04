@@ -214,18 +214,9 @@ pub(crate) mod tests {
         };
 
         let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
-
-        // let now = Instant::now();
-
         let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &vec![]);
 
-        // println!("gen proof {}", now.elapsed().as_millis());
-
-        // let now = Instant::now();
-
         let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
-
-        // println!("check proof {}", now.elapsed().as_millis());
 
         assert!(ok);
     }
@@ -245,13 +236,12 @@ pub(crate) mod tests {
         let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
         let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &vec![]);
         let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
+        assert!(ok);
 
         let pk_b = pk.ser();
         let es_b = es.ser();
         let eprimes_b = e_primes.ser();
         let proof_b = proof.ser();
-
-        assert!(ok);
 
         let pk_d = PublicKey::<C>::deser(&pk_b).unwrap();
         let es_d = Vec::<Ciphertext<C>>::deser(&es_b).unwrap();
@@ -263,6 +253,7 @@ pub(crate) mod tests {
             generators: &hs,
             ctx: (*ctx).clone(),
         };
+
         let ok_d = shuffler_d.check_proof(&proof_d, &es_d, &eprimes_d, &vec![]);
 
         assert!(ok_d);

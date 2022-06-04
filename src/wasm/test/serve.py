@@ -8,6 +8,10 @@ class CrossOriginIsolation(SimpleHTTPRequestHandler):
         
         return super(CrossOriginIsolation, self).end_headers()
 
-
-httpd = HTTPServer(('localhost', 8080), CrossOriginIsolation)
+handler = CrossOriginIsolation
+handler.extensions_map.update({
+    '.wasm': 'application/wasm',
+    # '': 'application/octet-stream', # Default
+})
+httpd = HTTPServer(('localhost', 8080), handler)
 httpd.serve_forever()
