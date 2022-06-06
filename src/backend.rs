@@ -235,8 +235,9 @@ pub(crate) mod tests {
         };
         let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
         let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &vec![]);
-        let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
-        assert!(ok);
+        // in this test do this only after serialization
+        // let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
+        // assert!(ok);
 
         let pk_b = pk.ser();
         let es_b = es.ser();

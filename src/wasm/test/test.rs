@@ -29,7 +29,6 @@ pub fn pMessage(s: &str) {
 #[wasm_bindgen]
 pub fn test() {
     pMessage("--- wasm::test.rs");
-    test_shuffle();
     test_elgamal();
     test_schnorr();
     test_chaumpedersen();
@@ -38,7 +37,8 @@ pub fn test() {
     test_distributed_btserde();
     test_threshold();
     test_encrypted_sk();
-    // test_shuffle_btserde();
+    // test_shuffle();
+    test_shuffle_btserde();
 }
 
 #[wasm_bindgen]
