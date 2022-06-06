@@ -21,14 +21,14 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn pMessage(s: &str) {
+pub fn message(s: &str) {
     log(s);
     postMessage(s);
 }
 
 #[wasm_bindgen]
 pub fn test() {
-    pMessage("--- wasm::test.rs");
+    message("--- wasm::test.rs");
     test_elgamal();
     test_schnorr();
     test_chaumpedersen();
@@ -43,18 +43,18 @@ pub fn test() {
 
 #[wasm_bindgen]
 pub fn test_shuffle_btserde() {
-    pMessage("* Ristretto shuffle btserde..");
+    message("* Ristretto shuffle btserde..");
     let ctx = RistrettoCtx;
     test_shuffle_btserde_generic(&ctx);
 
-    pMessage("* BigInt shuffle btserde..");
+    message("* BigInt shuffle btserde..");
     let ctx = BigintCtx::<P2048>::new();
     test_shuffle_btserde_generic(&ctx);
 }
 
 #[wasm_bindgen]
 pub fn test_encrypted_sk() {
-    pMessage("* Ristretto encrypted_sk..");
+    message("* Ristretto encrypted_sk..");
     let mut csprng = StrandRng;
     let ctx = RistrettoCtx;
     let mut fill = [0u8; 30];
@@ -62,7 +62,7 @@ pub fn test_encrypted_sk() {
     let plaintext = util::to_u8_30(&fill.to_vec());
     test_encrypted_sk_generic(&ctx, plaintext);
 
-    pMessage("* BigInt encrypted_sk..");
+    message("* BigInt encrypted_sk..");
     let ctx = BigintCtx::<P2048>::new();
     let plaintext = ctx.rnd_exp();
     test_encrypted_sk_generic(&ctx, plaintext);
@@ -70,33 +70,33 @@ pub fn test_encrypted_sk() {
 
 #[wasm_bindgen]
 pub fn test_shuffle() {
-    pMessage("* Ristretto shuffle..");
+    message("* Ristretto shuffle..");
     let ctx = RistrettoCtx;
     test_shuffle_generic(&ctx);
-    pMessage("* BigInt shuffle..");
+    message("* BigInt shuffle..");
     let ctx = BigintCtx::<P2048>::new();
     test_shuffle_generic(&ctx);
 }
 
 #[wasm_bindgen]
 pub fn test_chaumpedersen() {
-    pMessage("* Ristretto chaumpedersen..");
+    message("* Ristretto chaumpedersen..");
     let ctx = RistrettoCtx;
     test_chaumpedersen_generic(&ctx);
 
-    pMessage("* BigInt chaumpedersen..");
+    message("* BigInt chaumpedersen..");
     let ctx = BigintCtx::<P2048>::new();
     test_chaumpedersen_generic(&ctx);
 }
 
 #[wasm_bindgen]
 pub fn test_elgamal() {
-    pMessage("* BigInt encrypt..");
+    message("* BigInt encrypt..");
     let ctx = BigintCtx::<P2048>::new();
     let plaintext = ctx.rnd_exp();
     test_elgamal_generic(&ctx, plaintext);
 
-    pMessage("* Ristretto encrypt..");
+    message("* Ristretto encrypt..");
     let ctx = RistrettoCtx;
     let mut csprng = StrandRng;
     let mut fill = [0u8; 30];
@@ -107,18 +107,18 @@ pub fn test_elgamal() {
 
 #[wasm_bindgen]
 pub fn test_schnorr() {
-    pMessage("* Ristretto schnorr..");
+    message("* Ristretto schnorr..");
     let ctx = RistrettoCtx;
     test_schnorr_generic(&ctx);
 
-    pMessage("* BigInt schnorr..");
+    message("* BigInt schnorr..");
     let ctx = BigintCtx::<P2048>::new();
     test_schnorr_generic(&ctx);
 }
 
 #[wasm_bindgen]
 pub fn test_vdecryption() {
-    pMessage("* Ristretto vdecryption..");
+    message("* Ristretto vdecryption..");
     let mut csprng = StrandRng;
     let ctx = RistrettoCtx;
     let mut fill = [0u8; 30];
@@ -126,14 +126,14 @@ pub fn test_vdecryption() {
     let plaintext = util::to_u8_30(&fill.to_vec());
     test_vdecryption_generic(&ctx, plaintext);
 
-    pMessage("* BigInt vdecryption..");
+    message("* BigInt vdecryption..");
     let ctx = BigintCtx::<P2048>::new();
     let plaintext = ctx.rnd_exp();
     test_vdecryption_generic(&ctx, plaintext);
 }
 
 pub fn test_distributed() {
-    pMessage("* Ristretto distributed..");
+    message("* Ristretto distributed..");
     let mut csprng = StrandRng;
     let ctx = RistrettoCtx;
     let mut fill = [0u8; 30];
@@ -141,7 +141,7 @@ pub fn test_distributed() {
     let plaintext = util::to_u8_30(&fill.to_vec());
     test_distributed_generic(&ctx, plaintext);
 
-    pMessage("* BigInt distributed..");
+    message("* BigInt distributed..");
     let ctx = BigintCtx::<P2048>::new();
     let plaintext = ctx.rnd_exp();
     test_distributed_generic(&ctx, plaintext);
@@ -149,7 +149,7 @@ pub fn test_distributed() {
 
 #[wasm_bindgen]
 pub fn test_distributed_btserde() {
-    pMessage("* Ristretto distributed btserde..");
+    message("* Ristretto distributed btserde..");
     let mut csprng = StrandRng;
     let ctx = RistrettoCtx;
     let mut ps = vec![];
@@ -161,7 +161,7 @@ pub fn test_distributed_btserde() {
     }
     test_distributed_btserde_generic(&ctx, ps);
 
-    pMessage("* BigInt distributed btserde..");
+    message("* BigInt distributed btserde..");
     let ctx = BigintCtx::<P2048>::new();
     let mut ps = vec![];
     for _ in 0..1 {
@@ -172,7 +172,7 @@ pub fn test_distributed_btserde() {
 }
 
 pub fn test_threshold() {
-    pMessage("* Ristretto threshold..");
+    message("* Ristretto threshold..");
     let mut csprng = StrandRng;
     let ctx = RistrettoCtx;
     let mut fill = [0u8; 30];
@@ -182,7 +182,7 @@ pub fn test_threshold() {
     let threshold = 3usize;
     test_threshold_generic(&ctx, trustees, threshold, plaintext);
 
-    pMessage("* BigInt threshold..");
+    message("* BigInt threshold..");
     let trustees = 5usize;
     let threshold = 3usize;
     let ctx = BigintCtx::<P2048>::new();
