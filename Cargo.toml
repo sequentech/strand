@@ -48,6 +48,8 @@ web-sys = { version = "0.3.4", features = ['Performance'], optional = true}
 # [package.metadata.wasm-pack.profile.release]
 # wasm-opt = ['-O4']
 
+cfg-if = "1.0.0"
+
 [features]
 rayon = ["dep:rayon"]
 wasmrayon = ["rayon", "wasm", "dep:wasm-bindgen-rayon"]
@@ -59,7 +61,7 @@ rug = ["dep:rug"]
 criterion = {version = "0.3", features=["html_reports"]}
 glassbench = "0.3"
 serde_json = "1.0"
-cfg-if = "1.0.0"
+
 
 [[bench]]
 name = "shuffle"

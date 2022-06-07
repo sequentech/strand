@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate quick_error;
+extern crate cfg_if;
 
 pub mod backend;
 mod byte_tree;

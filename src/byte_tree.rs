@@ -1,5 +1,7 @@
 use std::marker::PhantomData;
 
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
 
@@ -7,11 +9,8 @@ use crate::context::Ctx;
 use crate::elgamal::{Ciphertext, EncryptedPrivateKey, PrivateKey, PublicKey};
 use crate::shuffler::{Commitments, Responses, ShuffleProof};
 use crate::util;
-use crate::zkp::{ChaumPedersen, Schnorr};
-
 use crate::util::Par;
-#[cfg(feature = "rayon")]
-use rayon::prelude::*;
+use crate::zkp::{ChaumPedersen, Schnorr};
 
 quick_error! {
     #[derive(Debug)]

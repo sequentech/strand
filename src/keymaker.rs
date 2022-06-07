@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use crate::context::{Ctx, Element};
-use crate::elgamal::{Ciphertext, EncryptedPrivateKey, PrivateKey, PublicKey};
-use crate::zkp::{ChaumPedersen, Schnorr};
-
-use crate::util::Par;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
+
+use crate::context::{Ctx, Element};
+use crate::elgamal::{Ciphertext, EncryptedPrivateKey, PrivateKey, PublicKey};
+use crate::util::Par;
+use crate::zkp::{ChaumPedersen, Schnorr};
 
 pub struct Keymaker<C: Ctx> {
     sk: PrivateKey<C>,
