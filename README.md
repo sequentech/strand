@@ -33,6 +33,22 @@ The library supports pluggable [discrete log](https://en.wikipedia.org/wiki/Deci
 * Serialization of intermediate byte trees using [bincode](https://crates.io/crates/bincode) and serde.
 * Randomness is sourced from [rand::rngs::OsRng](https://docs.rs/rand/latest/rand/rngs/struct.OsRng.html), in wasm builds [getrandom](https://crates.io/crates/getrandom) is backed by [Crypto.getRandomValues](https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues)
 
+## building
+
+### Default features
+
+```cargo build```
+
+### Parallel operations
+
+Uses rayon's parallel collections for compute intensive operations
+
+```cargo build --features=rayon```
+
+## unit tests
+
+```cargo test```
+
 ## wasm test
 
 See [here](https://github.com/sequentech/strand/tree/main/src/wasm/test).
