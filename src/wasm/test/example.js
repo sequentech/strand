@@ -1,4 +1,4 @@
-import init, {ex} from "../../../pkg/strand.js";
+import init, {ex} from "../../../pkg/index.js";
 init()
 .then(() => {
     const bytes = new Uint8Array([1,99,226,99]);
