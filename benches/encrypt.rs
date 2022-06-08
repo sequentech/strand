@@ -3,8 +3,6 @@ use rand::rngs::OsRng;
 use rand::RngCore;
 use strand::backend::numb::{BigintCtx, P2048};
 use strand::backend::ristretto::RistrettoCtx;
-#[cfg(feature = "rug")]
-use strand::backend::rug::RugCtx;
 use strand::context::Ctx;
 use strand::elgamal::*;
 use strand::util;
@@ -32,10 +30,15 @@ fn encrypt_bigint(ctx: &BigintCtx<P2048>, pk: &PublicKey<BigintCtx<P2048>>, n: u
     encrypt(ctx, pk, plaintext, n);
 }
 
-#[cfg(feature = "rug")]
-fn encrypt_rug(ctx: &RugCtx, pk: &PublicKey<RugCtx>, n: usize) {
-    let plaintext = ctx.rnd_exp();
-    encrypt(ctx, pk, plaintext, n);
+cfg_if::cfg_if! {
+    if #[cfg(feature = "rug")] {
+        use strand::backend::rug::RugCtx;
+        #[cfg(feature = "rug")]
+        fn encrypt_rug(ctx: &RugCtx, pk: &PublicKey<RugCtx>, n: usize) {
+            let plaintext = ctx.rnd_exp();
+            encrypt(ctx, pk, plaintext, n);
+        }
+    }
 }
 
 fn bench_encrypt(c: &mut Criterion) {
@@ -47,12 +50,13 @@ fn bench_encrypt(c: &mut Criterion) {
     let bsk = bctx.gen_key();
     let bpk = PublicKey::from(bsk.public_value(), &bctx);
 
-    #[cfg(feature = "rug")]
-    let gctx = RugCtx::default();
-    #[cfg(feature = "rug")]
-    let gsk = gctx.gen_key();
-    #[cfg(feature = "rug")]
-    let gpk = PublicKey::from(gsk.public_value(), &gctx);
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "rug")] {
+            let gctx = RugCtx::default();
+            let gsk = gctx.gen_key();
+            let gpk = PublicKey::from(gsk.public_value(), &gctx);
+        }
+    }
 
     let mut group = c.benchmark_group("encrypt");
     group.sampling_mode(SamplingMode::Flat);

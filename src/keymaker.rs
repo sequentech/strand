@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use crate::context::{Ctx, Element};
-use crate::elgamal::{Ciphertext, EncryptedPrivateKey, PrivateKey, PublicKey};
-use crate::zkp::{ChaumPedersen, Schnorr};
-
-use crate::util::Par;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
+
+use crate::context::{Ctx, Element};
+use crate::elgamal::{Ciphertext, EncryptedPrivateKey, PrivateKey, PublicKey};
+use crate::util::Par;
+use crate::zkp::{ChaumPedersen, Schnorr};
 
 pub struct Keymaker<C: Ctx> {
     sk: PrivateKey<C>,
@@ -18,8 +18,8 @@ pub struct Keymaker<C: Ctx> {
 
 impl<C: Ctx> Keymaker<C> {
     pub fn gen(ctx: &C) -> Keymaker<C> {
-        let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, ctx);
+        let sk = PrivateKey::gen(ctx);
+        let pk = PublicKey::from_element(&sk.public_value, ctx);
 
         Keymaker {
             sk,
@@ -29,7 +29,7 @@ impl<C: Ctx> Keymaker<C> {
     }
 
     pub fn from_sk(sk: PrivateKey<C>, ctx: &C) -> Keymaker<C> {
-        let pk = PublicKey::from(&sk.public_value, ctx);
+        let pk = PublicKey::from_element(&sk.public_value, ctx);
 
         Keymaker {
             sk,
@@ -39,7 +39,7 @@ impl<C: Ctx> Keymaker<C> {
     }
 
     pub fn share(&self, label: &[u8]) -> (PublicKey<C>, Schnorr<C>) {
-        let pk = PublicKey::from(&self.pk.value, &self.ctx);
+        let pk = PublicKey::from_element(&self.pk.value, &self.ctx);
         let proof = self
             .ctx
             .schnorr_prove(&self.sk.value, &pk.value, self.ctx.generator(), label);
@@ -62,7 +62,7 @@ impl<C: Ctx> Keymaker<C> {
             acc = acc.mul(&pk.value).modulo(ctx.modulus());
         }
 
-        PublicKey::from(&acc, ctx)
+        PublicKey::from_element(&acc, ctx)
     }
 
     pub fn decryption_factor(&self, c: &Ciphertext<C>, label: &[u8]) -> (C::E, ChaumPedersen<C>) {

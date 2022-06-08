@@ -1,5 +1,7 @@
 use std::marker::PhantomData;
 
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
 
@@ -7,11 +9,8 @@ use crate::context::Ctx;
 use crate::elgamal::{Ciphertext, EncryptedPrivateKey, PrivateKey, PublicKey};
 use crate::shuffler::{Commitments, Responses, ShuffleProof};
 use crate::util;
-use crate::zkp::{ChaumPedersen, Schnorr};
-
 use crate::util::Par;
-#[cfg(feature = "rayon")]
-use rayon::prelude::*;
+use crate::zkp::{ChaumPedersen, Schnorr};
 
 quick_error! {
     #[derive(Debug)]
@@ -460,8 +459,8 @@ pub(crate) mod tests {
     }
 
     pub(crate) fn test_key_bytes_generic<C: Ctx + Eq>(ctx: &C) {
-        let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, ctx);
+        let sk = PrivateKey::gen(ctx);
+        let pk = PublicKey::from_element(&sk.public_value, ctx);
 
         let bytes = sk.ser();
         let back = PrivateKey::<C>::deser(&bytes).unwrap();
@@ -509,8 +508,8 @@ pub(crate) mod tests {
     }
 
     pub(crate) fn test_epk_bytes_generic<C: Ctx + Eq>(ctx: &C, plaintext: C::P) {
-        let sk = ctx.gen_key();
-        let pk: PublicKey<C> = PublicKey::from(&sk.public_value, ctx);
+        let sk = PrivateKey::gen(ctx);
+        let pk: PublicKey<C> = PublicKey::from_element(&sk.public_value, ctx);
 
         let encoded = ctx.encode(&plaintext).unwrap();
         let c = pk.encrypt(&encoded);

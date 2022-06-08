@@ -1,8 +1,6 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode};
 use strand::backend::numb::{BigintCtx, P2048};
 use strand::backend::ristretto::RistrettoCtx;
-#[cfg(feature = "rug")]
-use strand::backend::rug::RugCtx;
 use strand::context::Ctx;
 use strand::elgamal::*;
 use strand::shuffler::*;
@@ -34,10 +32,14 @@ fn shuffle_bigint(n: usize) {
     test_shuffle_generic(ctx, n);
 }
 
-#[cfg(feature = "rug")]
-fn shuffle_rug(n: usize) {
-    let ctx = RugCtx::default();
-    test_shuffle_generic(ctx, n);
+cfg_if::cfg_if! {
+    if #[cfg(feature = "rug")] {
+        use strand::backend::rug::RugCtx;
+        fn shuffle_rug(n: usize) {
+            let ctx = RugCtx::default();
+            test_shuffle_generic(ctx, n);
+        }
+    }
 }
 
 fn bench_shuffle(c: &mut Criterion) {

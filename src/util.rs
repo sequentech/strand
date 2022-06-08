@@ -1,37 +1,35 @@
 use crate::context::Ctx;
 use crate::elgamal::Ciphertext;
 
-#[cfg(feature = "rayon")]
-use rayon::iter::IntoParallelIterator;
-#[cfg(feature = "rayon")]
-use rayon::prelude::*;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "rayon")] {
+        use rayon::iter::IntoParallelIterator;
+        use rayon::prelude::*;
+        use std::iter::IntoIterator;
 
-#[cfg(not(feature = "rayon"))]
-use std::iter::IntoIterator;
 
-#[cfg(not(feature = "rayon"))]
-pub trait Par<I: IntoIterator> {
-    fn par(self) -> I::IntoIter;
-}
+        pub trait Par<I: IntoIterator + IntoParallelIterator> {
+            fn par(self) -> <I as rayon::iter::IntoParallelIterator>::Iter;
+        }
 
-#[cfg(not(feature = "rayon"))]
-impl<I: IntoIterator> Par<I> for I {
-    #[inline(always)]
-    fn par(self) -> I::IntoIter {
-        self.into_iter()
-    }
-}
+        impl<I: IntoIterator + IntoParallelIterator> Par<I> for I {
+            #[inline(always)]
+            fn par(self) -> <I as rayon::iter::IntoParallelIterator>::Iter {
+                self.into_par_iter()
+            }
+        }
 
-#[cfg(feature = "rayon")]
-pub trait Par<I: IntoIterator + IntoParallelIterator> {
-    fn par(self) -> <I as rayon::iter::IntoParallelIterator>::Iter;
-}
+    } else {
+        pub trait Par<I: IntoIterator> {
+            fn par(self) -> I::IntoIter;
+        }
 
-#[cfg(feature = "rayon")]
-impl<I: IntoIterator + IntoParallelIterator> Par<I> for I {
-    #[inline(always)]
-    fn par(self) -> <I as rayon::iter::IntoParallelIterator>::Iter {
-        self.into_par_iter()
+        impl<I: IntoIterator> Par<I> for I {
+            #[inline(always)]
+            fn par(self) -> I::IntoIter {
+                self.into_iter()
+            }
+        }
     }
 }
 
@@ -49,7 +47,7 @@ pub fn to_u8_30(input: &[u8]) -> [u8; 30] {
     bytes
 }
 
-pub fn to_u8_32(input: &[u8]) -> [u8; 32] {
+pub(crate) fn to_u8_32(input: &[u8]) -> [u8; 32] {
     assert_eq!(input.len(), 32);
     let mut bytes = [0u8; 32];
     bytes.copy_from_slice(input);

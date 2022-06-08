@@ -3,17 +3,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 use rand::Rng;
-use std::sync::Mutex;
-// use std::time::{Duration, Instant};
-
-use crate::rnd::StrandRng;
-
-use crate::util::Par;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
+use std::sync::Mutex;
 
 use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::{Ciphertext, PublicKey};
+use crate::rnd::StrandRng;
+use crate::util::Par;
 
 pub struct YChallengeInput<'a, C: Ctx> {
     pub es: &'a [Ciphertext<C>],

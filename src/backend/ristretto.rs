@@ -13,7 +13,6 @@ use sha3::Shake256;
 use crate::byte_tree::ByteTree::Leaf;
 use crate::byte_tree::*;
 use crate::context::{Ctx, Element, Exponent};
-use crate::elgamal::*;
 use crate::rnd::StrandRng;
 use crate::util;
 use crate::zkp::ZKProver;
@@ -96,10 +95,6 @@ impl Ctx for RistrettoCtx {
 
         value
     }
-    fn gen_key(&self) -> PrivateKey<Self> {
-        let secret = self.rnd_exp();
-        PrivateKey::from(&secret, self)
-    }
     // see https://github.com/ruescasd/braid-mg/issues/4
     fn encode(&self, data: &[u8; 30]) -> Result<RistrettoPoint, &'static str> {
         let mut bytes = [0u8; 32];
@@ -147,19 +142,6 @@ impl Ctx for RistrettoCtx {
     }
     fn new() -> RistrettoCtx {
         RistrettoCtx
-    }
-}
-
-impl ZKProver<RistrettoCtx> for RistrettoCtx {
-    fn hash_to(&self, bytes: &[u8]) -> Scalar {
-        let mut hasher = Sha512::new();
-        Digest::update(&mut hasher, bytes);
-
-        Scalar::from_hash(hasher)
-    }
-
-    fn ctx(&self) -> &RistrettoCtx {
-        &RistrettoCtx
     }
 }
 
@@ -222,6 +204,34 @@ impl Exponent<RistrettoCtx> for Scalar {
     }
     fn to_string(&self) -> String {
         format!("{:x?}", self.to_bytes())
+    }
+}
+
+impl ZKProver<RistrettoCtx> for RistrettoCtx {
+    fn hash_to(&self, bytes: &[u8]) -> Scalar {
+        let mut hasher = Sha512::new();
+        Digest::update(&mut hasher, bytes);
+
+        Scalar::from_hash(hasher)
+    }
+
+    fn ctx(&self) -> &RistrettoCtx {
+        &RistrettoCtx
+    }
+}
+
+use crate::zkp::{Zkp, Zkpr};
+
+impl Zkpr<RistrettoCtx> for Zkp<RistrettoCtx> {
+    fn hash_to(&self, bytes: &[u8]) -> Scalar {
+        let mut hasher = Sha512::new();
+        Digest::update(&mut hasher, bytes);
+
+        Scalar::from_hash(hasher)
+    }
+
+    fn ctx(&self) -> &RistrettoCtx {
+        &RistrettoCtx
     }
 }
 
