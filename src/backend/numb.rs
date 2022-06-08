@@ -5,10 +5,12 @@ use num_integer::Integer;
 use num_modular::{ModularSymbols, ModularUnaryOps};
 use num_traits::Num;
 use num_traits::{One, Zero};
+use serde_bytes::ByteBuf;
 
 use crate::backend::constants::*;
+use crate::byte_tree::ByteTree::Leaf;
+use crate::byte_tree::*;
 use crate::context::{Ctx, Element, Exponent};
-use crate::elgamal::*;
 use crate::rnd::StrandRng;
 use crate::zkp::ZKProver;
 
@@ -120,10 +122,10 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn exp_from_u64(&self, value: u64) -> BigUint {
         BigUint::from(value)
     }
-    fn gen_key(&self) -> PrivateKey<BigintCtx<P>> {
+    /*fn gen_key(&self) -> PrivateKey<BigintCtx<P>> {
         let secret = self.rnd_exp();
         PrivateKey::from(&secret, self)
-    }
+    }*/
 
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<BigUint> {
         self.generators_fips(size, contest, seed)
@@ -216,6 +218,22 @@ impl<P: BigintCtxParams> ZKProver<BigintCtx<P>> for BigintCtx<P> {
     }
 }
 
+use crate::zkp::{Zkp, Zkpr};
+
+impl<P: BigintCtxParams> Zkpr<BigintCtx<P>> for Zkp<BigintCtx<P>> {
+    fn hash_to(&self, bytes: &[u8]) -> BigUint {
+        let mut hasher = Sha512::new();
+        hasher.update(bytes);
+        let hashed = hasher.finalize();
+
+        let num = BigUint::from_bytes_be(&hashed);
+        num.mod_floor(self.ctx.modulus())
+    }
+    fn ctx(&self) -> &BigintCtx<P> {
+        &self.ctx
+    }
+}
+
 pub trait BigintCtxParams: Clone + Send + Sync {
     fn generator(&self) -> &BigUint;
     fn modulus(&self) -> &BigUint;
@@ -263,10 +281,6 @@ impl BigintCtxParams for P2048 {
         }
     }
 }
-
-use crate::byte_tree::ByteTree::Leaf;
-use crate::byte_tree::*;
-use serde_bytes::ByteBuf;
 
 impl ToByteTree for BigUint {
     fn to_byte_tree(&self) -> ByteTree {

@@ -34,8 +34,8 @@ pub(crate) mod tests {
     use crate::zkp::{ChaumPedersen, Schnorr};
 
     pub(crate) fn test_elgamal_generic<C: Ctx>(ctx: &C, data: C::P) {
-        let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, ctx);
+        let sk = PrivateKey::gen(ctx);
+        let pk = sk.get_public();
 
         let plaintext = ctx.encode(&data).unwrap();
 
@@ -74,8 +74,8 @@ pub(crate) mod tests {
     }
 
     pub(crate) fn test_vdecryption_generic<C: Ctx>(ctx: &C, data: C::P) {
-        let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, ctx);
+        let sk = PrivateKey::gen(ctx);
+        let pk = sk.get_public();
 
         let plaintext = ctx.encode(&data).unwrap();
 
@@ -201,8 +201,8 @@ pub(crate) mod tests {
     }
 
     pub(crate) fn test_shuffle_generic<C: Ctx>(ctx: &C) {
-        let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, ctx);
+        let sk = PrivateKey::gen(ctx);
+        let pk = sk.get_public();
 
         let es = util::random_ballots(10, ctx);
         let seed = vec![];
@@ -222,8 +222,8 @@ pub(crate) mod tests {
     }
 
     pub(crate) fn test_shuffle_btserde_generic<C: Ctx>(ctx: &C) {
-        let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, ctx);
+        let sk = PrivateKey::gen(ctx);
+        let pk = sk.get_public();
 
         let es = util::random_ballots(10, ctx);
         let seed = vec![];
@@ -261,8 +261,8 @@ pub(crate) mod tests {
     }
 
     pub(crate) fn test_encrypted_sk_generic<C: Ctx>(ctx: &C, data: C::P) {
-        let sk = ctx.gen_key();
-        let pk: PublicKey<C> = PublicKey::from(&sk.public_value, ctx);
+        let sk = PrivateKey::gen(ctx);
+        let pk: PublicKey<C> = sk.get_public();
         let plaintext = ctx.encode(&data).unwrap();
         let c = pk.encrypt(&plaintext);
         let sym_key = symmetric::gen_key();

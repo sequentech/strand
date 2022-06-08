@@ -10,7 +10,7 @@
 use crate::context::{Ctx, Element, Exponent};
 use crate::zkp::ChaumPedersen;
 
-pub struct Keymaker<C: Ctx> {
+pub struct KeymakerT<C: Ctx> {
     num_trustees: usize,
     threshold: usize,
     coefficients: Vec<C::X>,
@@ -21,8 +21,8 @@ pub struct Keymaker<C: Ctx> {
     ctx: C,
 }
 
-impl<C: Ctx> Keymaker<C> {
-    pub fn gen(num_trustees: usize, threshold: usize, ctx: &C) -> Keymaker<C> {
+impl<C: Ctx> KeymakerT<C> {
+    pub fn gen(num_trustees: usize, threshold: usize, ctx: &C) -> KeymakerT<C> {
         let mut coefficients = vec![];
         let mut commitments = vec![];
         let mut shares = vec![];
@@ -44,7 +44,7 @@ impl<C: Ctx> Keymaker<C> {
             shares.push(share);
         }
 
-        Keymaker {
+        KeymakerT {
             num_trustees,
             threshold,
             coefficients,
@@ -178,7 +178,7 @@ pub(crate) mod tests {
         let mut pk = C::E::mul_identity();
         let mut trustees = Vec::new();
         for _ in 0..num_trustees {
-            let trustee = Keymaker::gen(num_trustees, threshold, ctx);
+            let trustee = KeymakerT::gen(num_trustees, threshold, ctx);
             pk = pk.mul(&trustee.commitments[0]).modulo(&ctx.modulus());
             trustees.push(trustee);
         }
@@ -193,7 +193,7 @@ pub(crate) mod tests {
             }
         }
 
-        let pk = PublicKey::from(&pk, ctx);
+        let pk = PublicKey::from_element(&pk, ctx);
         let plaintext = ctx.encode(&data).unwrap();
 
         let c: Ciphertext<C> = pk.encrypt(&plaintext);
@@ -218,7 +218,7 @@ pub(crate) mod tests {
             let ok = ctx.cp_verify(&v_key, &base, None, &c.gr, &proof, &vec![]);
             assert!(ok);
 
-            let lagrange = Keymaker::lagrange(present[i], &present, ctx);
+            let lagrange = KeymakerT::lagrange(present[i], &present, ctx);
 
             let next = base.mod_pow(&lagrange, &ctx.modulus());
             divider = divider.mul(&next).modulo(&ctx.modulus())
@@ -238,7 +238,7 @@ pub(crate) mod tests {
             let ok = ctx.cp_verify(&v_key, &base, None, &c.gr, &proof, &vec![]);
             assert!(ok);
 
-            let lagrange = Keymaker::lagrange(present[i], &present, ctx);
+            let lagrange = KeymakerT::lagrange(present[i], &present, ctx);
 
             let next = base.mod_pow(&lagrange, &ctx.modulus());
             divider = divider.mul(&next).modulo(&ctx.modulus())

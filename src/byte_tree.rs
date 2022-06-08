@@ -459,8 +459,8 @@ pub(crate) mod tests {
     }
 
     pub(crate) fn test_key_bytes_generic<C: Ctx + Eq>(ctx: &C) {
-        let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, ctx);
+        let sk = PrivateKey::gen(ctx);
+        let pk = PublicKey::from_element(&sk.public_value, ctx);
 
         let bytes = sk.ser();
         let back = PrivateKey::<C>::deser(&bytes).unwrap();
@@ -508,8 +508,8 @@ pub(crate) mod tests {
     }
 
     pub(crate) fn test_epk_bytes_generic<C: Ctx + Eq>(ctx: &C, plaintext: C::P) {
-        let sk = ctx.gen_key();
-        let pk: PublicKey<C> = PublicKey::from(&sk.public_value, ctx);
+        let sk = PrivateKey::gen(ctx);
+        let pk: PublicKey<C> = PublicKey::from_element(&sk.public_value, ctx);
 
         let encoded = ctx.encode(&plaintext).unwrap();
         let c = pk.encrypt(&encoded);

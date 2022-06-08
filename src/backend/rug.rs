@@ -14,16 +14,144 @@ use crate::backend::constants::*;
 use crate::byte_tree::ByteTree::Leaf;
 use crate::byte_tree::*;
 use crate::context::{Ctx, Element, Exponent};
-use crate::elgamal::PrivateKey;
 use crate::rnd::StrandRng;
 use crate::zkp::ZKProver;
 
-impl Element<RugCtx> for Integer {
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub struct RugCtx<P: RugCtxParams> {
+    params: P,
+}
+
+impl<P: RugCtxParams> RugCtx<P> {
+    // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf A.2.3
+    fn generators_fips(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Integer> {
+        let mut ret = Vec::with_capacity(size);
+        let two = Integer::from(2i32);
+
+        let mut prefix = seed.to_vec();
+        prefix.extend("ggen".to_string().into_bytes());
+        prefix.extend(&contest.to_le_bytes());
+
+        let mut index: u64 = 0;
+        for _ in 0..size {
+            index += 1;
+            let mut next = prefix.clone();
+            let mut count: u64 = 0;
+            loop {
+                count += 1;
+                assert!(count != 0);
+                next.extend(&index.to_le_bytes());
+                next.extend(&count.to_le_bytes());
+                let elem: Integer = self.hash_to(&next);
+                let g =
+                    Element::<RugCtx<P>>::mod_pow(&elem, &self.params.co_factor(), &self.modulus());
+                if g >= two {
+                    ret.push(g);
+                    break;
+                }
+            }
+        }
+
+        ret
+    }
+}
+
+impl<P: RugCtxParams> Ctx for RugCtx<P> {
+    type E = Integer;
+    type X = Integer;
+    type P = Integer;
+
+    #[inline(always)]
+    fn generator(&self) -> &Integer {
+        self.params.generator()
+    }
+    #[inline(always)]
+    fn gmod_pow(&self, other: &Integer) -> Integer {
+        Element::<RugCtx<P>>::mod_pow(self.generator(), other, self.modulus())
+    }
+    #[inline(always)]
+    fn emod_pow(&self, base: &Integer, exponent: &Integer) -> Integer {
+        Element::<RugCtx<P>>::mod_pow(base, exponent, self.modulus())
+    }
+    #[inline(always)]
+    fn modulus(&self) -> &Integer {
+        &self.params.modulus()
+    }
+    #[inline(always)]
+    fn exp_modulus(&self) -> &Integer {
+        &self.params.exp_modulus()
+    }
+    #[inline(always)]
+    fn rnd(&self) -> Integer {
+        let mut gen = StrandRandgen(StrandRng);
+        let mut state = RandState::new_custom(&mut gen);
+
+        self.encode(&self.exp_modulus().clone().random_below(&mut state))
+            .unwrap()
+    }
+    #[inline(always)]
+    fn rnd_exp(&self) -> Integer {
+        let mut gen = StrandRandgen(StrandRng);
+        let mut state = RandState::new_custom(&mut gen);
+
+        self.exp_modulus().clone().random_below(&mut state)
+    }
+    fn rnd_plaintext(&self) -> Integer {
+        self.rnd_exp()
+    }
+    fn encode(&self, plaintext: &Integer) -> Result<Integer, &'static str> {
+        if plaintext >= &(self.exp_modulus().clone() - 1) {
+            return Err("Failed to encode, out of range");
+        }
+        if plaintext < &0 {
+            return Err("Failed to encode, negative");
+        }
+
+        let notzero: Integer = plaintext.clone() + 1;
+        let legendre = notzero.legendre(self.modulus());
+        if legendre == 0 {
+            return Err("Failed to encode, legendre = 0");
+        }
+        let product = legendre * notzero;
+
+        Ok(Element::<RugCtx<P>>::modulo(&product, self.modulus()))
+    }
+    fn decode(&self, element: &Integer) -> Integer {
+        if element > self.exp_modulus() {
+            let sub: Integer = (self.modulus() - element).complete();
+            sub - 1
+        } else {
+            (element - 1i32).complete()
+        }
+    }
+    fn exp_from_u64(&self, value: u64) -> Integer {
+        Integer::from(value)
+    }
+    /* fn gen_key(&self) -> PrivateKey<Self> {
+        let secret = self.rnd_exp();
+        PrivateKey::from(&secret, self)
+    }*/
+
+    fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Integer> {
+        self.generators_fips(size, contest, seed)
+    }
+
+    fn is_valid_element(&self, element: &Self::E) -> bool {
+        element.legendre(self.modulus()) == 1
+    }
+
+    fn new() -> RugCtx<P> {
+        let params = P::new();
+        RugCtx { params }
+    }
+}
+
+impl<P: RugCtxParams> Element<RugCtx<P>> for Integer {
     fn mul(&self, other: &Self) -> Self {
         Integer::from(self * other)
     }
     fn div(&self, other: &Self, modulus: &Self) -> Self {
-        let inverse = Element::inv(other, modulus);
+        let inverse = Element::<RugCtx<P>>::inv(other, modulus);
         self * inverse
     }
     fn inv(&self, modulus: &Self) -> Self {
@@ -47,7 +175,7 @@ impl Element<RugCtx> for Integer {
     }
 }
 
-impl Exponent<RugCtx> for Integer {
+impl<P: RugCtxParams> Exponent<RugCtx<P>> for Integer {
     fn add(&self, other: &Integer) -> Integer {
         Integer::from(self + other)
     }
@@ -94,153 +222,7 @@ impl RandGen for StrandRandgen {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Debug)]
-pub struct RugCtx {
-    pub generator: Integer,
-    pub modulus: Integer,
-    pub modulus_exp: Integer,
-    pub co_factor: Integer,
-}
-
-impl RugCtx {
-    pub fn default() -> RugCtx {
-        let p = Integer::from_str_radix(P_STR_2048, 16).unwrap();
-        let q = Integer::from_str_radix(Q_STR_2048, 16).unwrap();
-        let g = Integer::from(3);
-        let co_factor = Integer::from(2);
-
-        assert!(g.legendre(&p) == 1);
-
-        RugCtx {
-            generator: g,
-            modulus: p,
-            modulus_exp: q,
-            co_factor,
-        }
-    }
-
-    // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf A.2.3
-    fn generators_fips(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Integer> {
-        let mut ret = Vec::with_capacity(size);
-        let two = Integer::from(2);
-
-        let mut prefix = seed.to_vec();
-        prefix.extend("ggen".to_string().into_bytes());
-        prefix.extend(&contest.to_le_bytes());
-
-        let mut index: u64 = 0;
-        for _ in 0..size {
-            index += 1;
-            let mut next = prefix.clone();
-            let mut count: u64 = 0;
-            loop {
-                count += 1;
-                assert!(count != 0);
-                next.extend(&index.to_le_bytes());
-                next.extend(&count.to_le_bytes());
-                let elem: Integer = self.hash_to(&next);
-                let g = elem.mod_pow(&self.co_factor, &self.modulus);
-                if g >= two {
-                    ret.push(g);
-                    break;
-                }
-            }
-        }
-
-        ret
-    }
-}
-
-impl Ctx for RugCtx {
-    type E = Integer;
-    type X = Integer;
-    type P = Integer;
-
-    #[inline(always)]
-    fn generator(&self) -> &Integer {
-        &self.generator
-    }
-    #[inline(always)]
-    fn gmod_pow(&self, other: &Integer) -> Integer {
-        self.generator.mod_pow(other, self.modulus())
-    }
-    #[inline(always)]
-    fn emod_pow(&self, base: &Integer, exponent: &Integer) -> Integer {
-        base.mod_pow(exponent, self.modulus())
-    }
-    #[inline(always)]
-    fn modulus(&self) -> &Integer {
-        &self.modulus
-    }
-    #[inline(always)]
-    fn exp_modulus(&self) -> &Integer {
-        &self.modulus_exp
-    }
-    #[inline(always)]
-    fn rnd(&self) -> Integer {
-        let mut gen = StrandRandgen(StrandRng);
-        let mut state = RandState::new_custom(&mut gen);
-
-        self.encode(&self.modulus_exp.clone().random_below(&mut state))
-            .unwrap()
-    }
-    #[inline(always)]
-    fn rnd_exp(&self) -> Integer {
-        let mut gen = StrandRandgen(StrandRng);
-        let mut state = RandState::new_custom(&mut gen);
-
-        self.modulus_exp.clone().random_below(&mut state)
-    }
-    fn rnd_plaintext(&self) -> Integer {
-        self.rnd_exp()
-    }
-    fn encode(&self, plaintext: &Integer) -> Result<Integer, &'static str> {
-        if plaintext >= &(self.modulus_exp.clone() - 1) {
-            return Err("Failed to encode, out of range");
-        }
-        if plaintext < &0 {
-            return Err("Failed to encode, negative");
-        }
-
-        let notzero: Integer = plaintext.clone() + 1;
-        let legendre = notzero.legendre(self.modulus());
-        if legendre == 0 {
-            return Err("Failed to encode, legendre = 0");
-        }
-        let product = legendre * notzero;
-
-        Ok(Element::modulo(&product, self.modulus()))
-    }
-    fn decode(&self, element: &Integer) -> Integer {
-        if element > self.exp_modulus() {
-            let sub: Integer = (self.modulus() - element).complete();
-            sub - 1
-        } else {
-            (element - 1i32).complete()
-        }
-    }
-    fn exp_from_u64(&self, value: u64) -> Integer {
-        Integer::from(value)
-    }
-    fn gen_key(&self) -> PrivateKey<Self> {
-        let secret = self.rnd_exp();
-        PrivateKey::from(&secret, self)
-    }
-
-    fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Integer> {
-        self.generators_fips(size, contest, seed)
-    }
-
-    fn is_valid_element(&self, element: &Self::E) -> bool {
-        element.legendre(self.modulus()) == 1
-    }
-
-    fn new() -> RugCtx {
-        RugCtx::default()
-    }
-}
-
-impl ZKProver<RugCtx> for RugCtx {
+impl<P: RugCtxParams> ZKProver<RugCtx<P>> for RugCtx<P> {
     fn hash_to(&self, bytes: &[u8]) -> Integer {
         let mut hasher = Sha512::new();
         hasher.update(bytes);
@@ -251,9 +233,36 @@ impl ZKProver<RugCtx> for RugCtx {
         rem
     }
 
-    fn ctx(&self) -> &RugCtx {
+    fn ctx(&self) -> &RugCtx<P> {
         self
     }
+}
+
+use crate::zkp::{Zkp, Zkpr};
+
+impl<P: RugCtxParams> Zkpr<RugCtx<P>> for Zkp<RugCtx<P>> {
+    fn hash_to(&self, bytes: &[u8]) -> Integer {
+        let mut hasher = Sha512::new();
+        hasher.update(bytes);
+        let hashed = hasher.finalize();
+
+        let (_, rem) =
+            Integer::from_digits(&hashed, Order::Lsf).div_rem(self.ctx.modulus().clone());
+
+        rem
+    }
+
+    fn ctx(&self) -> &RugCtx<P> {
+        &self.ctx
+    }
+}
+
+pub trait RugCtxParams: Clone + Send + Sync {
+    fn generator(&self) -> &Integer;
+    fn modulus(&self) -> &Integer;
+    fn exp_modulus(&self) -> &Integer;
+    fn co_factor(&self) -> &Integer;
+    fn new() -> Self;
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
@@ -262,13 +271,6 @@ pub struct P2048 {
     modulus: Integer,
     exp_modulus: Integer,
     co_factor: Integer,
-}
-pub trait RugCtxParams: Clone + Send + Sync {
-    fn generator(&self) -> &Integer;
-    fn modulus(&self) -> &Integer;
-    fn exp_modulus(&self) -> &Integer;
-    fn co_factor(&self) -> &Integer;
-    fn new() -> Self;
 }
 impl RugCtxParams for P2048 {
     #[inline(always)]
@@ -323,6 +325,7 @@ mod tests {
     use crate::backend::tests::*;
     use crate::byte_tree::tests::*;
     use crate::context::Ctx;
+    use crate::elgamal::PrivateKey;
     use crate::elgamal::{Ciphertext, PublicKey};
     use crate::shuffler::gen_permutation;
     use crate::shuffler::PermutationData;
@@ -332,40 +335,40 @@ mod tests {
 
     #[test]
     fn test_elgamal() {
-        let ctx = RugCtx::default();
+        let ctx = RugCtx::<P2048>::new();
         let plaintext = ctx.rnd_exp();
         test_elgamal_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_schnorr() {
-        let ctx = RugCtx::default();
+        let ctx = RugCtx::<P2048>::new();
         test_schnorr_generic(&ctx);
     }
 
     #[test]
     fn test_chaumpedersen() {
-        let ctx = RugCtx::default();
+        let ctx = RugCtx::<P2048>::new();
         test_chaumpedersen_generic(&ctx);
     }
 
     #[test]
     fn test_vdecryption() {
-        let ctx = RugCtx::default();
+        let ctx = RugCtx::<P2048>::new();
         let plaintext = ctx.rnd_exp();
         test_vdecryption_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_distributed() {
-        let ctx = RugCtx::default();
+        let ctx = RugCtx::<P2048>::new();
         let plaintext = ctx.rnd_exp();
         test_distributed_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_distributed_btserde() {
-        let ctx = RugCtx::default();
+        let ctx = RugCtx::<P2048>::new();
         let mut ps = vec![];
         for _ in 0..10 {
             let p = ctx.rnd_exp();
@@ -376,19 +379,19 @@ mod tests {
 
     #[test]
     fn test_shuffle() {
-        let ctx = RugCtx::default();
+        let ctx = RugCtx::<P2048>::new();
         test_shuffle_generic(&ctx);
     }
 
     #[test]
     fn test_shuffle_btserde() {
-        let ctx = RugCtx::default();
+        let ctx = RugCtx::<P2048>::new();
         test_shuffle_btserde_generic(&ctx);
     }
 
     #[test]
     fn test_encrypted_sk() {
-        let ctx = RugCtx::default();
+        let ctx = RugCtx::<P2048>::new();
         let plaintext = ctx.rnd_exp();
         test_encrypted_sk_generic(&ctx, plaintext);
     }
@@ -397,7 +400,7 @@ mod tests {
     fn test_threshold() {
         let trustees = 5usize;
         let threshold = 3usize;
-        let ctx = RugCtx::default();
+        let ctx = RugCtx::<P2048>::new();
         let plaintext = ctx.rnd_exp();
 
         test_threshold_generic(&ctx, trustees, threshold, plaintext);
@@ -405,39 +408,39 @@ mod tests {
 
     #[test]
     fn test_ciphertext_bytes() {
-        let ctx = RugCtx::default();
+        let ctx = RugCtx::<P2048>::new();
         test_ciphertext_bytes_generic(&ctx);
     }
 
     #[test]
     fn test_key_bytes() {
-        let ctx = RugCtx::default();
+        let ctx = RugCtx::<P2048>::new();
         test_key_bytes_generic(&ctx);
     }
 
     #[test]
     fn test_schnorr_bytes() {
-        let ctx = RugCtx::default();
+        let ctx = RugCtx::<P2048>::new();
         test_schnorr_bytes_generic(&ctx);
     }
 
     #[test]
     fn test_cp_bytes() {
-        let ctx = RugCtx::default();
+        let ctx = RugCtx::<P2048>::new();
         test_cp_bytes_generic(&ctx);
     }
 
     #[test]
     fn test_epk_bytes() {
-        let ctx = RugCtx::default();
+        let ctx = RugCtx::<P2048>::new();
         let plaintext = ctx.rnd_exp();
         test_epk_bytes_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_encode_err() {
-        let rg = RugCtx::default();
-        let result = rg.encode(&(rg.exp_modulus() - 1i32).complete());
+        let ctx = RugCtx::<P2048>::new();
+        let result = ctx.encode(&(ctx.exp_modulus() - 1i32).complete());
         assert!(result.is_err())
     }
 
@@ -459,13 +462,13 @@ mod tests {
     #[ignore]
     #[test]
     fn test_gen_coq_data() {
-        let ctx = RugCtx::new();
+        let ctx = RugCtx::<P2048>::new();
 
-        let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, &ctx);
+        let sk = PrivateKey::gen(&ctx);
+        let pk = sk.get_public();
 
         let n = 100;
-        let mut es: Vec<Ciphertext<RugCtx>> = Vec::with_capacity(n);
+        let mut es: Vec<Ciphertext<RugCtx<P2048>>> = Vec::with_capacity(n);
 
         for _ in 0..n {
             let plaintext: Integer = ctx.rnd_plaintext();
@@ -495,7 +498,7 @@ mod tests {
         assert!(ok);
 
         let pk_list = vec![
-            ctx.generator.to_string_radix(16),
+            ctx.generator().to_string_radix(16),
             pk.value.to_string_radix(16),
         ];
 
@@ -561,8 +564,8 @@ mod tests {
         let challenge: Vec<String> = vec![c.to_string_radix(16)];
 
         let group = vec![
-            ctx.modulus.to_string_radix(16),
-            ctx.modulus_exp.to_string_radix(16),
+            ctx.modulus().to_string_radix(16),
+            ctx.exp_modulus().to_string_radix(16),
         ];
 
         let transcript = CoqVerifierTranscript {

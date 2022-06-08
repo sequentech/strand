@@ -18,8 +18,8 @@ pub struct Keymaker<C: Ctx> {
 
 impl<C: Ctx> Keymaker<C> {
     pub fn gen(ctx: &C) -> Keymaker<C> {
-        let sk = ctx.gen_key();
-        let pk = PublicKey::from(&sk.public_value, ctx);
+        let sk = PrivateKey::gen(ctx);
+        let pk = PublicKey::from_element(&sk.public_value, ctx);
 
         Keymaker {
             sk,
@@ -29,7 +29,7 @@ impl<C: Ctx> Keymaker<C> {
     }
 
     pub fn from_sk(sk: PrivateKey<C>, ctx: &C) -> Keymaker<C> {
-        let pk = PublicKey::from(&sk.public_value, ctx);
+        let pk = PublicKey::from_element(&sk.public_value, ctx);
 
         Keymaker {
             sk,
@@ -39,7 +39,7 @@ impl<C: Ctx> Keymaker<C> {
     }
 
     pub fn share(&self, label: &[u8]) -> (PublicKey<C>, Schnorr<C>) {
-        let pk = PublicKey::from(&self.pk.value, &self.ctx);
+        let pk = PublicKey::from_element(&self.pk.value, &self.ctx);
         let proof = self
             .ctx
             .schnorr_prove(&self.sk.value, &pk.value, self.ctx.generator(), label);
@@ -62,7 +62,7 @@ impl<C: Ctx> Keymaker<C> {
             acc = acc.mul(&pk.value).modulo(ctx.modulus());
         }
 
-        PublicKey::from(&acc, ctx)
+        PublicKey::from_element(&acc, ctx)
     }
 
     pub fn decryption_factor(&self, c: &Ciphertext<C>, label: &[u8]) -> (C::E, ChaumPedersen<C>) {

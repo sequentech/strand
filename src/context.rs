@@ -1,5 +1,4 @@
 use crate::byte_tree::ToFromBTree;
-use crate::elgamal::*;
 use crate::zkp::ZKProver;
 use std::marker::{Send, Sync};
 
@@ -18,7 +17,6 @@ pub trait Ctx: Sync + Sized + Clone + ZKProver<Self> {
     fn rnd_exp(&self) -> Self::X;
     fn rnd_plaintext(&self) -> Self::P;
 
-    fn gen_key(&self) -> PrivateKey<Self>;
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str>;
     fn decode(&self, element: &Self::E) -> Self::P;
     fn exp_from_u64(&self, value: u64) -> Self::X;

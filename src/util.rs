@@ -47,7 +47,7 @@ pub fn to_u8_30(input: &[u8]) -> [u8; 30] {
     bytes
 }
 
-pub fn to_u8_32(input: &[u8]) -> [u8; 32] {
+pub(crate) fn to_u8_32(input: &[u8]) -> [u8; 32] {
     assert_eq!(input.len(), 32);
     let mut bytes = [0u8; 32];
     bytes.copy_from_slice(input);

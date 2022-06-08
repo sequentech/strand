@@ -59,7 +59,7 @@ impl<C: Ctx> PublicKey<C> {
             gr: ctx.gmod_pow(randomness),
         }
     }
-    pub fn from(pk_value: &C::E, ctx: &C) -> PublicKey<C> {
+    pub fn from_element(pk_value: &C::E, ctx: &C) -> PublicKey<C> {
         PublicKey {
             value: pk_value.clone(),
             ctx: (*ctx).clone(),
@@ -99,6 +99,10 @@ impl<C: Ctx> PrivateKey<C> {
 
         c.gr.mod_pow(&self.value, modulus)
     }
+    pub fn gen(ctx: &C) -> PrivateKey<C> {
+        let secret = ctx.rnd_exp();
+        PrivateKey::from(&secret, ctx)
+    }
     pub fn from(secret: &C::X, ctx: &C) -> PrivateKey<C> {
         let public_value = ctx.gmod_pow(secret);
         PrivateKey {
@@ -135,5 +139,12 @@ impl<C: Ctx> PrivateKey<C> {
 
     pub fn public_value(&self) -> &C::E {
         &self.public_value
+    }
+
+    pub fn get_public(&self) -> PublicKey<C> {
+        PublicKey {
+            value: self.public_value.clone(),
+            ctx: self.ctx.clone(),
+        }
     }
 }
