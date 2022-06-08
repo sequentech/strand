@@ -7,8 +7,8 @@ use strand::shuffler::*;
 use strand::util;
 
 fn test_shuffle_generic<C: Ctx>(ctx: C, n: usize) {
-    let sk = ctx.gen_key();
-    let pk = PublicKey::from(sk.public_value(), &ctx);
+    let sk = PrivateKey::gen(&ctx);
+    let pk = sk.get_public();
 
     let es = util::random_ballots(n, &ctx);
     let seed = vec![];

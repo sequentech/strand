@@ -5,7 +5,7 @@ use crate::backend::numb::{BigintCtx, P2048};
 use crate::backend::ristretto::RistrettoCtx;
 use crate::byte_tree::BTreeSer;
 use crate::context::{Ctx, Element};
-use crate::elgamal::PublicKey;
+use crate::elgamal::{PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::shuffler::Shuffler;
 use crate::util;
@@ -83,8 +83,8 @@ pub fn bench_enc_pok(n: u32) {
 }
 
 fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
-    let sk = ctx.gen_key();
-    let pk = PublicKey::from(&sk.public_value, &ctx);
+    let sk = PrivateKey::gen(&ctx);
+    let pk: PublicKey<C> = sk.get_public();
 
     log("gen ballots..");
     let es = util::random_ballots(n, &ctx);
@@ -155,8 +155,8 @@ fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
 }
 
 fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P, n: u32) {
-    let sk = ctx.gen_key();
-    let pk: PublicKey<C> = PublicKey::from(&sk.public_value, &ctx);
+    let sk = PrivateKey::gen(&ctx);
+    let pk: PublicKey<C> = sk.get_public();
 
     log("encode..");
     let now = performance.now();

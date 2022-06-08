@@ -43,12 +43,12 @@ cfg_if::cfg_if! {
 
 fn bench_encrypt(c: &mut Criterion) {
     let rctx = RistrettoCtx;
-    let rsk = rctx.gen_key();
-    let rpk = PublicKey::from(rsk.public_value(), &rctx);
+    let rsk = PrivateKey::gen(&rctx);
+    let rpk = rsk.get_public();
 
     let bctx = BigintCtx::<P2048>::new();
-    let bsk = bctx.gen_key();
-    let bpk = PublicKey::from(bsk.public_value(), &bctx);
+    let bsk = PrivateKey::gen(&bctx);
+    let bpk = bsk.get_public();
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "rug")] {
