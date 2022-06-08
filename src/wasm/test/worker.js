@@ -1,4 +1,4 @@
-import * as pkg from "../../../pkg/strand.js";
+import * as pkg from "../../../pkg/index.js";
 pkg.default().then(_ => {
     var parameters = {}
     location.search.slice(1).split("&").forEach( function(key_value) { var kv = key_value.split("="); parameters[kv[0]] = kv[1]; });

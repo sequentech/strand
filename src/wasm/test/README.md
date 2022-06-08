@@ -12,7 +12,7 @@ and cannot work without https unless testing on localhost.
 
 * Build with [multithreading](https://github.com/GoogleChromeLabs/wasm-bindgen-rayon)
 ```
-RUSTFLAGS='-C target-feature=+atomics,+bulk-memory,+mutable-globals' \
-rustup run nightly-2022-04-07 wasm-pack build --release --target web 
---features=wasmtest,wasmrayon -- -Z build-std=panic_abort,std  \
+RUSTFLAGS='-C target-feature=+atomics,+bulk-memory,+mutable-globals' \ 
+rustup run nightly-2022-04-07 wasm-pack build --out-name index --release \ 
+--target web --features=wasmtest,wasmrayon -- -Z build-std=panic_abort,std
 ```
