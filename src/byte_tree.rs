@@ -447,6 +447,7 @@ pub(crate) mod tests {
     /*use crate::shuffler::*;*/
     use crate::byte_tree::*;
     use crate::symmetric;
+    use crate::zkp::Zkp;
 
     // use ed25519_dalek::Keypair;
 
