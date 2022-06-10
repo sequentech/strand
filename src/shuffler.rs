@@ -11,7 +11,10 @@ use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::{Ciphertext, PublicKey};
 use crate::rnd::StrandRng;
 use crate::util::Par;
-use crate::zkp::Zkp;
+use crate::byte_tree::ByteTree::*;
+use crate::byte_tree::{ByteTree,ToByteTree};
+use serde_bytes::ByteBuf;
+use ed25519_dalek::{Digest, Sha512};
 
 pub struct YChallengeInput<'a, C: Ctx> {
     pub es: &'a [Ciphertext<C>],
@@ -162,7 +165,6 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         label: &[u8],
     ) -> (ShuffleProof<C>, Vec<C::X>, C::X) {
         let ctx = &self.ctx;
-        let zkp = Zkp::new(ctx);
 
         #[allow(non_snake_case)]
         let N = es.len();
@@ -184,7 +186,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         // COST
         // let now = Instant::now();
-        let us = zkp.shuffle_proof_us(es, e_primes, cs, N, label);
+        let us = self.shuffle_proof_us(es, e_primes, cs, N, label);
         // println!("shuffle proof us {}", now.elapsed().as_millis());
 
         let mut u_primes: Vec<&C::X> = Vec::with_capacity(N);
@@ -296,7 +298,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         // COST
         // let now = Instant::now();
         // ~0 cost
-        let c: C::X = zkp.shuffle_proof_challenge(&y, &t, label);
+        let c: C::X = self.shuffle_proof_challenge(&y, &t, label);
 
         // println!("shuffle proof challenge {}", now.elapsed().as_millis());
 
@@ -339,7 +341,6 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         label: &[u8],
     ) -> bool {
         let ctx = &self.ctx;
-        let zkp = Zkp::new(ctx);
 
         #[allow(non_snake_case)]
         let N = es.len();
@@ -353,7 +354,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         let gmod = ctx.modulus();
         let xmod = ctx.exp_modulus();
 
-        let us: Vec<C::X> = zkp.shuffle_proof_us(es, e_primes, &proof.cs, N, label);
+        let us: Vec<C::X> = self.shuffle_proof_us(es, e_primes, &proof.cs, N, label);
 
         let mut c_bar_num: C::E = C::E::mul_identity();
         let mut c_bar_den: C::E = C::E::mul_identity();
@@ -411,7 +412,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             pk: self.pk,
         };
 
-        let c = zkp.shuffle_proof_challenge(&y, &proof.t, label);
+        let c = self.shuffle_proof_challenge(&y, &proof.t, label);
 
         let t_prime1 = (c_bar.inv(gmod).mod_pow(&c, gmod))
             .mul(&ctx.gmod_pow(&proof.s.s1))
@@ -531,6 +532,79 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         // println!("v9 {}", now.elapsed().as_millis());
 
         (cs, rs)
+    }
+
+    fn shuffle_proof_us(
+        &self,
+        es: &[Ciphertext<C>],
+        e_primes: &[Ciphertext<C>],
+        cs: &[C::E],
+        n: usize,
+        label: &[u8],
+    ) -> Vec<C::X> {
+        let trees: Vec<ByteTree> = vec![
+            ByteTree::Leaf(ByteBuf::from(label.to_vec())),
+            es.to_byte_tree(),
+            e_primes.to_byte_tree(),
+            cs.to_byte_tree(),
+        ];
+
+        let prefix_bytes = ByteTree::Tree(trees).to_hashable_bytes();
+
+        // optimization: instead of calculating u = H(prefix || i),
+        // we do u = H(H(prefix) || i)
+        // that way we avoid allocating prefix-size bytes n times
+        let mut hasher = Sha512::new();
+        hasher.update(prefix_bytes);
+        let prefix_hash = hasher.finalize().to_vec();
+        /* let mut ret = Vec::with_capacity(n);
+        for i in 0..n {
+            let next: Vec<ByteTree> = vec![
+                Leaf(ByteBuf::from(prefix_hash.clone())),
+                Leaf(ByteBuf::from(i.to_le_bytes())),
+            ];
+            let bytes = ByteTree::Tree(next).to_hashable_bytes();
+
+            let u: C::X = self.hash_to(&bytes);
+            ret.push(u);
+        }*/
+        (0..n)
+            .par()
+            .map(|i| {
+                let next: Vec<ByteTree> = vec![
+                    Leaf(ByteBuf::from(prefix_hash.clone())),
+                    Leaf(ByteBuf::from(i.to_le_bytes())),
+                ];
+                let bytes = ByteTree::Tree(next).to_hashable_bytes();
+
+                self.ctx.hash_to(&bytes)
+            })
+            .collect()
+    }
+
+    fn shuffle_proof_challenge(
+        &self,
+        y: &YChallengeInput<C>,
+        t: &Commitments<C>,
+        label: &[u8],
+    ) -> C::X {
+        let trees: Vec<ByteTree> = vec![
+            ByteTree::Leaf(ByteBuf::from(label.to_vec())),
+            y.es.to_byte_tree(),
+            y.e_primes.to_byte_tree(),
+            y.cs.to_byte_tree(),
+            y.c_hats.to_byte_tree(),
+            y.pk.value.to_byte_tree(),
+            t.t1.to_byte_tree(),
+            t.t2.to_byte_tree(),
+            t.t3.to_byte_tree(),
+            t.t4_1.to_byte_tree(),
+            t.t4_2.to_byte_tree(),
+            t.t_hats.to_byte_tree(),
+        ];
+        let bytes = ByteTree::Tree(trees).to_hashable_bytes();
+
+        self.ctx.hash_to(&bytes)
     }
 }
 

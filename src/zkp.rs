@@ -1,16 +1,14 @@
 #![allow(clippy::too_many_arguments)]
 use crate::util::Par;
-use ed25519_dalek::{Digest, Sha512};
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
 use serde_bytes::ByteBuf;
 
 use crate::byte_tree::ByteTree;
-use crate::byte_tree::ByteTree::*;
+
 use crate::byte_tree::ToByteTree;
 use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::*;
-use crate::shuffler::{Commitments, YChallengeInput};
 
 pub struct Zkp<C: Ctx> {
     pub(crate) ctx: C,
@@ -133,7 +131,7 @@ impl<C: Ctx> Zkp<C> {
         ok1 && ok2 && ok3
     }
 
-    pub(crate) fn schnorr_proof_challenge(
+    fn schnorr_proof_challenge(
         &self,
         g: &C::E,
         public: &C::E,
@@ -149,7 +147,7 @@ impl<C: Ctx> Zkp<C> {
         self.ctx.hash_to(&bytes)
     }
 
-    pub(crate) fn cp_proof_challenge(
+    fn cp_proof_challenge(
         &self,
         g1: &C::E,
         g2: &C::E,
@@ -164,79 +162,6 @@ impl<C: Ctx> Zkp<C> {
         let mut tree: Vec<ByteTree> = values.iter().map(|e| e.to_byte_tree()).collect();
         tree.push(ByteTree::Leaf(ByteBuf::from(label.to_vec())));
         let bytes = ByteTree::Tree(tree).to_hashable_bytes();
-
-        self.ctx.hash_to(&bytes)
-    }
-
-    pub(crate) fn shuffle_proof_us(
-        &self,
-        es: &[Ciphertext<C>],
-        e_primes: &[Ciphertext<C>],
-        cs: &[C::E],
-        n: usize,
-        label: &[u8],
-    ) -> Vec<C::X> {
-        let trees: Vec<ByteTree> = vec![
-            ByteTree::Leaf(ByteBuf::from(label.to_vec())),
-            es.to_byte_tree(),
-            e_primes.to_byte_tree(),
-            cs.to_byte_tree(),
-        ];
-
-        let prefix_bytes = ByteTree::Tree(trees).to_hashable_bytes();
-
-        // optimization: instead of calculating u = H(prefix || i),
-        // we do u = H(H(prefix) || i)
-        // that way we avoid allocating prefix-size bytes n times
-        let mut hasher = Sha512::new();
-        hasher.update(prefix_bytes);
-        let prefix_hash = hasher.finalize().to_vec();
-        /* let mut ret = Vec::with_capacity(n);
-        for i in 0..n {
-            let next: Vec<ByteTree> = vec![
-                Leaf(ByteBuf::from(prefix_hash.clone())),
-                Leaf(ByteBuf::from(i.to_le_bytes())),
-            ];
-            let bytes = ByteTree::Tree(next).to_hashable_bytes();
-
-            let u: C::X = self.hash_to(&bytes);
-            ret.push(u);
-        }*/
-        (0..n)
-            .par()
-            .map(|i| {
-                let next: Vec<ByteTree> = vec![
-                    Leaf(ByteBuf::from(prefix_hash.clone())),
-                    Leaf(ByteBuf::from(i.to_le_bytes())),
-                ];
-                let bytes = ByteTree::Tree(next).to_hashable_bytes();
-
-                self.ctx.hash_to(&bytes)
-            })
-            .collect()
-    }
-
-    pub(crate) fn shuffle_proof_challenge(
-        &self,
-        y: &YChallengeInput<C>,
-        t: &Commitments<C>,
-        label: &[u8],
-    ) -> C::X {
-        let trees: Vec<ByteTree> = vec![
-            ByteTree::Leaf(ByteBuf::from(label.to_vec())),
-            y.es.to_byte_tree(),
-            y.e_primes.to_byte_tree(),
-            y.cs.to_byte_tree(),
-            y.c_hats.to_byte_tree(),
-            y.pk.value.to_byte_tree(),
-            t.t1.to_byte_tree(),
-            t.t2.to_byte_tree(),
-            t.t3.to_byte_tree(),
-            t.t4_1.to_byte_tree(),
-            t.t4_2.to_byte_tree(),
-            t.t_hats.to_byte_tree(),
-        ];
-        let bytes = ByteTree::Tree(trees).to_hashable_bytes();
 
         self.ctx.hash_to(&bytes)
     }
