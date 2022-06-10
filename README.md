@@ -8,7 +8,7 @@ The following primitives are implemented
 
 * ElGamal and exponential ElGamal encryption.
 
-* [Threshold distributed ElGamal](https://members.loria.fr/VCortier/files/Papers/WPES2013.pdf).
+* Fixed distributed and [threshold distributed ElGamal](https://members.loria.fr/VCortier/files/Papers/WPES2013.pdf).
 
 * [Wikstrom](http://www.csc.kth.se/~terelius/TeWi10Full.pdf) [shuffle](https://eprint.iacr.org/2011/168.pdf) [proofs](https://www.ifca.ai/fc17/voting/papers/voting17_HLKD17.pdf).
 
@@ -24,7 +24,7 @@ The library supports pluggable [discrete log](https://en.wikipedia.org/wiki/Deci
 
 * Curve25519 using the [ristretto group](https://ristretto.group/) via the [curve25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek) library.
 * [Standard multiplicative groups](https://en.wikipedia.org/wiki/Schnorr_group) via the [rug](https://crates.io/crates/rug) arbitrary-precision library, backed by [gmp](https://gmplib.org/).
-[Standard multiplicative groups](https://en.wikipedia.org/wiki/Schnorr_group) via the [num-bigint](https://crates.io/crates/num-bigint) arbitrary-precision library, in pure rust.
+* [Standard multiplicative groups](https://en.wikipedia.org/wiki/Schnorr_group) via the [num-bigint](https://crates.io/crates/num-bigint) arbitrary-precision library, in pure rust.
 
 ## Significant dependencies
 
