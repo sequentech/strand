@@ -11,6 +11,7 @@ use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::{Ciphertext, PublicKey};
 use crate::rnd::StrandRng;
 use crate::util::Par;
+use crate::zkp::Zkp;
 
 pub struct YChallengeInput<'a, C: Ctx> {
     pub es: &'a [Ciphertext<C>],
@@ -161,6 +162,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         label: &[u8],
     ) -> (ShuffleProof<C>, Vec<C::X>, C::X) {
         let ctx = &self.ctx;
+        let zkp = Zkp::new(ctx);
 
         #[allow(non_snake_case)]
         let N = es.len();
@@ -182,7 +184,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         // COST
         // let now = Instant::now();
-        let us = ctx.shuffle_proof_us(es, e_primes, cs, N, label);
+        let us = zkp.shuffle_proof_us(es, e_primes, cs, N, label);
         // println!("shuffle proof us {}", now.elapsed().as_millis());
 
         let mut u_primes: Vec<&C::X> = Vec::with_capacity(N);
@@ -294,7 +296,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         // COST
         // let now = Instant::now();
         // ~0 cost
-        let c: C::X = ctx.shuffle_proof_challenge(&y, &t, label);
+        let c: C::X = zkp.shuffle_proof_challenge(&y, &t, label);
 
         // println!("shuffle proof challenge {}", now.elapsed().as_millis());
 
@@ -337,6 +339,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         label: &[u8],
     ) -> bool {
         let ctx = &self.ctx;
+        let zkp = Zkp::new(ctx);
 
         #[allow(non_snake_case)]
         let N = es.len();
@@ -350,7 +353,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         let gmod = ctx.modulus();
         let xmod = ctx.exp_modulus();
 
-        let us: Vec<C::X> = ctx.shuffle_proof_us(es, e_primes, &proof.cs, N, label);
+        let us: Vec<C::X> = zkp.shuffle_proof_us(es, e_primes, &proof.cs, N, label);
 
         let mut c_bar_num: C::E = C::E::mul_identity();
         let mut c_bar_den: C::E = C::E::mul_identity();
@@ -408,7 +411,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             pk: self.pk,
         };
 
-        let c = ctx.shuffle_proof_challenge(&y, &proof.t, label);
+        let c = zkp.shuffle_proof_challenge(&y, &proof.t, label);
 
         let t_prime1 = (c_bar.inv(gmod).mod_pow(&c, gmod))
             .mul(&ctx.gmod_pow(&proof.s.s1))

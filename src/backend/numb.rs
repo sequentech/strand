@@ -12,7 +12,6 @@ use crate::byte_tree::ByteTree::Leaf;
 use crate::byte_tree::*;
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
-use crate::zkp::ZKProver;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct BigintCtx<P: BigintCtxParams> {
@@ -93,6 +92,14 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn rnd_plaintext(&self) -> BigUint {
         self.rnd_exp()
     }
+    fn hash_to(&self, bytes: &[u8]) -> BigUint {
+        let mut hasher = Sha512::new();
+        hasher.update(bytes);
+        let hashed = hasher.finalize();
+
+        let num = BigUint::from_bytes_be(&hashed);
+        num.mod_floor(self.modulus())
+    }
     fn encode(&self, plaintext: &BigUint) -> Result<BigUint, &'static str> {
         let one: BigUint = One::one();
 
@@ -122,18 +129,12 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn exp_from_u64(&self, value: u64) -> BigUint {
         BigUint::from(value)
     }
-    /*fn gen_key(&self) -> PrivateKey<BigintCtx<P>> {
-        let secret = self.rnd_exp();
-        PrivateKey::from(&secret, self)
-    }*/
-
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<BigUint> {
         self.generators_fips(size, contest, seed)
     }
     fn is_valid_element(&self, element: &Self::E) -> bool {
         element.legendre(self.modulus()) == 1
     }
-
     fn new() -> BigintCtx<P> {
         let params = P::new();
         BigintCtx { params }
@@ -204,7 +205,7 @@ impl<P: BigintCtxParams> Exponent<BigintCtx<P>> for BigUint {
     }
 }
 
-impl<P: BigintCtxParams> ZKProver<BigintCtx<P>> for BigintCtx<P> {
+/*impl<P: BigintCtxParams> ZKProver<BigintCtx<P>> for BigintCtx<P> {
     fn hash_to(&self, bytes: &[u8]) -> BigUint {
         let mut hasher = Sha512::new();
         hasher.update(bytes);
@@ -218,9 +219,7 @@ impl<P: BigintCtxParams> ZKProver<BigintCtx<P>> for BigintCtx<P> {
     }
 }
 
-use crate::zkp::{Zkp, Zkpr};
-
-impl<P: BigintCtxParams> Zkpr<BigintCtx<P>> for Zkp<BigintCtx<P>> {
+impl<P: BigintCtxParams> Zkp<BigintCtx<P>> for ZkpStruct<BigintCtx<P>> {
     fn hash_to(&self, bytes: &[u8]) -> BigUint {
         let mut hasher = Sha512::new();
         hasher.update(bytes);
@@ -232,7 +231,7 @@ impl<P: BigintCtxParams> Zkpr<BigintCtx<P>> for Zkp<BigintCtx<P>> {
     fn ctx(&self) -> &BigintCtx<P> {
         &self.ctx
     }
-}
+}*/
 
 pub trait BigintCtxParams: Clone + Send + Sync {
     fn generator(&self) -> &BigUint;

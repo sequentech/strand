@@ -15,7 +15,6 @@ use crate::byte_tree::ByteTree::Leaf;
 use crate::byte_tree::*;
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
-use crate::zkp::ZKProver;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct RugCtx<P: RugCtxParams> {
@@ -44,7 +43,7 @@ impl<P: RugCtxParams> RugCtx<P> {
                 next.extend(&count.to_le_bytes());
                 let elem: Integer = self.hash_to(&next);
                 let g =
-                    Element::<RugCtx<P>>::mod_pow(&elem, &self.params.co_factor(), &self.modulus());
+                    Element::<RugCtx<P>>::mod_pow(&elem, self.params.co_factor(), self.modulus());
                 if g >= two {
                     ret.push(g);
                     break;
@@ -75,11 +74,11 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     }
     #[inline(always)]
     fn modulus(&self) -> &Integer {
-        &self.params.modulus()
+        self.params.modulus()
     }
     #[inline(always)]
     fn exp_modulus(&self) -> &Integer {
-        &self.params.exp_modulus()
+        self.params.exp_modulus()
     }
     #[inline(always)]
     fn rnd(&self) -> Integer {
@@ -98,6 +97,15 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     }
     fn rnd_plaintext(&self) -> Integer {
         self.rnd_exp()
+    }
+    fn hash_to(&self, bytes: &[u8]) -> Integer {
+        let mut hasher = Sha512::new();
+        hasher.update(bytes);
+        let hashed = hasher.finalize();
+
+        let (_, rem) = Integer::from_digits(&hashed, Order::Lsf).div_rem(self.modulus().clone());
+
+        rem
     }
     fn encode(&self, plaintext: &Integer) -> Result<Integer, &'static str> {
         if plaintext >= &(self.exp_modulus().clone() - 1) {
@@ -127,11 +135,6 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     fn exp_from_u64(&self, value: u64) -> Integer {
         Integer::from(value)
     }
-    /* fn gen_key(&self) -> PrivateKey<Self> {
-        let secret = self.rnd_exp();
-        PrivateKey::from(&secret, self)
-    }*/
-
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Integer> {
         self.generators_fips(size, contest, seed)
     }
@@ -139,7 +142,6 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     fn is_valid_element(&self, element: &Self::E) -> bool {
         element.legendre(self.modulus()) == 1
     }
-
     fn new() -> RugCtx<P> {
         let params = P::new();
         RugCtx { params }
@@ -221,7 +223,7 @@ impl RandGen for StrandRandgen {
         self.0.next_u32()
     }
 }
-
+/*
 impl<P: RugCtxParams> ZKProver<RugCtx<P>> for RugCtx<P> {
     fn hash_to(&self, bytes: &[u8]) -> Integer {
         let mut hasher = Sha512::new();
@@ -238,9 +240,7 @@ impl<P: RugCtxParams> ZKProver<RugCtx<P>> for RugCtx<P> {
     }
 }
 
-use crate::zkp::{Zkp, Zkpr};
-
-impl<P: RugCtxParams> Zkpr<RugCtx<P>> for Zkp<RugCtx<P>> {
+impl<P: RugCtxParams> Zkp<RugCtx<P>> for ZkpStruct<RugCtx<P>> {
     fn hash_to(&self, bytes: &[u8]) -> Integer {
         let mut hasher = Sha512::new();
         hasher.update(bytes);
@@ -255,7 +255,7 @@ impl<P: RugCtxParams> Zkpr<RugCtx<P>> for Zkp<RugCtx<P>> {
     fn ctx(&self) -> &RugCtx<P> {
         &self.ctx
     }
-}
+}*/
 
 pub trait RugCtxParams: Clone + Send + Sync {
     fn generator(&self) -> &Integer;

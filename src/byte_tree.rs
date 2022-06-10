@@ -474,36 +474,38 @@ pub(crate) mod tests {
     }
 
     pub(crate) fn test_schnorr_bytes_generic<C: Ctx + Eq>(ctx: &C) {
+        let zkp = Zkp::new(ctx);
         let g = ctx.generator();
         let secret = ctx.rnd_exp();
         let public = g.mod_pow(&secret, &ctx.modulus());
-        let schnorr = ctx.schnorr_prove(&secret, &public, &g, &vec![]);
-        let verified = ctx.schnorr_verify(&public, &g, &schnorr, &vec![]);
+        let schnorr = zkp.schnorr_prove(&secret, &public, &g, &vec![]);
+        let verified = zkp.schnorr_verify(&public, &g, &schnorr, &vec![]);
         assert!(verified);
 
         let bytes = schnorr.ser();
         let back = Schnorr::<C>::deser(&bytes).unwrap();
         assert!(schnorr == back);
 
-        let verified = ctx.schnorr_verify(&public, &g, &back, &vec![]);
+        let verified = zkp.schnorr_verify(&public, &g, &back, &vec![]);
         assert!(verified);
     }
 
     pub(crate) fn test_cp_bytes_generic<C: Ctx + Eq>(ctx: &C) {
+        let zkp = Zkp::new(ctx);
         let g1 = ctx.generator();
         let g2 = ctx.rnd();
         let secret = ctx.rnd_exp();
         let public1 = g1.mod_pow(&secret, &ctx.modulus());
         let public2 = g2.mod_pow(&secret, &ctx.modulus());
-        let proof = ctx.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
-        let verified = ctx.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
+        let proof = zkp.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
+        let verified = zkp.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
         assert!(verified);
 
         let bytes = proof.ser();
         let back = ChaumPedersen::<C>::deser(&bytes).unwrap();
         assert!(proof == back);
 
-        let verified = ctx.cp_verify(&public1, &public2, None, &g2, &back, &vec![]);
+        let verified = zkp.cp_verify(&public1, &public2, None, &g2, &back, &vec![]);
         assert!(verified);
     }
 

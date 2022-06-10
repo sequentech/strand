@@ -9,7 +9,7 @@ use crate::elgamal::{PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::shuffler::Shuffler;
 use crate::util;
-use crate::zkp::ZKProver;
+use crate::zkp::Zkp;
 
 #[wasm_bindgen]
 extern "C" {
@@ -155,6 +155,7 @@ fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
 }
 
 fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P, n: u32) {
+    let zkp = Zkp::new(&ctx);
     let sk = PrivateKey::gen(&ctx);
     let pk: PublicKey<C> = sk.get_public();
 
@@ -172,7 +173,7 @@ fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P, n: u32) {
         log(&format!("{}", performance.now() - now));
         log("prove..");
         let now = performance.now();
-        let _proof = ctx.schnorr_prove(&randomness, &c.gr, ctx.generator(), &vec![]);
+        let _proof = zkp.schnorr_prove(&randomness, &c.gr, ctx.generator(), &vec![]);
         log(&format!("{}", performance.now() - now));
     }
     postMessage(&format!(

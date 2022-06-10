@@ -8,7 +8,7 @@
 // use rayon::prelude::*;
 
 use crate::context::{Ctx, Element, Exponent};
-use crate::zkp::ChaumPedersen;
+use crate::zkp::{ChaumPedersen, Zkp};
 
 pub struct KeymakerT<C: Ctx> {
     num_trustees: usize,
@@ -117,10 +117,11 @@ impl<C: Ctx> KeymakerT<C> {
     }
 
     fn decryption_factor(&self, b: &C::E, label: &[u8]) -> (C::E, ChaumPedersen<C>) {
+        let zkp = Zkp::new(&self.ctx);
         let share = self.secret_share();
         let v_key = self.verification_key();
         let factor = b.mod_pow(&share, self.ctx.modulus());
-        let proof = self.ctx.cp_prove(&share, &v_key, &factor, None, b, label);
+        let proof = zkp.cp_prove(&share, &v_key, &factor, None, b, label);
         // let ok = self.ctx.cp_verify(&v_key, &factor, None, b, &proof, &vec![]);
         // assert!(ok);
         (factor, proof)
@@ -175,6 +176,7 @@ pub(crate) mod tests {
         threshold: usize,
         data: C::P,
     ) {
+        let zkp = Zkp::new(ctx);
         let mut pk = C::E::mul_identity();
         let mut trustees = Vec::new();
         for _ in 0..num_trustees {
@@ -215,7 +217,7 @@ pub(crate) mod tests {
         for i in 0..present.len() {
             let v_key = trustees[present[i] - 1].verification_key();
             let (base, proof) = trustees[present[i] - 1].decryption_factor(&c.gr, &[]);
-            let ok = ctx.cp_verify(&v_key, &base, None, &c.gr, &proof, &vec![]);
+            let ok = zkp.cp_verify(&v_key, &base, None, &c.gr, &proof, &vec![]);
             assert!(ok);
 
             let lagrange = KeymakerT::lagrange(present[i], &present, ctx);
@@ -235,7 +237,7 @@ pub(crate) mod tests {
         for i in 0..present.len() {
             let v_key = trustees[present[i] - 1].verification_key();
             let (base, proof) = trustees[present[i] - 1].decryption_factor(&c.gr, &[]);
-            let ok = ctx.cp_verify(&v_key, &base, None, &c.gr, &proof, &vec![]);
+            let ok = zkp.cp_verify(&v_key, &base, None, &c.gr, &proof, &vec![]);
             assert!(ok);
 
             let lagrange = KeymakerT::lagrange(present[i], &present, ctx);

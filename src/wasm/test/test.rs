@@ -8,7 +8,7 @@ use crate::rnd::StrandRng;
 use crate::shuffler::Shuffler;
 use crate::threshold::tests::test_threshold_generic;
 use crate::util;
-use crate::zkp::ZKProver;
+use crate::zkp::Zkp;
 use rand::RngCore;
 use wasm_bindgen::prelude::*;
 

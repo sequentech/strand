@@ -15,7 +15,6 @@ use crate::byte_tree::*;
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
 use crate::util;
-use crate::zkp::ZKProver;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct RistrettoCtx;
@@ -94,6 +93,12 @@ impl Ctx for RistrettoCtx {
         csprng.fill_bytes(&mut value);
 
         value
+    }
+    fn hash_to(&self, bytes: &[u8]) -> Scalar {
+        let mut hasher = Sha512::new();
+        Digest::update(&mut hasher, bytes);
+
+        Scalar::from_hash(hasher)
     }
     // see https://github.com/ruescasd/braid-mg/issues/4
     fn encode(&self, data: &[u8; 30]) -> Result<RistrettoPoint, &'static str> {
@@ -207,7 +212,7 @@ impl Exponent<RistrettoCtx> for Scalar {
     }
 }
 
-impl ZKProver<RistrettoCtx> for RistrettoCtx {
+/*impl ZKProver<RistrettoCtx> for RistrettoCtx {
     fn hash_to(&self, bytes: &[u8]) -> Scalar {
         let mut hasher = Sha512::new();
         Digest::update(&mut hasher, bytes);
@@ -220,9 +225,7 @@ impl ZKProver<RistrettoCtx> for RistrettoCtx {
     }
 }
 
-use crate::zkp::{Zkp, Zkpr};
-
-impl Zkpr<RistrettoCtx> for Zkp<RistrettoCtx> {
+impl Zkp<RistrettoCtx> for ZkpStruct<RistrettoCtx> {
     fn hash_to(&self, bytes: &[u8]) -> Scalar {
         let mut hasher = Sha512::new();
         Digest::update(&mut hasher, bytes);
@@ -233,7 +236,7 @@ impl Zkpr<RistrettoCtx> for Zkp<RistrettoCtx> {
     fn ctx(&self) -> &RistrettoCtx {
         &RistrettoCtx
     }
-}
+}*/
 
 impl ToByteTree for Scalar {
     fn to_byte_tree(&self) -> ByteTree {

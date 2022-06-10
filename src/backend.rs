@@ -47,33 +47,39 @@ pub(crate) mod tests {
     }
 
     pub(crate) fn test_schnorr_generic<C: Ctx>(ctx: &C) {
+        let zkp = Zkp::new(ctx);
         let g = ctx.generator();
         let secret = ctx.rnd_exp();
         let public = g.mod_pow(&secret, &ctx.modulus());
-        let schnorr = ctx.schnorr_prove(&secret, &public, &g, &vec![]);
-        let verified = ctx.schnorr_verify(&public, &g, &schnorr, &vec![]);
+        let schnorr = zkp.schnorr_prove(&secret, &public, &g, &vec![]);
+        let verified = zkp.schnorr_verify(&public, &g, &schnorr, &vec![]);
         assert!(verified);
         let public_false = ctx.generator().mod_pow(&ctx.rnd_exp(), &ctx.modulus());
-        let verified_false = ctx.schnorr_verify(&public_false, &g, &schnorr, &vec![]);
+        let verified_false = zkp.schnorr_verify(&public_false, &g, &schnorr, &vec![]);
         assert!(verified_false == false);
     }
 
+    use crate::zkp::Zkp;
+
     pub(crate) fn test_chaumpedersen_generic<C: Ctx>(ctx: &C) {
+        let zkp = Zkp::new(ctx);
         let g1 = ctx.generator();
         let g2 = ctx.rnd();
         let secret = ctx.rnd_exp();
         let public1 = g1.mod_pow(&secret, &ctx.modulus());
         let public2 = g2.mod_pow(&secret, &ctx.modulus());
-        let proof = ctx.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
-        let verified = ctx.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
+        let proof = zkp.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
+        // let proof = ctx.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
+        let verified = zkp.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
 
         assert!(verified);
         let public_false = ctx.generator().mod_pow(&ctx.rnd_exp(), &ctx.modulus());
-        let verified_false = ctx.cp_verify(&public1, &public_false, None, &g2, &proof, &vec![]);
+        let verified_false = zkp.cp_verify(&public1, &public_false, None, &g2, &proof, &vec![]);
         assert!(verified_false == false);
     }
 
     pub(crate) fn test_vdecryption_generic<C: Ctx>(ctx: &C, data: C::P) {
+        let zkp = Zkp::new(ctx);
         let sk = PrivateKey::gen(ctx);
         let pk = sk.get_public();
 
@@ -84,20 +90,21 @@ pub(crate) mod tests {
 
         let dec_factor = c.mhr.div(&d, &ctx.modulus()).modulo(&ctx.modulus());
 
-        let verified = ctx.cp_verify(&pk.value, &dec_factor, None, &c.gr, &proof, &vec![]);
+        let verified = zkp.cp_verify(&pk.value, &dec_factor, None, &c.gr, &proof, &vec![]);
         let recovered = ctx.decode(&d);
         assert!(verified);
         assert_eq!(data, recovered);
     }
 
     pub(crate) fn test_distributed_generic<C: Ctx>(ctx: &C, data: C::P) {
+        let zkp = Zkp::new(ctx);
         let km1 = Keymaker::gen(ctx);
         let km2 = Keymaker::gen(ctx);
         let (pk1, proof1) = km1.share(&vec![]);
         let (pk2, proof2) = km2.share(&vec![]);
 
-        let verified1 = ctx.schnorr_verify(&pk1.value, &ctx.generator(), &proof1, &vec![]);
-        let verified2 = ctx.schnorr_verify(&pk2.value, &ctx.generator(), &proof2, &vec![]);
+        let verified1 = zkp.schnorr_verify(&pk1.value, &ctx.generator(), &proof1, &vec![]);
+        let verified2 = zkp.schnorr_verify(&pk2.value, &ctx.generator(), &proof2, &vec![]);
         assert!(verified1);
         assert!(verified2);
 
@@ -113,8 +120,8 @@ pub(crate) mod tests {
         let (dec_f1, proof1) = km1.decryption_factor(&c, &vec![]);
         let (dec_f2, proof2) = km2.decryption_factor(&c, &vec![]);
 
-        let verified1 = ctx.cp_verify(pk1_value, &dec_f1, None, &c.gr, &proof1, &vec![]);
-        let verified2 = ctx.cp_verify(pk2_value, &dec_f2, None, &c.gr, &proof2, &vec![]);
+        let verified1 = zkp.cp_verify(pk1_value, &dec_f1, None, &c.gr, &proof1, &vec![]);
+        let verified2 = zkp.cp_verify(pk2_value, &dec_f2, None, &c.gr, &proof2, &vec![]);
         assert!(verified1);
         assert!(verified2);
 

@@ -14,4 +14,4 @@ mod threshold;
 pub mod util;
 #[cfg(feature = "wasm")]
 pub mod wasm;
-mod zkp;
+pub mod zkp;

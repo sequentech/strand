@@ -5,7 +5,7 @@
 use crate::byte_tree::{BTreeDeser, BTreeSer};
 use crate::context::{Ctx, Element};
 use crate::symmetric;
-use crate::zkp::ChaumPedersen;
+use crate::zkp::{ChaumPedersen, Zkp};
 use std::marker::PhantomData;
 
 #[derive(Clone, Eq, PartialEq)]
@@ -77,11 +77,12 @@ impl<C: Ctx> PrivateKey<C> {
     }
     pub fn decrypt_and_prove(&self, c: &Ciphertext<C>, label: &[u8]) -> (C::E, ChaumPedersen<C>) {
         let ctx = &self.ctx;
+        let zkp = Zkp::new(ctx);
         let modulus = ctx.modulus();
 
         let dec_factor = &c.gr.mod_pow(&self.value, modulus);
 
-        let proof = ctx.cp_prove(
+        let proof = zkp.cp_prove(
             &self.value,
             &self.public_value,
             dec_factor,

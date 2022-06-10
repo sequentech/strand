@@ -35,8 +35,9 @@ fn shuffle_bigint(n: usize) {
 cfg_if::cfg_if! {
     if #[cfg(feature = "rug")] {
         use strand::backend::rug::RugCtx;
+        use strand::backend::rug::P2048 as RP2048;
         fn shuffle_rug(n: usize) {
-            let ctx = RugCtx::default();
+            let ctx = RugCtx::<RP2048>::new();
             test_shuffle_generic(ctx, n);
         }
     }

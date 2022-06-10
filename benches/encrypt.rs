@@ -6,14 +6,16 @@ use strand::backend::ristretto::RistrettoCtx;
 use strand::context::Ctx;
 use strand::elgamal::*;
 use strand::util;
+use strand::zkp::Zkp;
 
 fn encrypt<C: Ctx>(ctx: &C, pk: &PublicKey<C>, data: C::P, n: usize) {
+    let zkp = Zkp::new(ctx);
     for _ in 0..n {
         let plaintext = ctx.encode(&data).unwrap();
         let randomness = ctx.rnd_exp();
         let c = pk.encrypt_ext(&plaintext, &randomness);
 
-        let _proof = ctx.schnorr_prove(&randomness, &c.gr(), ctx.generator(), &vec![]);
+        let _proof = zkp.schnorr_prove(&randomness, &c.gr(), ctx.generator(), &vec![]);
     }
 }
 
@@ -33,8 +35,9 @@ fn encrypt_bigint(ctx: &BigintCtx<P2048>, pk: &PublicKey<BigintCtx<P2048>>, n: u
 cfg_if::cfg_if! {
     if #[cfg(feature = "rug")] {
         use strand::backend::rug::RugCtx;
+        use strand::backend::rug::P2048 as RP2048;
         #[cfg(feature = "rug")]
-        fn encrypt_rug(ctx: &RugCtx, pk: &PublicKey<RugCtx>, n: usize) {
+        fn encrypt_rug(ctx: &RugCtx<RP2048>, pk: &PublicKey<RugCtx<RP2048>>, n: usize) {
             let plaintext = ctx.rnd_exp();
             encrypt(ctx, pk, plaintext, n);
         }
@@ -52,9 +55,10 @@ fn bench_encrypt(c: &mut Criterion) {
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "rug")] {
-            let gctx = RugCtx::default();
-            let gsk = gctx.gen_key();
-            let gpk = PublicKey::from(gsk.public_value(), &gctx);
+            use strand::backend::rug::P2048 as RP2048;
+            let gctx = RugCtx::<RP2048>::new();
+            let gsk = PrivateKey::gen(&gctx);
+            let gpk = gsk.get_public();
         }
     }
 

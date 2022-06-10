@@ -8,7 +8,7 @@ use rayon::prelude::*;
 use crate::context::{Ctx, Element};
 use crate::elgamal::{Ciphertext, EncryptedPrivateKey, PrivateKey, PublicKey};
 use crate::util::Par;
-use crate::zkp::{ChaumPedersen, Schnorr};
+use crate::zkp::{ChaumPedersen, Schnorr, Zkp};
 
 pub struct Keymaker<C: Ctx> {
     sk: PrivateKey<C>,
@@ -39,10 +39,9 @@ impl<C: Ctx> Keymaker<C> {
     }
 
     pub fn share(&self, label: &[u8]) -> (PublicKey<C>, Schnorr<C>) {
+        let zkp = Zkp::new(&self.ctx);
         let pk = PublicKey::from_element(&self.pk.value, &self.ctx);
-        let proof = self
-            .ctx
-            .schnorr_prove(&self.sk.value, &pk.value, self.ctx.generator(), label);
+        let proof = zkp.schnorr_prove(&self.sk.value, &pk.value, self.ctx.generator(), label);
 
         (pk, proof)
     }
@@ -52,7 +51,8 @@ impl<C: Ctx> Keymaker<C> {
     }
 
     pub fn verify_share(ctx: &C, pk: &PublicKey<C>, proof: &Schnorr<C>, label: &[u8]) -> bool {
-        ctx.schnorr_verify(&pk.value, ctx.generator(), proof, label)
+        let zkp = Zkp::new(ctx);
+        zkp.schnorr_verify(&pk.value, ctx.generator(), proof, label)
     }
 
     pub fn combine_pks(ctx: &C, pks: Vec<PublicKey<C>>) -> PublicKey<C> {
@@ -67,8 +67,8 @@ impl<C: Ctx> Keymaker<C> {
 
     pub fn decryption_factor(&self, c: &Ciphertext<C>, label: &[u8]) -> (C::E, ChaumPedersen<C>) {
         let dec_factor = self.sk.decryption_factor(c);
-
-        let proof = self.ctx.cp_prove(
+        let zkp = Zkp::new(&self.ctx);
+        let proof = zkp.cp_prove(
             &self.sk.value,
             &self.pk.value,
             &dec_factor,
@@ -128,11 +128,12 @@ impl<C: Ctx> Keymaker<C> {
     ) -> bool {
         assert_eq!(decs.len(), proofs.len());
         assert_eq!(decs.len(), ciphertexts.len());
+        let zkp = Zkp::new(ctx);
 
         let notok = (0..decs.len())
             .par()
             .map(|i| {
-                ctx.cp_verify(
+                zkp.cp_verify(
                     pk_value,
                     &decs[i],
                     None,

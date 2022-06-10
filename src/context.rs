@@ -1,8 +1,8 @@
 use crate::byte_tree::ToFromBTree;
-use crate::zkp::ZKProver;
+// use crate::zkp::Zkp;
 use std::marker::{Send, Sync};
 
-pub trait Ctx: Sync + Sized + Clone + ZKProver<Self> {
+pub trait Ctx: Sync + Sized + Clone {
     type E: Element<Self>;
     type X: Exponent<Self>;
     type P: Send + Sync + Eq + std::fmt::Debug;
@@ -20,6 +20,7 @@ pub trait Ctx: Sync + Sized + Clone + ZKProver<Self> {
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str>;
     fn decode(&self, element: &Self::E) -> Self::P;
     fn exp_from_u64(&self, value: u64) -> Self::X;
+    fn hash_to(&self, bytes: &[u8]) -> Self::X;
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E>;
 
     fn is_valid_element(&self, element: &Self::E) -> bool;
