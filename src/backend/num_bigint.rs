@@ -186,7 +186,7 @@ impl Element<BigintCtx> for BigUint {
     }
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
-        self.invm(modulus).unwrap()
+        self.invm(modulus).expect("there is always an inverse for prime p")
     }
     #[inline(always)]
     fn mod_pow(&self, other: &BigUint, modulus: &Self) -> Self {

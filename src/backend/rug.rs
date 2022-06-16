@@ -86,7 +86,7 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         let mut state = RandState::new_custom(&mut gen);
 
         self.encode(&self.exp_modulus().clone().random_below(&mut state))
-            .unwrap()
+            .expect("0..(q-1) should always be encodable")
     }
     #[inline(always)]
     fn rnd_exp(&self) -> Integer {
@@ -149,21 +149,28 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
 }
 
 impl<P: RugCtxParams> Element<RugCtx<P>> for Integer {
+    #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
         Integer::from(self * other)
     }
+    #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {
         let inverse = Element::<RugCtx<P>>::inv(other, modulus);
         self * inverse
     }
+    #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
-        self.clone().invert(modulus).unwrap()
+        self.clone().invert(modulus).expect("there is always an inverse for prime p")
     }
+    #[inline(always)]
     fn mod_pow(&self, other: &Integer, modulus: &Self) -> Self {
         let ret = self.clone().pow_mod(other, modulus);
-
-        ret.unwrap()
+        // From https://docs.rs/rug/latest/rug/struct.Integer.html#method.pow_mod
+        // If the exponent is negative, then the number must have an inverse for an answer to exist.
+        // When the exponent is positive and the modulo is not zero, an answer always exists.
+        ret.expect("an answer always exists for prime p")
     }
+    #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
         let (_, mut rem) = self.clone().div_rem(modulus.clone());
         if rem < 0 {
@@ -178,22 +185,28 @@ impl<P: RugCtxParams> Element<RugCtx<P>> for Integer {
 }
 
 impl<P: RugCtxParams> Exponent<RugCtx<P>> for Integer {
+    #[inline(always)]
     fn add(&self, other: &Integer) -> Integer {
         Integer::from(self + other)
     }
+    #[inline(always)]
     fn sub(&self, other: &Integer) -> Integer {
         Integer::from(self - other)
     }
+    #[inline(always)]
     fn mul(&self, other: &Integer) -> Integer {
         Integer::from(self * other)
     }
+    #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {
-        let inverse = other.clone().invert(modulus).unwrap();
+        let inverse = other.clone().inv(modulus);
         self * inverse
     }
+    #[inline(always)]
     fn inv(&self, modulus: &Integer) -> Integer {
-        self.clone().invert(modulus).unwrap()
+        self.clone().invert(modulus).expect("there is always an inverse for prime p")
     }
+    #[inline(always)]
     fn modulo(&self, modulus: &Integer) -> Integer {
         let (_, mut rem) = self.clone().div_rem(modulus.clone());
 

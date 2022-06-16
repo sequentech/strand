@@ -16,7 +16,7 @@ use crate::byte_tree::{ByteTree,ToByteTree};
 use serde_bytes::ByteBuf;
 use ed25519_dalek::{Digest, Sha512};
 
-pub struct YChallengeInput<'a, C: Ctx> {
+pub(crate) struct YChallengeInput<'a, C: Ctx> {
     pub es: &'a [Ciphertext<C>],
     pub e_primes: &'a [Ciphertext<C>],
     pub cs: &'a [C::E],

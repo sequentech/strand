@@ -8,7 +8,7 @@ use crate::symmetric;
 use crate::zkp::{ChaumPedersen, Zkp};
 use std::marker::PhantomData;
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Ciphertext<C: Ctx> {
     pub(crate) mhr: C::E,
     pub(crate) gr: C::E,
@@ -22,13 +22,13 @@ impl<C: Ctx> Ciphertext<C> {
     }
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Debug)]
 pub struct PublicKey<C: Ctx> {
     pub(crate) value: C::E,
     pub(crate) ctx: C,
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Debug)]
 pub struct PrivateKey<C: Ctx> {
     pub(crate) value: C::X,
     pub(crate) public_value: C::E,
@@ -128,6 +128,7 @@ impl<C: Ctx> PrivateKey<C> {
         ctx: &C,
     ) -> PrivateKey<C> {
         let key_bytes = symmetric::decrypt(key, encrypted.iv, &encrypted.bytes);
+        // FIXME handle this error
         let value = C::X::deser(&key_bytes).unwrap();
         let public_value = ctx.gmod_pow(&value);
 
