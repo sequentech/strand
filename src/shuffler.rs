@@ -7,14 +7,14 @@ use rand::Rng;
 use rayon::prelude::*;
 use std::sync::Mutex;
 
+use crate::byte_tree::ByteTree::*;
+use crate::byte_tree::{ByteTree, ToByteTree};
 use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::{Ciphertext, PublicKey};
 use crate::rnd::StrandRng;
 use crate::util::Par;
-use crate::byte_tree::ByteTree::*;
-use crate::byte_tree::{ByteTree,ToByteTree};
-use serde_bytes::ByteBuf;
 use ed25519_dalek::{Digest, Sha512};
+use serde_bytes::ByteBuf;
 
 pub(crate) struct YChallengeInput<'a, C: Ctx> {
     pub es: &'a [Ciphertext<C>],

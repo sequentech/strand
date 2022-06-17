@@ -2,16 +2,16 @@
 extern crate quick_error;
 extern crate cfg_if;
 
-pub mod context;
 pub mod backend;
-pub mod elgamal;
-pub mod zkp;
-pub mod shuffler;
-pub mod util;
 mod byte_tree;
+pub mod context;
+pub mod elgamal;
 mod keymaker;
 mod rnd;
+pub mod shuffler;
 mod symmetric;
 mod threshold;
+pub mod util;
 #[cfg(feature = "wasm")]
 pub mod wasm;
+pub mod zkp;

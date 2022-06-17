@@ -120,9 +120,12 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         if legendre == 0 {
             return Err("Failed to encode, legendre = 0");
         }
-        let product = legendre * notzero;
-
-        Ok(Element::<RugCtx<P>>::modulo(&product, self.modulus()))
+        let result = if legendre == 1 {
+            notzero
+        } else {
+            self.modulus() - notzero
+        };
+        Ok(Element::<RugCtx<P>>::modulo(&result, self.modulus()))
     }
     fn decode(&self, element: &Integer) -> Integer {
         if element > self.exp_modulus() {
@@ -160,22 +163,26 @@ impl<P: RugCtxParams> Element<RugCtx<P>> for Integer {
     }
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
-        self.clone().invert(modulus).expect("there is always an inverse for prime p")
+        self.clone()
+            .invert(modulus)
+            .expect("there is always an inverse for prime p")
     }
     #[inline(always)]
     fn mod_pow(&self, other: &Integer, modulus: &Self) -> Self {
         let ret = self.clone().pow_mod(other, modulus);
         // From https://docs.rs/rug/latest/rug/struct.Integer.html#method.pow_mod
-        // If the exponent is negative, then the number must have an inverse for an answer to exist.
-        // When the exponent is positive and the modulo is not zero, an answer always exists.
+        // "If the exponent is negative, then the number must have an inverse for an answer to exist.
+        // When the exponent is positive and the modulo is not zero, an answer always exists."
         ret.expect("an answer always exists for prime p")
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
+        // FIXME remove this check
+        assert!(self >= &0);
+        // From https://docs.rs/rug/latest/rug/struct.Integer.html#method.div_rem
+        // The remainder has the same sign as the dividend.
+        // thus if self is >= 0 then the result >= 0, and remainder === modulo
         let (_, mut rem) = self.clone().div_rem(modulus.clone());
-        if rem < 0 {
-            rem += modulus;
-        }
 
         rem
     }
@@ -199,20 +206,23 @@ impl<P: RugCtxParams> Exponent<RugCtx<P>> for Integer {
     }
     #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {
-        let inverse = other.clone().inv(modulus);
+        let inverse = Element::<RugCtx<P>>::inv(other, modulus);
         self * inverse
     }
     #[inline(always)]
     fn inv(&self, modulus: &Integer) -> Integer {
-        self.clone().invert(modulus).expect("there is always an inverse for prime p")
+        self.clone()
+            .invert(modulus)
+            .expect("there is always an inverse for prime p")
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Integer) -> Integer {
+        // FIXME remove this check
+        assert!(self >= &0);
+        // From https://docs.rs/rug/latest/rug/struct.Integer.html#method.div_rem
+        // "The remainder has the same sign as the dividend."
+        // thus if self is >= 0 then the result >= 0, and remainder === modulo
         let (_, mut rem) = self.clone().div_rem(modulus.clone());
-
-        if rem < 0 {
-            rem += modulus;
-        }
 
         rem
     }

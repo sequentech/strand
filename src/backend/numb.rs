@@ -82,7 +82,8 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         let one: BigUint = One::one();
         let unencoded = gen.gen_biguint_below(&(self.exp_modulus() - one));
 
-        self.encode(&unencoded).expect("0..(q-1) should always be encodable")
+        self.encode(&unencoded)
+            .expect("0..(q-1) should always be encodable")
     }
     #[inline(always)]
     fn rnd_exp(&self) -> BigUint {
@@ -153,7 +154,8 @@ impl<P: BigintCtxParams> Element<BigintCtx<P>> for BigUint {
     }
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
-        self.invm(modulus).expect("there is always an inverse for prime p")
+        self.invm(modulus)
+            .expect("there is always an inverse for prime p")
     }
     #[inline(always)]
     fn mod_pow(&self, other: &BigUint, modulus: &Self) -> Self {
@@ -188,7 +190,8 @@ impl<P: BigintCtxParams> Exponent<BigintCtx<P>> for BigUint {
     }
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
-        self.invm(modulus).expect("there is always an inverse for prime p")
+        self.invm(modulus)
+            .expect("there is always an inverse for prime p")
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
