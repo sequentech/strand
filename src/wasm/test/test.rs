@@ -11,6 +11,7 @@ use crate::util;
 use crate::zkp::ZKProver;
 use rand::RngCore;
 use wasm_bindgen::prelude::*;
+use sequent_core::{Ballot, Cyphertext};
 
 #[wasm_bindgen]
 extern "C" {
@@ -188,4 +189,25 @@ pub fn test_threshold() {
     let ctx = BigintCtx::<P2048>::new();
     let plaintext = ctx.rnd_exp();
     test_threshold_generic(&ctx, trustees, threshold, plaintext);
+}
+
+/*
+#[wasm_bindgen]
+pub fn hash_to(ballot: &sequent_core::Ballot) -> String {
+    let ballot_str = serde_json::to_string(&ballot.cyphertext).unwrap();
+    let mut hasher = ed25519_dalek::Sha512::new();
+    hasher.update(ballot_str.as_bytes());
+    let hashed = hasher.finalize();
+    hex::encode(&hashed)
+}
+*/
+/*
+#[wasm_bindgen]
+pub fn replicate_ballot(ballot: &Ballot, replication: &Replication, config: &ElectionConfig) -> Cyphertext {
+    ballot.cyphertext
+}
+*/
+#[wasm_bindgen]
+pub fn replicate_ballot(ballot: &Ballot) -> Cyphertext {
+    ballot.cyphertext()
 }

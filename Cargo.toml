@@ -50,6 +50,12 @@ web-sys = { version = "0.3.4", features = ['Performance'], optional = true}
 
 cfg-if = "1.0.0"
 
+sequent-core = { git = "https://github.com/sequentech/sequent-core", rev = "70ede3226fe8a0aa21e179ca6e38b62f20c09171"}
+
+# hex
+hex = "0.4"
+serde_json = "1.0"
+
 [features]
 rayon = ["dep:rayon"]
 wasmrayon = ["rayon", "wasm", "dep:wasm-bindgen-rayon"]
@@ -60,7 +66,6 @@ rug = ["dep:rug"]
 [dev-dependencies]
 criterion = {version = "0.3", features=["html_reports"]}
 glassbench = "0.3"
-serde_json = "1.0"
 
 
 [[bench]]
