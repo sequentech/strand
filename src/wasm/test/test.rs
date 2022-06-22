@@ -11,7 +11,7 @@ use crate::util;
 use crate::zkp::ZKProver;
 use rand::RngCore;
 use wasm_bindgen::prelude::*;
-use sequent_core::{Ballot, Cyphertext};
+//use sequent_core::{Ballot, Cyphertext};
 
 #[wasm_bindgen]
 extern "C" {
@@ -200,14 +200,14 @@ pub fn hash_to(ballot: &sequent_core::Ballot) -> String {
     let hashed = hasher.finalize();
     hex::encode(&hashed)
 }
-*/
-/*
+
+
 #[wasm_bindgen]
 pub fn replicate_ballot(ballot: &Ballot, replication: &Replication, config: &ElectionConfig) -> Cyphertext {
     ballot.cyphertext
 }
-*/
 #[wasm_bindgen]
 pub fn replicate_ballot(ballot: &Ballot) -> Cyphertext {
     ballot.cyphertext()
 }
+*/
