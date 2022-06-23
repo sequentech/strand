@@ -313,9 +313,9 @@ impl RugCtxParams for P2048 {
         &self.co_factor
     }
     fn new() -> P2048 {
-        let p = Integer::from_str_radix(P_STR_2048, 16).unwrap();
-        let q = Integer::from_str_radix(Q_STR_2048, 16).unwrap();
-        let g = Integer::from_str_radix(G_STR_2048, 16).unwrap();
+        let p = Integer::from_str_radix(P_VERIFICATUM_STR_2048, 10).unwrap();
+        let q = Integer::from_str_radix(Q_VERIFICATUM_STR_2048, 10).unwrap();
+        let g = Integer::from_str_radix(G_VERIFICATUM_STR_2048, 10).unwrap();
         let co_factor = Integer::from_str_radix(SAFEPRIME_COFACTOR, 16).unwrap();
         assert!(g.legendre(&p) == 1);
 
