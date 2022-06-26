@@ -20,7 +20,7 @@ pub trait Ctx: Sync + Sized + Clone {
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str>;
     fn decode(&self, element: &Self::E) -> Self::P;
     fn exp_from_u64(&self, value: u64) -> Self::X;
-    fn hash_to(&self, bytes: &[u8]) -> Self::X;
+    fn hash_to_exp(&self, bytes: &[u8]) -> Self::X;
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E>;
 
     fn is_valid_element(&self, element: &Self::E) -> bool;

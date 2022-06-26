@@ -110,7 +110,7 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     fn rnd_plaintext(&self) -> Self::P {
         self.rnd_exp().0
     }
-    fn hash_to(&self, bytes: &[u8]) -> Self::X {
+    fn hash_to_exp(&self, bytes: &[u8]) -> Self::X {
         let mut hasher = Sha512::new();
         hasher.update(bytes);
         let hashed = hasher.finalize();
@@ -159,11 +159,11 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         element.0.legendre(&self.modulus().0) == 1
     }
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
-        let ret = Integer::from_digits(bytes, Order::LsfBe);
+        let ret = Integer::from_digits(bytes, Order::MsfLe);
         Ok(IntegerE(ret))
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
-        let ret = Integer::from_digits(bytes, Order::LsfBe);
+        let ret = Integer::from_digits(bytes, Order::MsfLe);
         Ok(IntegerX(ret))
     }
     fn new() -> RugCtx<P> {
@@ -325,7 +325,7 @@ pub struct IntegerX(Integer);
 
 impl ToByteTree for IntegerE {
     fn to_byte_tree(&self) -> ByteTree {
-        Leaf(ByteBuf::from(self.0.to_digits::<u8>(Order::LsfBe)))
+        Leaf(ByteBuf::from(self.0.to_digits::<u8>(Order::MsfLe)))
     }
 }
 
@@ -338,7 +338,7 @@ impl<P: RugCtxParams> FromByteTree<RugCtx<P>> for IntegerE {
 
 impl ToByteTree for IntegerX {
     fn to_byte_tree(&self) -> ByteTree {
-        Leaf(ByteBuf::from(self.0.to_digits::<u8>(Order::LsfBe)))
+        Leaf(ByteBuf::from(self.0.to_digits::<u8>(Order::MsfLe)))
     }
 }
 

@@ -55,7 +55,7 @@ impl<P: BigintCtxParams> BigintCtx<P> {
         hasher.update(bytes);
         let hashed = hasher.finalize();
 
-        let num = BigUint::from_bytes_be(&hashed);
+        let num = BigUint::from_bytes_le(&hashed);
         num.mod_floor(&self.params.modulus().0)
     }
 }
@@ -102,12 +102,12 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn rnd_plaintext(&self) -> Self::P {
         self.rnd_exp().0
     }
-    fn hash_to(&self, bytes: &[u8]) -> Self::X {
+    fn hash_to_exp(&self, bytes: &[u8]) -> Self::X {
         let mut hasher = Sha512::new();
         hasher.update(bytes);
         let hashed = hasher.finalize();
 
-        let num = BigUint::from_bytes_be(&hashed);
+        let num = BigUint::from_bytes_le(&hashed);
         BigUintX(num.mod_floor(&self.exp_modulus().0))
     }
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
@@ -146,11 +146,11 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         element.0.legendre(&self.modulus().0) == 1
     }
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
-        let ret = BigUint::from_bytes_be(bytes);
+        let ret = BigUint::from_bytes_le(bytes);
         Ok(BigUintE(ret))
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
-        let ret = BigUint::from_bytes_be(bytes);
+        let ret = BigUint::from_bytes_le(bytes);
         Ok(BigUintX(ret))
     }
     fn new() -> BigintCtx<P> {
@@ -282,8 +282,8 @@ pub struct BigUintX(BigUint);
 
 impl ToByteTree for BigUintE {
     fn to_byte_tree(&self) -> ByteTree {
-        // Leaf(DataType::Element, ByteBuf::from(self.to_bytes_be()))
-        Leaf(ByteBuf::from(self.0.to_bytes_be()))
+        // Leaf(DataType::Element, ByteBuf::from(self.to_bytes_le()))
+        Leaf(ByteBuf::from(self.0.to_bytes_le()))
     }
 }
 
@@ -296,8 +296,8 @@ impl<P: BigintCtxParams> FromByteTree<BigintCtx<P>> for BigUintE {
 
 impl ToByteTree for BigUintX {
     fn to_byte_tree(&self) -> ByteTree {
-        // Leaf(DataType::Exponent, ByteBuf::from(self.to_bytes_be()))
-        Leaf(ByteBuf::from(self.0.to_bytes_be()))
+        // Leaf(DataType::Exponent, ByteBuf::from(self.to_bytes_le()))
+        Leaf(ByteBuf::from(self.0.to_bytes_le()))
     }
 }
 

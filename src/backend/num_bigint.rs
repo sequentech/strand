@@ -165,7 +165,7 @@ impl ZKProver<BigintCtx> for BigintCtx {
         hasher.update(bytes);
         let hashed = hasher.finalize();
 
-        let num = BigUint::from_bytes_be(&hashed);
+        let num = BigUint::from_bytes_le(&hashed);
         num.mod_floor(self.modulus())
     }
 

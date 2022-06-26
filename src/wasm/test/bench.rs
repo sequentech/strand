@@ -69,7 +69,7 @@ pub fn bench_modpow(n: u32) {
 #[wasm_bindgen]
 pub fn bench_enc_pok(n: u32) {
     let ctx = BigintCtx::<P2048>::new();
-    let plaintext = ctx.rnd_exp();
+    let plaintext = ctx.rnd_plaintext();
     postMessage("> Bigint enc_pok");
     bench_enc_pok_generic(ctx, plaintext, n);
 

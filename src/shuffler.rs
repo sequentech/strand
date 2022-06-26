@@ -576,7 +576,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
                 ];
                 let bytes = ByteTree::Tree(next).to_hashable_bytes();
 
-                self.ctx.hash_to(&bytes)
+                self.ctx.hash_to_exp(&bytes)
             })
             .collect()
     }
@@ -603,7 +603,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         ];
         let bytes = ByteTree::Tree(trees).to_hashable_bytes();
 
-        self.ctx.hash_to(&bytes)
+        self.ctx.hash_to_exp(&bytes)
     }
 }
 

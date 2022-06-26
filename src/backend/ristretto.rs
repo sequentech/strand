@@ -94,7 +94,7 @@ impl Ctx for RistrettoCtx {
 
         value
     }
-    fn hash_to(&self, bytes: &[u8]) -> Self::X {
+    fn hash_to_exp(&self, bytes: &[u8]) -> Self::X {
         let mut hasher = Sha512::new();
         Digest::update(&mut hasher, bytes);
 
@@ -149,11 +149,11 @@ impl Ctx for RistrettoCtx {
         let b32 = util::to_u8_32(bytes)?;
         CompressedRistretto(b32)
             .decompress()
-            .ok_or_else(|| "Failed constructing ristretto point")
+            .ok_or("Failed constructing ristretto point")
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
         let b32 = util::to_u8_32(bytes)?;
-        Scalar::from_canonical_bytes(b32).ok_or_else(|| "Failed constructing scalar")
+        Scalar::from_canonical_bytes(b32).ok_or("Failed constructing scalar")
     }
     fn new() -> RistrettoCtx {
         RistrettoCtx

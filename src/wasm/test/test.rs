@@ -64,7 +64,7 @@ pub fn test_encrypted_sk() {
 
     message("* BigInt encrypted_sk..");
     let ctx = BigintCtx::<P2048>::new();
-    let plaintext = ctx.rnd_exp();
+    let plaintext = ctx.rnd_plaintext();
     test_encrypted_sk_generic(&ctx, plaintext);
 }
 
@@ -93,7 +93,7 @@ pub fn test_chaumpedersen() {
 pub fn test_elgamal() {
     message("* BigInt encrypt..");
     let ctx = BigintCtx::<P2048>::new();
-    let plaintext = ctx.rnd_exp();
+    let plaintext = ctx.rnd_plaintext();
     test_elgamal_generic(&ctx, plaintext);
 
     message("* Ristretto encrypt..");
@@ -128,7 +128,7 @@ pub fn test_vdecryption() {
 
     message("* BigInt vdecryption..");
     let ctx = BigintCtx::<P2048>::new();
-    let plaintext = ctx.rnd_exp();
+    let plaintext = ctx.rnd_plaintext();
     test_vdecryption_generic(&ctx, plaintext);
 }
 
@@ -143,7 +143,7 @@ pub fn test_distributed() {
 
     message("* BigInt distributed..");
     let ctx = BigintCtx::<P2048>::new();
-    let plaintext = ctx.rnd_exp();
+    let plaintext = ctx.rnd_plaintext();
     test_distributed_generic(&ctx, plaintext);
 }
 
@@ -165,7 +165,7 @@ pub fn test_distributed_btserde() {
     let ctx = BigintCtx::<P2048>::new();
     let mut ps = vec![];
     for _ in 0..1 {
-        let p = ctx.rnd_exp();
+        let p = ctx.rnd_plaintext();
         ps.push(p);
     }
     test_distributed_btserde_generic(&ctx, ps);
@@ -186,6 +186,6 @@ pub fn test_threshold() {
     let trustees = 5usize;
     let threshold = 3usize;
     let ctx = BigintCtx::<P2048>::new();
-    let plaintext = ctx.rnd_exp();
+    let plaintext = ctx.rnd_plaintext();
     test_threshold_generic(&ctx, trustees, threshold, plaintext);
 }

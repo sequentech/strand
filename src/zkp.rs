@@ -138,7 +138,7 @@ impl<C: Ctx> Zkp<C> {
         tree.push(ByteTree::Leaf(ByteBuf::from(label.to_vec())));
         let bytes = ByteTree::Tree(tree).to_hashable_bytes();
 
-        self.ctx.hash_to(&bytes)
+        self.ctx.hash_to_exp(&bytes)
     }
 
     fn cp_proof_challenge(
@@ -157,7 +157,7 @@ impl<C: Ctx> Zkp<C> {
         tree.push(ByteTree::Leaf(ByteBuf::from(label.to_vec())));
         let bytes = ByteTree::Tree(tree).to_hashable_bytes();
 
-        self.ctx.hash_to(&bytes)
+        self.ctx.hash_to_exp(&bytes)
     }
 }
 
