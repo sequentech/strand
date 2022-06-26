@@ -20,7 +20,7 @@ pub struct BigintCtx<P: BigintCtxParams> {
 
 impl<P: BigintCtxParams> BigintCtx<P> {
     // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf A.2.3
-    fn generators_fips(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<BigUint> {
+    fn generators_fips(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<BigUintE> {
         let mut ret = Vec::with_capacity(size);
         let two = BigUint::from(2u32);
 
@@ -38,10 +38,10 @@ impl<P: BigintCtxParams> BigintCtx<P> {
                 assert!(count != 0);
                 next.extend(&index.to_le_bytes());
                 next.extend(&count.to_le_bytes());
-                let elem: BigUint = self.hash_to(&next);
-                let g = elem.modpow(self.params.co_factor(), self.modulus());
+                let elem: BigUint = self.hash_to_element(&next);
+                let g = elem.modpow(self.params.co_factor(), &self.modulus().0);
                 if g >= two {
-                    ret.push(g);
+                    ret.push(BigUintE(g));
                     break;
                 }
             }
@@ -49,92 +49,109 @@ impl<P: BigintCtxParams> BigintCtx<P> {
 
         ret
     }
-}
 
-impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
-    type E = BigUint;
-    type X = BigUint;
-    type P = BigUint;
-
-    #[inline(always)]
-    fn generator(&self) -> &BigUint {
-        self.params.generator()
-    }
-    #[inline(always)]
-    fn gmod_pow(&self, other: &BigUint) -> BigUint {
-        self.generator().modpow(other, self.modulus())
-    }
-    #[inline(always)]
-    fn emod_pow(&self, base: &Self::E, exponent: &BigUint) -> BigUint {
-        base.modpow(exponent, self.modulus())
-    }
-    #[inline(always)]
-    fn modulus(&self) -> &BigUint {
-        self.params.modulus()
-    }
-    #[inline(always)]
-    fn exp_modulus(&self) -> &BigUint {
-        self.params.exp_modulus()
-    }
-    #[inline(always)]
-    fn rnd(&self) -> BigUint {
-        let mut gen = StrandRng;
-        let one: BigUint = One::one();
-        let unencoded = gen.gen_biguint_below(&(self.exp_modulus() - one));
-
-        self.encode(&unencoded)
-            .expect("0..(q-1) should always be encodable")
-    }
-    #[inline(always)]
-    fn rnd_exp(&self) -> BigUint {
-        let mut gen = StrandRng;
-        gen.gen_biguint_below(self.exp_modulus())
-    }
-    fn rnd_plaintext(&self) -> BigUint {
-        self.rnd_exp()
-    }
-    fn hash_to(&self, bytes: &[u8]) -> BigUint {
+    fn hash_to_element(&self, bytes: &[u8]) -> BigUint {
         let mut hasher = Sha512::new();
         hasher.update(bytes);
         let hashed = hasher.finalize();
 
         let num = BigUint::from_bytes_be(&hashed);
-        num.mod_floor(self.modulus())
+        num.mod_floor(&self.params.modulus().0)
     }
-    fn encode(&self, plaintext: &BigUint) -> Result<BigUint, &'static str> {
+}
+
+impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
+    type E = BigUintE;
+    type X = BigUintX;
+    type P = BigUint;
+
+    #[inline(always)]
+    fn generator(&self) -> &Self::E {
+        self.params.generator()
+    }
+    #[inline(always)]
+    fn gmod_pow(&self, other: &Self::X) -> Self::E {
+        BigUintE(self.generator().0.modpow(&other.0, &self.modulus().0))
+    }
+    #[inline(always)]
+    fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
+        BigUintE(base.0.modpow(&exponent.0, &self.modulus().0))
+    }
+    #[inline(always)]
+    fn modulus(&self) -> &Self::E {
+        self.params.modulus()
+    }
+    #[inline(always)]
+    fn exp_modulus(&self) -> &Self::X {
+        self.params.exp_modulus()
+    }
+    #[inline(always)]
+    fn rnd(&self) -> Self::E {
+        let mut gen = StrandRng;
+        let one: BigUint = One::one();
+        let unencoded = gen.gen_biguint_below(&(&self.exp_modulus().0 - one));
+
+        self.encode(&unencoded)
+            .expect("0..(q-1) should always be encodable")
+    }
+    #[inline(always)]
+    fn rnd_exp(&self) -> Self::X {
+        let mut gen = StrandRng;
+        BigUintX(gen.gen_biguint_below(&self.exp_modulus().0))
+    }
+    fn rnd_plaintext(&self) -> Self::P {
+        self.rnd_exp().0
+    }
+    fn hash_to(&self, bytes: &[u8]) -> Self::X {
+        let mut hasher = Sha512::new();
+        hasher.update(bytes);
+        let hashed = hasher.finalize();
+
+        let num = BigUint::from_bytes_be(&hashed);
+        BigUintX(num.mod_floor(&self.exp_modulus().0))
+    }
+    fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
         let one: BigUint = One::one();
 
-        if plaintext >= &(self.exp_modulus() - &one) {
+        if plaintext >= &(&self.exp_modulus().0 - &one) {
             return Err("Failed to encode, out of range");
         }
         let notzero: BigUint = plaintext + one;
-        let legendre = notzero.legendre(self.modulus());
+        let legendre = notzero.legendre(&self.modulus().0);
         if legendre == 0 {
             return Err("Failed to encode, legendre = 0");
         }
         let result = if legendre == 1 {
             notzero
         } else {
-            self.modulus() - notzero
+            &self.modulus().0 - notzero
         };
-        Ok(BigUint::mod_floor(&result, self.modulus()))
+        Ok(BigUintE(BigUint::mod_floor(&result, &self.modulus().0)))
     }
-    fn decode(&self, element: &BigUint) -> BigUint {
+    fn decode(&self, element: &Self::E) -> Self::P {
         let one: BigUint = One::one();
-        if element > self.exp_modulus() {
-            (self.modulus() - element) - one
+        if element.0 > self.exp_modulus().0 {
+            (&self.modulus().0 - &element.0) - one
         } else {
-            element - one
+            &element.0 - one
         }
     }
-    fn exp_from_u64(&self, value: u64) -> BigUint {
-        BigUint::from(value)
+    fn exp_from_u64(&self, value: u64) -> Self::X {
+        BigUintX(BigUint::from(value))
     }
-    fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<BigUint> {
+    fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E> {
         self.generators_fips(size, contest, seed)
     }
     fn is_valid_element(&self, element: &Self::E) -> bool {
-        element.legendre(self.modulus()) == 1
+        element.0.legendre(&self.modulus().0) == 1
+    }
+    fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
+        let ret = BigUint::from_bytes_be(bytes);
+        Ok(BigUintE(ret))
+    }
+    fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
+        let ret = BigUint::from_bytes_be(bytes);
+        Ok(BigUintX(ret))
     }
     fn new() -> BigintCtx<P> {
         let params = P::new();
@@ -142,125 +159,96 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     }
 }
 
-impl<P: BigintCtxParams> Element<BigintCtx<P>> for BigUint {
+impl<P: BigintCtxParams> Element<BigintCtx<P>> for BigUintE {
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
-        self * other
+        BigUintE(&self.0 * &other.0)
     }
     #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {
         let inverse = Element::<BigintCtx<P>>::inv(other, modulus);
-        self * inverse
+        BigUintE(&self.0 * inverse.0)
     }
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
-        self.invm(modulus)
-            .expect("there is always an inverse for prime p")
+        let inverse = (&self.0).invm(&modulus.0);
+        BigUintE(inverse
+            .expect("there is always an inverse for prime p"))
     }
     #[inline(always)]
-    fn mod_pow(&self, other: &BigUint, modulus: &Self) -> Self {
-        self.modpow(other, modulus)
+    fn mod_pow(&self, other: &BigUintX, modulus: &Self) -> Self {
+        BigUintE(self.0.modpow(&other.0, &modulus.0))
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
-        self.mod_floor(modulus)
+        BigUintE(self.0.mod_floor(&modulus.0))
     }
     fn mul_identity() -> Self {
-        One::one()
+        BigUintE(One::one())
     }
 }
 
-impl<P: BigintCtxParams> Exponent<BigintCtx<P>> for BigUint {
+impl<P: BigintCtxParams> Exponent<BigintCtx<P>> for BigUintX {
     #[inline(always)]
     fn add(&self, other: &Self) -> Self {
-        self + other
+        BigUintX(&self.0 + &other.0)
     }
     #[inline(always)]
     fn sub(&self, other: &Self) -> Self {
-        self - other
+        BigUintX(&self.0 - &other.0)
     }
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
-        self * other
+        BigUintX(&self.0 * &other.0)
     }
     #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {
         let inverse = Exponent::<BigintCtx<P>>::inv(other, modulus);
-        self * inverse
+        BigUintX(&self.0 * inverse.0)
     }
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
-        self.invm(modulus)
-            .expect("there is always an inverse for prime p")
+        let inverse = (&self.0).invm(&modulus.0);
+        BigUintX(inverse
+            .expect("there is always an inverse for prime p"))
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
-        self.mod_floor(modulus)
+        BigUintX(self.0.mod_floor(&modulus.0))
     }
     fn add_identity() -> Self {
-        Zero::zero()
+        BigUintX(Zero::zero())
     }
     fn mul_identity() -> Self {
-        One::one()
-    }
-    fn to_string(&self) -> String {
-        format!("{:x?}", self.to_bytes_be())
+        BigUintX(One::one())
     }
 }
-
-/*impl<P: BigintCtxParams> ZKProver<BigintCtx<P>> for BigintCtx<P> {
-    fn hash_to(&self, bytes: &[u8]) -> BigUint {
-        let mut hasher = Sha512::new();
-        hasher.update(bytes);
-        let hashed = hasher.finalize();
-
-        let num = BigUint::from_bytes_be(&hashed);
-        num.mod_floor(self.modulus())
-    }
-    fn ctx(&self) -> &BigintCtx<P> {
-        self
-    }
-}
-
-impl<P: BigintCtxParams> Zkp<BigintCtx<P>> for ZkpStruct<BigintCtx<P>> {
-    fn hash_to(&self, bytes: &[u8]) -> BigUint {
-        let mut hasher = Sha512::new();
-        hasher.update(bytes);
-        let hashed = hasher.finalize();
-
-        let num = BigUint::from_bytes_be(&hashed);
-        num.mod_floor(self.ctx.modulus())
-    }
-    fn ctx(&self) -> &BigintCtx<P> {
-        &self.ctx
-    }
-}*/
 
 pub trait BigintCtxParams: Clone + Send + Sync {
-    fn generator(&self) -> &BigUint;
-    fn modulus(&self) -> &BigUint;
-    fn exp_modulus(&self) -> &BigUint;
+    fn generator(&self) -> &BigUintE;
+    fn modulus(&self) -> &BigUintE;
+    fn exp_modulus(&self) -> &BigUintX;
     fn co_factor(&self) -> &BigUint;
     fn new() -> Self;
 }
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct P2048 {
-    generator: BigUint,
-    modulus: BigUint,
-    exp_modulus: BigUint,
+    generator: BigUintE,
+    modulus: BigUintE,
+    exp_modulus: BigUintX,
     co_factor: BigUint,
 }
 impl BigintCtxParams for P2048 {
     #[inline(always)]
-    fn generator(&self) -> &BigUint {
+    fn generator(&self) -> &BigUintE {
         &self.generator
     }
     #[inline(always)]
-    fn modulus(&self) -> &BigUint {
+    fn modulus(&self) -> &BigUintE {
         &self.modulus
     }
     #[inline(always)]
-    fn exp_modulus(&self) -> &BigUint {
+    fn exp_modulus(&self) -> &BigUintX {
         &self.exp_modulus
     }
     #[inline(always)]
@@ -268,12 +256,17 @@ impl BigintCtxParams for P2048 {
         &self.co_factor
     }
     fn new() -> P2048 {
-        let p = BigUint::from_str_radix(P_VERIFICATUM_STR_2048, 10).unwrap();
-        let q = BigUint::from_str_radix(Q_VERIFICATUM_STR_2048, 10).unwrap();
-        let g = BigUint::from_str_radix(G_VERIFICATUM_STR_2048, 10).unwrap();
+        let p = BigUintE(BigUint::from_str_radix(P_VERIFICATUM_STR_2048, 10).unwrap());
+        let q = BigUintX(BigUint::from_str_radix(Q_VERIFICATUM_STR_2048, 10).unwrap());
+        let g = BigUintE(BigUint::from_str_radix(G_VERIFICATUM_STR_2048, 10).unwrap());
         let co_factor = BigUint::from_str_radix(SAFEPRIME_COFACTOR, 16).unwrap();
+        /*
+        FIXME revert to this, seems slightly faster due to small generator
+        let p = BigUint::from_str_radix(P_STR_2048, 16).unwrap();
+        let q = BigUint::from_str_radix(Q_STR_2048, 16).unwrap();
+        let g = BigUint::from_str_radix(G_STR_2048, 16).unwrap();*/
 
-        assert!(g.legendre(&p) == 1);
+        assert!(g.0.legendre(&p.0) == 1);
 
         P2048 {
             generator: g,
@@ -284,17 +277,36 @@ impl BigintCtxParams for P2048 {
     }
 }
 
-impl ToByteTree for BigUint {
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct BigUintE(BigUint);
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct BigUintX(BigUint);
+
+impl ToByteTree for BigUintE {
     fn to_byte_tree(&self) -> ByteTree {
-        Leaf(ByteBuf::from(self.to_bytes_be()))
+        // Leaf(DataType::Element, ByteBuf::from(self.to_bytes_be()))
+        Leaf(ByteBuf::from(self.0.to_bytes_be()))
     }
 }
 
-impl FromByteTree for BigUint {
-    fn from_byte_tree(tree: &ByteTree) -> Result<BigUint, ByteError> {
+impl<P: BigintCtxParams> FromByteTree<BigintCtx<P>> for BigUintE {
+    fn from_byte_tree(tree: &ByteTree, ctx: &BigintCtx<P>) -> Result<BigUintE, ByteError> {
         let bytes = tree.leaf()?;
-        let ret = BigUint::from_bytes_be(bytes);
-        Ok(ret)
+        ctx.element_from_bytes(bytes).map_err(ByteError::Msg)
+    }
+}
+
+impl ToByteTree for BigUintX {
+    fn to_byte_tree(&self) -> ByteTree {
+        // Leaf(DataType::Exponent, ByteBuf::from(self.to_bytes_be()))
+        Leaf(ByteBuf::from(self.0.to_bytes_be()))
+    }
+}
+
+impl<P: BigintCtxParams> FromByteTree<BigintCtx<P>> for BigUintX {
+    fn from_byte_tree(tree: &ByteTree, ctx: &BigintCtx<P>) -> Result<BigUintX, ByteError> {
+        let bytes = tree.leaf()?;
+        ctx.exp_from_bytes(bytes).map_err(ByteError::Msg)
     }
 }
 
@@ -309,7 +321,7 @@ mod tests {
     #[test]
     fn test_elgamal() {
         let ctx = BigintCtx::<P2048>::new();
-        let plaintext = ctx.rnd_exp();
+        let plaintext = ctx.rnd_plaintext();
         test_elgamal_generic(&ctx, plaintext);
     }
 
@@ -328,14 +340,14 @@ mod tests {
     #[test]
     fn test_vdecryption() {
         let ctx = BigintCtx::<P2048>::new();
-        let plaintext = ctx.rnd_exp();
+        let plaintext = ctx.rnd_plaintext();
         test_vdecryption_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_distributed() {
         let ctx = BigintCtx::<P2048>::new();
-        let plaintext = ctx.rnd_exp();
+        let plaintext = ctx.rnd_plaintext();
         test_distributed_generic(&ctx, plaintext);
     }
 
@@ -344,7 +356,7 @@ mod tests {
         let ctx = BigintCtx::<P2048>::new();
         let mut ps = vec![];
         for _ in 0..10 {
-            let p = ctx.rnd_exp();
+            let p = ctx.rnd_plaintext();
             ps.push(p);
         }
         test_distributed_btserde_generic(&ctx, ps);
@@ -365,7 +377,7 @@ mod tests {
     #[test]
     fn test_encrypted_sk() {
         let ctx = BigintCtx::<P2048>::new();
-        let plaintext = ctx.rnd_exp();
+        let plaintext = ctx.rnd_plaintext();
         test_encrypted_sk_generic(&ctx, plaintext);
     }
 
@@ -374,7 +386,7 @@ mod tests {
         let trustees = 5usize;
         let threshold = 3usize;
         let ctx = BigintCtx::<P2048>::new();
-        let plaintext = ctx.rnd_exp();
+        let plaintext = ctx.rnd_plaintext();
 
         test_threshold_generic(&ctx, trustees, threshold, plaintext);
     }
@@ -406,7 +418,7 @@ mod tests {
     #[test]
     fn test_epk_bytes() {
         let ctx = BigintCtx::<P2048>::new();
-        let plaintext = ctx.rnd_exp();
+        let plaintext = ctx.rnd_plaintext();
         test_epk_bytes_generic(&ctx, plaintext);
     }
 
@@ -414,7 +426,7 @@ mod tests {
     fn test_encode_err() {
         let ctx = BigintCtx::<P2048>::new();
         let one: BigUint = One::one();
-        let result = ctx.encode(&(ctx.exp_modulus() - one));
+        let result = ctx.encode(&(&ctx.exp_modulus().0 - one));
         assert!(result.is_err())
     }
 }

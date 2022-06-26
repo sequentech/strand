@@ -129,7 +129,7 @@ impl<C: Ctx> PrivateKey<C> {
     ) -> PrivateKey<C> {
         let key_bytes = symmetric::decrypt(key, encrypted.iv, &encrypted.bytes);
         // FIXME handle this error
-        let value = C::X::deser(&key_bytes).unwrap();
+        let value = C::X::deser(&key_bytes, ctx).unwrap();
         let public_value = ctx.gmod_pow(&value);
 
         PrivateKey {

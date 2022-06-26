@@ -11,9 +11,9 @@ pub mod rug;
 pub(crate) mod constants {
     pub(crate) const SAFEPRIME_COFACTOR: &str = "2";
     // https://github.com/bfh-evg/unicrypt/blob/2c9b223c1abc6266aa56ace5562200a5050a0c2a/src/main/java/ch/bfh/unicrypt/helper/prime/SafePrime.java
-    // pub(crate) const P_STR_2048: &str = "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF324E7738926CFBE5F4BF8D8D8C31D763DA06C80ABB1185EB4F7C7B5757F5958490CFD47D7C19BB42158D9554F7B46BCED55C4D79FD5F24D6613C31C3839A2DDF8A9A276BCFBFA1C877C56284DAB79CD4C2B3293D20E9E5EAF02AC60ACC93ED874422A52ECB238FEEE5AB6ADD835FD1A0753D0A8F78E537D2B95BB79D8DCAEC642C1E9F23B829B5C2780BF38737DF8BB300D01334A0D0BD8645CBFA73A6160FFE393C48CBBBCA060F0FF8EC6D31BEB5CCEED7F2F0BB088017163BC60DF45A0ECB1BCD289B06CBBFEA21AD08E1847F3F7378D56CED94640D6EF0D3D37BE69D0063";
-    // pub(crate) const Q_STR_2048: &str = "5bf0a8b1457695355fb8ac404e7a79e3b1738b079c5a6d2b53c26c8228c867f799273b9c49367df2fa5fc6c6c618ebb1ed0364055d88c2f5a7be3dababfacac24867ea3ebe0cdda10ac6caaa7bda35e76aae26bcfeaf926b309e18e1c1cd16efc54d13b5e7dfd0e43be2b1426d5bce6a6159949e9074f2f5781563056649f6c3a21152976591c7f772d5b56ec1afe8d03a9e8547bc729be95caddbcec6e57632160f4f91dc14dae13c05f9c39befc5d98068099a50685ec322e5fd39d30b07ff1c9e2465dde5030787fc763698df5ae6776bf9785d84400b8b1de306fa2d07658de6944d8365dff510d68470c23f9fb9bc6ab676ca3206b77869e9bdf34e8031";
-    // pub(crate) const G_STR_2048: &str = "3";
+    /* pub(crate) const P_STR_2048: &str = "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF324E7738926CFBE5F4BF8D8D8C31D763DA06C80ABB1185EB4F7C7B5757F5958490CFD47D7C19BB42158D9554F7B46BCED55C4D79FD5F24D6613C31C3839A2DDF8A9A276BCFBFA1C877C56284DAB79CD4C2B3293D20E9E5EAF02AC60ACC93ED874422A52ECB238FEEE5AB6ADD835FD1A0753D0A8F78E537D2B95BB79D8DCAEC642C1E9F23B829B5C2780BF38737DF8BB300D01334A0D0BD8645CBFA73A6160FFE393C48CBBBCA060F0FF8EC6D31BEB5CCEED7F2F0BB088017163BC60DF45A0ECB1BCD289B06CBBFEA21AD08E1847F3F7378D56CED94640D6EF0D3D37BE69D0063";
+    pub(crate) const Q_STR_2048: &str = "5bf0a8b1457695355fb8ac404e7a79e3b1738b079c5a6d2b53c26c8228c867f799273b9c49367df2fa5fc6c6c618ebb1ed0364055d88c2f5a7be3dababfacac24867ea3ebe0cdda10ac6caaa7bda35e76aae26bcfeaf926b309e18e1c1cd16efc54d13b5e7dfd0e43be2b1426d5bce6a6159949e9074f2f5781563056649f6c3a21152976591c7f772d5b56ec1afe8d03a9e8547bc729be95caddbcec6e57632160f4f91dc14dae13c05f9c39befc5d98068099a50685ec322e5fd39d30b07ff1c9e2465dde5030787fc763698df5ae6776bf9785d84400b8b1de306fa2d07658de6944d8365dff510d68470c23f9fb9bc6ab676ca3206b77869e9bdf34e8031";
+    pub(crate) const G_STR_2048: &str = "3";*/
 
     pub(crate) const P_VERIFICATUM_STR_2048: &str = "49585549017473769285737299189965659293354088286913371933804180900778253856217662802521113040825270214021114944067918826365443480688403488878664971371922806487664111406970012663245195033428706668950006712214428830267861043863002671272535727084730103068500694744742135062909134544770371782327891513041774499809308517270708450370367766144873413397605830861330660620343634294061022593630276805276836395304145517051831281606133359766619313659042006635890778628844508225693978825158392000638704210656475473454575867531351247745913531003971176340768343624926105786111680264179067961026247115541456982560249992525766217307447";
     pub(crate) const Q_VERIFICATUM_STR_2048: &str = "24792774508736884642868649594982829646677044143456685966902090450389126928108831401260556520412635107010557472033959413182721740344201744439332485685961403243832055703485006331622597516714353334475003356107214415133930521931501335636267863542365051534250347372371067531454567272385185891163945756520887249904654258635354225185183883072436706698802915430665330310171817147030511296815138402638418197652072758525915640803066679883309656829521003317945389314422254112846989412579196000319352105328237736727287933765675623872956765501985588170384171812463052893055840132089533980513123557770728491280124996262883108653723";
@@ -152,13 +152,13 @@ pub(crate) mod tests {
         let share2_proof_b = proof2.ser();
         let sk2_b = esk2.ser();
 
-        let share1_pk_d = PublicKey::<C>::deser(&share1_pk_b).unwrap();
-        let share1_proof_d = Schnorr::<C>::deser(&share1_proof_b).unwrap();
-        let _sk1_d = EncryptedPrivateKey::<C>::deser(&sk1_b).unwrap();
+        let share1_pk_d = PublicKey::<C>::deser(&share1_pk_b, ctx).unwrap();
+        let share1_proof_d = Schnorr::<C>::deser(&share1_proof_b, ctx).unwrap();
+        let _sk1_d = EncryptedPrivateKey::<C>::deser(&sk1_b, ctx).unwrap();
 
-        let share2_pk_d = PublicKey::<C>::deser(&share2_pk_b).unwrap();
-        let share2_proof_d = Schnorr::<C>::deser(&share2_proof_b).unwrap();
-        let _sk2_d = EncryptedPrivateKey::<C>::deser(&sk2_b).unwrap();
+        let share2_pk_d = PublicKey::<C>::deser(&share2_pk_b, ctx).unwrap();
+        let share2_proof_d = Schnorr::<C>::deser(&share2_proof_b, ctx).unwrap();
+        let _sk2_d = EncryptedPrivateKey::<C>::deser(&sk2_b, ctx).unwrap();
 
         let verified1 = Keymaker::verify_share(ctx, &share1_pk_d, &share1_proof_d, &vec![]);
         let verified2 = Keymaker::verify_share(ctx, &share2_pk_d, &share2_proof_d, &vec![]);
@@ -188,11 +188,11 @@ pub(crate) mod tests {
         let decs2_b = decs2.ser();
         let proofs2_b = proofs2.ser();
 
-        let decs1_d = Vec::<C::E>::deser(&decs1_b).unwrap();
-        let proofs1_d = Vec::<ChaumPedersen<C>>::deser(&proofs1_b).unwrap();
+        let decs1_d = Vec::<C::E>::deser(&decs1_b, ctx).unwrap();
+        let proofs1_d = Vec::<ChaumPedersen<C>>::deser(&proofs1_b, ctx).unwrap();
 
-        let decs2_d = Vec::<C::E>::deser(&decs2_b).unwrap();
-        let proofs2_d = Vec::<ChaumPedersen<C>>::deser(&proofs2_b).unwrap();
+        let decs2_d = Vec::<C::E>::deser(&decs2_b, ctx).unwrap();
+        let proofs2_d = Vec::<ChaumPedersen<C>>::deser(&proofs2_b, ctx).unwrap();
 
         let verified1 =
             Keymaker::verify_decryption_factors(ctx, pk1_value, &cs, &decs1_d, &proofs1_d, &vec![]);
@@ -254,10 +254,10 @@ pub(crate) mod tests {
         let eprimes_b = e_primes.ser();
         let proof_b = proof.ser();
 
-        let pk_d = PublicKey::<C>::deser(&pk_b).unwrap();
-        let es_d = Vec::<Ciphertext<C>>::deser(&es_b).unwrap();
-        let eprimes_d = Vec::<Ciphertext<C>>::deser(&eprimes_b).unwrap();
-        let proof_d = ShuffleProof::<C>::deser(&proof_b).unwrap();
+        let pk_d = PublicKey::<C>::deser(&pk_b, ctx).unwrap();
+        let es_d = Vec::<Ciphertext<C>>::deser(&es_b, ctx).unwrap();
+        let eprimes_d = Vec::<Ciphertext<C>>::deser(&eprimes_b, ctx).unwrap();
+        let proof_d = ShuffleProof::<C>::deser(&proof_b, ctx).unwrap();
 
         let shuffler_d = Shuffler {
             pk: &pk_d,
@@ -279,7 +279,7 @@ pub(crate) mod tests {
         let enc_sk = sk.to_encrypted(sym_key);
 
         let enc_sk_b = enc_sk.ser();
-        let enc_sk_d = EncryptedPrivateKey::deser(&enc_sk_b).unwrap();
+        let enc_sk_d = EncryptedPrivateKey::deser(&enc_sk_b, ctx).unwrap();
 
         let sk_d = PrivateKey::from_encrypted(sym_key, enc_sk_d, ctx);
         let d = sk_d.decrypt(&c);

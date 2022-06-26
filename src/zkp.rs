@@ -1,14 +1,8 @@
 #![allow(clippy::too_many_arguments)]
-use crate::util::Par;
-#[cfg(feature = "rayon")]
-use rayon::prelude::*;
 use serde_bytes::ByteBuf;
-
 use crate::byte_tree::ByteTree;
-
 use crate::byte_tree::ToByteTree;
 use crate::context::{Ctx, Element, Exponent};
-use crate::elgamal::*;
 
 pub struct Zkp<C: Ctx> {
     pub(crate) ctx: C,

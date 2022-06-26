@@ -50,29 +50,29 @@ impl Ctx for RistrettoCtx {
     type P = [u8; 30];
 
     #[inline(always)]
-    fn generator(&self) -> &RistrettoPoint {
+    fn generator(&self) -> &Self::E {
         &RISTRETTO_BASEPOINT_POINT
     }
     #[inline(always)]
-    fn gmod_pow(&self, other: &Scalar) -> RistrettoPoint {
+    fn gmod_pow(&self, other: &Scalar) -> Self::E {
         other * &RISTRETTO_BASEPOINT_TABLE
     }
     #[inline(always)]
-    fn emod_pow(&self, base: &RistrettoPoint, exponent: &Scalar) -> RistrettoPoint {
+    fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
         base * exponent
     }
     #[inline(always)]
-    fn modulus(&self) -> &RistrettoPoint {
+    fn modulus(&self) -> &Self::E {
         // returning a dummy value as modulus does not apply to this backend
         &DUMMY_POINT
     }
     #[inline(always)]
-    fn exp_modulus(&self) -> &Scalar {
+    fn exp_modulus(&self) -> &Self::X {
         // returning a dummy value as modulus does not apply to this backend
         &DUMMY_SCALAR
     }
     #[inline(always)]
-    fn rnd(&self) -> RistrettoPoint {
+    fn rnd(&self) -> Self::E {
         let mut rng = StrandRng;
         let mut uniform_bytes = [0u8; 64];
         rng.fill_bytes(&mut uniform_bytes);
@@ -80,28 +80,28 @@ impl Ctx for RistrettoCtx {
         RistrettoPoint::from_uniform_bytes(&uniform_bytes)
     }
     #[inline(always)]
-    fn rnd_exp(&self) -> Scalar {
+    fn rnd_exp(&self) -> Self::X {
         let mut rng = StrandRng;
         let mut uniform_bytes = [0u8; 64];
         rng.fill_bytes(&mut uniform_bytes);
 
         Scalar::from_bytes_mod_order_wide(&uniform_bytes)
     }
-    fn rnd_plaintext(&self) -> [u8; 30] {
+    fn rnd_plaintext(&self) -> Self::P {
         let mut csprng = StrandRng;
         let mut value = [0u8; 30];
         csprng.fill_bytes(&mut value);
 
         value
     }
-    fn hash_to(&self, bytes: &[u8]) -> Scalar {
+    fn hash_to(&self, bytes: &[u8]) -> Self::X {
         let mut hasher = Sha512::new();
         Digest::update(&mut hasher, bytes);
 
         Scalar::from_hash(hasher)
     }
     // see https://github.com/ruescasd/braid-mg/issues/4
-    fn encode(&self, data: &[u8; 30]) -> Result<RistrettoPoint, &'static str> {
+    fn encode(&self, data: &[u8; 30]) -> Result<Self::E, &'static str> {
         let mut bytes = [0u8; 32];
         bytes[1..1 + data.len()].copy_from_slice(data);
         for j in 0..64 {
@@ -115,12 +115,12 @@ impl Ctx for RistrettoCtx {
         }
         Err("Failed to encode into ristretto point")
     }
-    fn decode(&self, element: &RistrettoPoint) -> [u8; 30] {
+    fn decode(&self, element: &Self::E) -> Self::P {
         let compressed = element.compress();
         let slice = &compressed.as_bytes()[1..31];
         util::to_u8_30(slice)
     }
-    fn exp_from_u64(&self, value: u64) -> Scalar {
+    fn exp_from_u64(&self, value: u64) -> Self::X {
         let val_bytes = value.to_le_bytes();
         let mut bytes = [0u8; 32];
         let mut vec = val_bytes.to_vec();
@@ -139,11 +139,22 @@ impl Ctx for RistrettoCtx {
 
         scalar
     }
-    fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<RistrettoPoint> {
+    fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E> {
         self.generators_shake(size, contest, seed)
     }
     fn is_valid_element(&self, _element: &Self::E) -> bool {
         true
+    }
+    fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
+        let b32 = util::to_u8_32(bytes)?;
+        CompressedRistretto(b32)
+            .decompress()
+            .ok_or_else(|| "Failed constructing ristretto point")
+    }
+    fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
+        let b32 = util::to_u8_32(bytes)?;
+        Scalar::from_canonical_bytes(b32)
+            .ok_or_else(|| "Failed constructing scalar")
     }
     fn new() -> RistrettoCtx {
         RistrettoCtx
@@ -207,69 +218,38 @@ impl Exponent<RistrettoCtx> for Scalar {
     fn mul_identity() -> Self {
         Scalar::one()
     }
-    fn to_string(&self) -> String {
-        format!("{:x?}", self.to_bytes())
-    }
 }
-
-/*impl ZKProver<RistrettoCtx> for RistrettoCtx {
-    fn hash_to(&self, bytes: &[u8]) -> Scalar {
-        let mut hasher = Sha512::new();
-        Digest::update(&mut hasher, bytes);
-
-        Scalar::from_hash(hasher)
-    }
-
-    fn ctx(&self) -> &RistrettoCtx {
-        &RistrettoCtx
-    }
-}
-
-impl Zkp<RistrettoCtx> for ZkpStruct<RistrettoCtx> {
-    fn hash_to(&self, bytes: &[u8]) -> Scalar {
-        let mut hasher = Sha512::new();
-        Digest::update(&mut hasher, bytes);
-
-        Scalar::from_hash(hasher)
-    }
-
-    fn ctx(&self) -> &RistrettoCtx {
-        &RistrettoCtx
-    }
-}*/
 
 impl ToByteTree for Scalar {
     fn to_byte_tree(&self) -> ByteTree {
+        // Leaf(DataType::Exponent, ByteBuf::from(self.to_bytes()))
         Leaf(ByteBuf::from(self.to_bytes()))
     }
 }
 
-impl FromByteTree for Scalar {
-    fn from_byte_tree(tree: &ByteTree) -> Result<Scalar, ByteError> {
+impl FromByteTree<RistrettoCtx> for Scalar {
+    fn from_byte_tree(tree: &ByteTree, ctx: &RistrettoCtx) -> Result<Scalar, ByteError> {
         let bytes = tree.leaf()?;
-        let b32 = util::to_u8_32(bytes);
-        Scalar::from_canonical_bytes(b32)
-            .ok_or_else(|| ByteError::Msg(String::from("Failed constructing scalar")))
+        ctx.exp_from_bytes(bytes).map_err(ByteError::Msg)
     }
 }
 
 impl ToByteTree for RistrettoPoint {
     fn to_byte_tree(&self) -> ByteTree {
+        // Leaf(DataType::Element, ByteBuf::from(self.compress().to_bytes()))
         Leaf(ByteBuf::from(self.compress().to_bytes()))
     }
 }
 
-impl FromByteTree for RistrettoPoint {
-    fn from_byte_tree(tree: &ByteTree) -> Result<RistrettoPoint, ByteError> {
+impl FromByteTree<RistrettoCtx> for RistrettoPoint {
+    fn from_byte_tree(tree: &ByteTree, ctx: &RistrettoCtx) -> Result<RistrettoPoint, ByteError> {
         let bytes = tree.leaf()?;
-        let b32 = util::to_u8_32(bytes);
-        CompressedRistretto(b32)
-            .decompress()
-            .ok_or_else(|| ByteError::Msg(String::from("Failed constructing ristretto point")))
+        ctx.element_from_bytes(bytes).map_err(ByteError::Msg)
+        
     }
 }
 
-impl ToByteTree for RistrettoCtx {
+/*impl ToByteTree for RistrettoCtx {
     fn to_byte_tree(&self) -> ByteTree {
         ByteTree::Leaf(ByteBuf::new())
     }
@@ -280,7 +260,7 @@ impl FromByteTree for RistrettoCtx {
         let _leaf = tree.leaf()?;
         Ok(RistrettoCtx)
     }
-}
+}*/
 
 #[cfg(test)]
 mod tests {

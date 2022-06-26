@@ -143,15 +143,16 @@ fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
         n as f64 / ((performance.now() - now) / 1000.0)
     ));
 
-    /*
+    /* use crate::byte_tree::BTreeDeser;
+    use crate::shuffler::ShuffleProof;
+    use crate::elgamal::Ciphertext;
     log(&format!("deserialization.."));
     let now = performance.now();
-    let pk_d = PublicKey::<C>::deser(&pk_b).unwrap();
-    let es_d = Vec::<Ciphertext<C>>::deser(&es_b).unwrap();
-    let eprimes_d = Vec::<Ciphertext<C>>::deser(&eprimes_b).unwrap();
-    let proof_d = ShuffleProof::<C>::deser(&proof_b).unwrap();
-    log(&format!("{} / s", n as f64 / ( (performance.now() - now) / 1000.0)));
-    */
+    let pk_d = PublicKey::<C>::deser(&pk_b, &ctx).unwrap();
+    let es_d = Vec::<Ciphertext<C>>::deser(&es_b, &ctx).unwrap();
+    let eprimes_d = Vec::<Ciphertext<C>>::deser(&eprimes_b, &ctx).unwrap();
+    let proof_d = ShuffleProof::<C>::deser(&proof_b, &ctx).unwrap();
+    log(&format!("{} / s", n as f64 / ( (performance.now() - now) / 1000.0)));*/
 }
 
 fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P, n: u32) {

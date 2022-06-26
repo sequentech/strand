@@ -233,9 +233,6 @@ impl Exponent<BigintCtx> for BigUint {
     fn mul_identity() -> Self {
         One::one()
     }
-    fn to_string(&self) -> String {
-        format!("{:x?}", self.to_bytes_be())
-    }
 }
 
 impl ToByteTree for BigintCtx {

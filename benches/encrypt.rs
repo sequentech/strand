@@ -28,7 +28,7 @@ fn encrypt_ristretto(ctx: &RistrettoCtx, pk: &PublicKey<RistrettoCtx>, n: usize)
 }
 
 fn encrypt_bigint(ctx: &BigintCtx<P2048>, pk: &PublicKey<BigintCtx<P2048>>, n: usize) {
-    let plaintext = ctx.rnd_exp();
+    let plaintext = ctx.rnd_plaintext();
     encrypt(ctx, pk, plaintext, n);
 }
 
@@ -38,7 +38,7 @@ cfg_if::cfg_if! {
         use strand::backend::rug::P2048 as RP2048;
         #[cfg(feature = "rug")]
         fn encrypt_rug(ctx: &RugCtx<RP2048>, pk: &PublicKey<RugCtx<RP2048>>, n: usize) {
-            let plaintext = ctx.rnd_exp();
+            let plaintext = ctx.rnd_plaintext();
             encrypt(ctx, pk, plaintext, n);
         }
     }

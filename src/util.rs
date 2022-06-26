@@ -47,11 +47,15 @@ pub fn to_u8_30(input: &[u8]) -> [u8; 30] {
     bytes
 }
 
-pub(crate) fn to_u8_32(input: &[u8]) -> [u8; 32] {
-    assert_eq!(input.len(), 32);
-    let mut bytes = [0u8; 32];
-    bytes.copy_from_slice(input);
-    bytes
+pub(crate) fn to_u8_32(input: &[u8]) -> Result<[u8; 32], &'static str> {
+    if input.len() == 32 {
+        let mut bytes = [0u8; 32];
+        bytes.copy_from_slice(input);
+        Ok(bytes)
+    }
+    else {
+        Err("Not 32 bytes")
+    }
 }
 
 pub fn random_ballots<C: Ctx>(n: usize, ctx: &C) -> Vec<Ciphertext<C>> {

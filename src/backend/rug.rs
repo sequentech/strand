@@ -23,7 +23,7 @@ pub struct RugCtx<P: RugCtxParams> {
 
 impl<P: RugCtxParams> RugCtx<P> {
     // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf A.2.3
-    fn generators_fips(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Integer> {
+    fn generators_fips(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<IntegerE> {
         let mut ret = Vec::with_capacity(size);
         let two = Integer::from(2i32);
 
@@ -41,11 +41,11 @@ impl<P: RugCtxParams> RugCtx<P> {
                 assert!(count != 0);
                 next.extend(&index.to_le_bytes());
                 next.extend(&count.to_le_bytes());
-                let elem: Integer = self.hash_to(&next);
-                let g =
-                    Element::<RugCtx<P>>::mod_pow(&elem, self.params.co_factor(), self.modulus());
+                let elem: Integer = self.hash_to_element(&next);
+                let g = elem.pow_mod(self.params.co_factor(), &self.modulus().0).unwrap();
+                    // Element::<RugCtx<P>>::mod_pow(&elem, self.params.co_factor(), self.modulus());
                 if g >= two {
-                    ret.push(g);
+                    ret.push(IntegerE(g));
                     break;
                 }
             }
@@ -53,97 +53,115 @@ impl<P: RugCtxParams> RugCtx<P> {
 
         ret
     }
-}
 
-impl<P: RugCtxParams> Ctx for RugCtx<P> {
-    type E = Integer;
-    type X = Integer;
-    type P = Integer;
-
-    #[inline(always)]
-    fn generator(&self) -> &Integer {
-        self.params.generator()
-    }
-    #[inline(always)]
-    fn gmod_pow(&self, other: &Integer) -> Integer {
-        Element::<RugCtx<P>>::mod_pow(self.generator(), other, self.modulus())
-    }
-    #[inline(always)]
-    fn emod_pow(&self, base: &Integer, exponent: &Integer) -> Integer {
-        Element::<RugCtx<P>>::mod_pow(base, exponent, self.modulus())
-    }
-    #[inline(always)]
-    fn modulus(&self) -> &Integer {
-        self.params.modulus()
-    }
-    #[inline(always)]
-    fn exp_modulus(&self) -> &Integer {
-        self.params.exp_modulus()
-    }
-    #[inline(always)]
-    fn rnd(&self) -> Integer {
-        let mut gen = StrandRandgen(StrandRng);
-        let mut state = RandState::new_custom(&mut gen);
-
-        self.encode(&self.exp_modulus().clone().random_below(&mut state))
-            .expect("0..(q-1) should always be encodable")
-    }
-    #[inline(always)]
-    fn rnd_exp(&self) -> Integer {
-        let mut gen = StrandRandgen(StrandRng);
-        let mut state = RandState::new_custom(&mut gen);
-
-        self.exp_modulus().clone().random_below(&mut state)
-    }
-    fn rnd_plaintext(&self) -> Integer {
-        self.rnd_exp()
-    }
-    fn hash_to(&self, bytes: &[u8]) -> Integer {
+    fn hash_to_element(&self, bytes: &[u8]) -> Integer {
         let mut hasher = Sha512::new();
         hasher.update(bytes);
         let hashed = hasher.finalize();
 
-        let (_, rem) = Integer::from_digits(&hashed, Order::Lsf).div_rem(self.modulus().clone());
+        let (_, rem) = Integer::from_digits(&hashed, Order::Lsf).div_rem(self.modulus().0.clone());
 
         rem
     }
-    fn encode(&self, plaintext: &Integer) -> Result<Integer, &'static str> {
-        if plaintext >= &(self.exp_modulus().clone() - 1) {
+}
+
+impl<P: RugCtxParams> Ctx for RugCtx<P> {
+    type E = IntegerE;
+    type X = IntegerX;
+    type P = Integer;
+
+    #[inline(always)]
+    fn generator(&self) -> &Self::E {
+        self.params.generator()
+    }
+    #[inline(always)]
+    fn gmod_pow(&self, other: &Self::X) -> Self::E {
+        Element::<RugCtx<P>>::mod_pow(self.generator(), other, self.modulus())
+    }
+    #[inline(always)]
+    fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
+        Element::<RugCtx<P>>::mod_pow(base, exponent, self.modulus())
+    }
+    #[inline(always)]
+    fn modulus(&self) -> &Self::E {
+        self.params.modulus()
+    }
+    #[inline(always)]
+    fn exp_modulus(&self) -> &Self::X {
+        self.params.exp_modulus()
+    }
+    #[inline(always)]
+    fn rnd(&self) -> Self::E {
+        let mut gen = StrandRandgen(StrandRng);
+        let mut state = RandState::new_custom(&mut gen);
+
+        self.encode(&self.exp_modulus().0.clone().random_below(&mut state))
+            .expect("0..(q-1) should always be encodable")
+    }
+    #[inline(always)]
+    fn rnd_exp(&self) -> Self::X {
+        let mut gen = StrandRandgen(StrandRng);
+        let mut state = RandState::new_custom(&mut gen);
+
+        IntegerX(self.exp_modulus().0.clone().random_below(&mut state))
+    }
+    fn rnd_plaintext(&self) -> Self::P {
+        self.rnd_exp().0
+    }
+    fn hash_to(&self, bytes: &[u8]) -> Self::X {
+        let mut hasher = Sha512::new();
+        hasher.update(bytes);
+        let hashed = hasher.finalize();
+
+        let (_, rem) = Integer::from_digits(&hashed, Order::Lsf).div_rem(self.exp_modulus().0.clone());
+
+        IntegerX(rem)
+    }
+    fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
+        if plaintext >= &(self.exp_modulus().0.clone() - 1i32) {
             return Err("Failed to encode, out of range");
         }
-        if plaintext < &0 {
+        if plaintext < &0i32 {
             return Err("Failed to encode, negative");
         }
 
-        let notzero: Integer = plaintext.clone() + 1;
-        let legendre = notzero.legendre(self.modulus());
+        let notzero: Integer = plaintext.clone() + 1i32;
+        let legendre = notzero.legendre(&self.modulus().0);
         if legendre == 0 {
             return Err("Failed to encode, legendre = 0");
         }
         let result = if legendre == 1 {
             notzero
         } else {
-            self.modulus() - notzero
+            self.modulus().0.clone() - notzero
         };
-        Ok(Element::<RugCtx<P>>::modulo(&result, self.modulus()))
+        let r = IntegerE(result);
+        Ok(Element::<RugCtx<P>>::modulo(&r, self.modulus()))
     }
-    fn decode(&self, element: &Integer) -> Integer {
-        if element > self.exp_modulus() {
-            let sub: Integer = (self.modulus() - element).complete();
-            sub - 1
+    fn decode(&self, element: &Self::E) -> Self::P {
+        if element.0 > self.exp_modulus().0 {
+            let sub: Integer = self.modulus().0.clone() - element.0.clone();
+            sub - 1i32
         } else {
-            (element - 1i32).complete()
+            element.0.clone() - 1i32
         }
     }
-    fn exp_from_u64(&self, value: u64) -> Integer {
-        Integer::from(value)
+    fn exp_from_u64(&self, value: u64) -> Self::X {
+        IntegerX(Integer::from(value))
     }
-    fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Integer> {
+    fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E> {
         self.generators_fips(size, contest, seed)
     }
-
     fn is_valid_element(&self, element: &Self::E) -> bool {
-        element.legendre(self.modulus()) == 1
+        element.0.legendre(&self.modulus().0) == 1
+    }
+    fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
+        let ret = Integer::from_digits(bytes, Order::LsfBe);
+        Ok(IntegerE(ret))
+    }
+    fn exp_from_bytes(&self, bytes: &[u8], ) -> Result<Self::X, &'static str> {
+        let ret = Integer::from_digits(bytes, Order::LsfBe);
+        Ok(IntegerX(ret))
     }
     fn new() -> RugCtx<P> {
         let params = P::new();
@@ -151,91 +169,87 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     }
 }
 
-impl<P: RugCtxParams> Element<RugCtx<P>> for Integer {
+impl<P: RugCtxParams> Element<RugCtx<P>> for IntegerE {
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
-        Integer::from(self * other)
+        IntegerE(Integer::from(self.0.clone() * other.0.clone()))
     }
     #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {
         let inverse = Element::<RugCtx<P>>::inv(other, modulus);
-        self * inverse
+        IntegerE(self.0.clone() * inverse.0.clone())
     }
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
-        self.clone()
-            .invert(modulus)
-            .expect("there is always an inverse for prime p")
+        IntegerE(self.0.clone()
+            .invert(&modulus.0)
+            .expect("there is always an inverse for prime p"))
     }
     #[inline(always)]
-    fn mod_pow(&self, other: &Integer, modulus: &Self) -> Self {
-        let ret = self.clone().pow_mod(other, modulus);
+    fn mod_pow(&self, other: &IntegerX, modulus: &Self) -> Self {
+        let ret = self.0.clone().pow_mod(&other.0, &modulus.0);
         // From https://docs.rs/rug/latest/rug/struct.Integer.html#method.pow_mod
         // "If the exponent is negative, then the number must have an inverse for an answer to exist.
         // When the exponent is positive and the modulo is not zero, an answer always exists."
-        ret.expect("an answer always exists for prime p")
+        IntegerE(ret.expect("an answer always exists for prime p"))
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
         // FIXME remove this check
-        assert!(self >= &0);
+        assert!(self.0 >= 0);
         // From https://docs.rs/rug/latest/rug/struct.Integer.html#method.div_rem
         // The remainder has the same sign as the dividend.
         // thus if self is >= 0 then the result >= 0, and remainder === modulo
-        let (_, mut rem) = self.clone().div_rem(modulus.clone());
+        let (_, rem) = self.0.clone().div_rem(modulus.0.clone());
 
-        rem
+        IntegerE(rem)
     }
-    fn mul_identity() -> Integer {
-        Integer::from(1)
+    fn mul_identity() -> Self {
+        IntegerE(Integer::from(1))
     }
 }
 
-impl<P: RugCtxParams> Exponent<RugCtx<P>> for Integer {
+impl<P: RugCtxParams> Exponent<RugCtx<P>> for IntegerX {
     #[inline(always)]
-    fn add(&self, other: &Integer) -> Integer {
-        Integer::from(self + other)
+    fn add(&self, other: &Self) -> Self {
+        IntegerX(Integer::from(self.0.clone() + other.0.clone()))
     }
     #[inline(always)]
-    fn sub(&self, other: &Integer) -> Integer {
-        Integer::from(self - other)
+    fn sub(&self, other: &Self) -> Self {
+        IntegerX(Integer::from(self.0.clone() - other.0.clone()))
     }
     #[inline(always)]
-    fn mul(&self, other: &Integer) -> Integer {
-        Integer::from(self * other)
+    fn mul(&self, other: &Self) -> Self {
+        IntegerX(Integer::from(self.0.clone() * other.0.clone()))
     }
     #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {
-        let inverse = Element::<RugCtx<P>>::inv(other, modulus);
-        self * inverse
+        let inverse = Exponent::<RugCtx<P>>::inv(other, modulus);
+        IntegerX(self.0.clone() * inverse.0)
     }
     #[inline(always)]
-    fn inv(&self, modulus: &Integer) -> Integer {
-        self.clone()
-            .invert(modulus)
-            .expect("there is always an inverse for prime p")
+    fn inv(&self, modulus: &Self) -> Self {
+        IntegerX(self.0.clone()
+            .invert(&modulus.0)
+            .expect("there is always an inverse for prime p"))
     }
     #[inline(always)]
-    fn modulo(&self, modulus: &Integer) -> Integer {
+    fn modulo(&self, modulus: &Self) -> Self {
         // FIXME remove this check
-        assert!(self >= &0);
+        assert!(self.0 >= 0);
         // From https://docs.rs/rug/latest/rug/struct.Integer.html#method.div_rem
         // "The remainder has the same sign as the dividend."
         // thus if self is >= 0 then the result >= 0, and remainder === modulo
-        let (_, mut rem) = self.clone().div_rem(modulus.clone());
+        let (_, rem) = self.0.clone().div_rem(modulus.0.clone());
 
-        rem
+        IntegerX(rem)
     }
 
-    fn add_identity() -> Integer {
-        Integer::from(0)
+    fn add_identity() -> IntegerX {
+        IntegerX(Integer::from(0i32))
     }
-    fn mul_identity() -> Integer {
-        Integer::from(1)
-    }
-
-    fn to_string(&self) -> String {
-        self.to_string_radix(16)
+    fn mul_identity() -> IntegerX {
+        IntegerX(Integer::from(1i32))
     }
 }
 
@@ -246,66 +260,33 @@ impl RandGen for StrandRandgen {
         self.0.next_u32()
     }
 }
-/*
-impl<P: RugCtxParams> ZKProver<RugCtx<P>> for RugCtx<P> {
-    fn hash_to(&self, bytes: &[u8]) -> Integer {
-        let mut hasher = Sha512::new();
-        hasher.update(bytes);
-        let hashed = hasher.finalize();
-
-        let (_, rem) = Integer::from_digits(&hashed, Order::Lsf).div_rem(self.modulus().clone());
-
-        rem
-    }
-
-    fn ctx(&self) -> &RugCtx<P> {
-        self
-    }
-}
-
-impl<P: RugCtxParams> Zkp<RugCtx<P>> for ZkpStruct<RugCtx<P>> {
-    fn hash_to(&self, bytes: &[u8]) -> Integer {
-        let mut hasher = Sha512::new();
-        hasher.update(bytes);
-        let hashed = hasher.finalize();
-
-        let (_, rem) =
-            Integer::from_digits(&hashed, Order::Lsf).div_rem(self.ctx.modulus().clone());
-
-        rem
-    }
-
-    fn ctx(&self) -> &RugCtx<P> {
-        &self.ctx
-    }
-}*/
 
 pub trait RugCtxParams: Clone + Send + Sync {
-    fn generator(&self) -> &Integer;
-    fn modulus(&self) -> &Integer;
-    fn exp_modulus(&self) -> &Integer;
+    fn generator(&self) -> &IntegerE;
+    fn modulus(&self) -> &IntegerE;
+    fn exp_modulus(&self) -> &IntegerX;
     fn co_factor(&self) -> &Integer;
     fn new() -> Self;
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct P2048 {
-    generator: Integer,
-    modulus: Integer,
-    exp_modulus: Integer,
+    generator: IntegerE,
+    modulus: IntegerE,
+    exp_modulus: IntegerX,
     co_factor: Integer,
 }
 impl RugCtxParams for P2048 {
     #[inline(always)]
-    fn generator(&self) -> &Integer {
+    fn generator(&self) -> &IntegerE {
         &self.generator
     }
     #[inline(always)]
-    fn modulus(&self) -> &Integer {
+    fn modulus(&self) -> &IntegerE {
         &self.modulus
     }
     #[inline(always)]
-    fn exp_modulus(&self) -> &Integer {
+    fn exp_modulus(&self) -> &IntegerX {
         &self.exp_modulus
     }
     #[inline(always)]
@@ -313,11 +294,11 @@ impl RugCtxParams for P2048 {
         &self.co_factor
     }
     fn new() -> P2048 {
-        let p = Integer::from_str_radix(P_VERIFICATUM_STR_2048, 10).unwrap();
-        let q = Integer::from_str_radix(Q_VERIFICATUM_STR_2048, 10).unwrap();
-        let g = Integer::from_str_radix(G_VERIFICATUM_STR_2048, 10).unwrap();
+        let p = IntegerE(Integer::from_str_radix(P_VERIFICATUM_STR_2048, 10).unwrap());
+        let q = IntegerX(Integer::from_str_radix(Q_VERIFICATUM_STR_2048, 10).unwrap());
+        let g = IntegerE(Integer::from_str_radix(G_VERIFICATUM_STR_2048, 10).unwrap());
         let co_factor = Integer::from_str_radix(SAFEPRIME_COFACTOR, 16).unwrap();
-        assert!(g.legendre(&p) == 1);
+        assert!(g.0.legendre(&p.0) == 1);
 
         P2048 {
             generator: g,
@@ -328,17 +309,34 @@ impl RugCtxParams for P2048 {
     }
 }
 
-impl ToByteTree for Integer {
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct IntegerE(Integer);
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct IntegerX(Integer);
+
+impl ToByteTree for IntegerE {
     fn to_byte_tree(&self) -> ByteTree {
-        Leaf(ByteBuf::from(self.to_digits::<u8>(Order::LsfLe)))
+        Leaf(ByteBuf::from(self.0.to_digits::<u8>(Order::LsfBe)))
     }
 }
 
-impl FromByteTree for Integer {
-    fn from_byte_tree(tree: &ByteTree) -> Result<Integer, ByteError> {
+impl<P: RugCtxParams> FromByteTree<RugCtx<P>> for IntegerE {
+    fn from_byte_tree(tree: &ByteTree, ctx: &RugCtx<P>) -> Result<IntegerE, ByteError> {
         let bytes = tree.leaf()?;
-        let ret = Integer::from_digits(bytes, Order::LsfLe);
-        Ok(ret)
+        ctx.element_from_bytes(bytes).map_err(ByteError::Msg)
+    }
+}
+
+impl ToByteTree for IntegerX {
+    fn to_byte_tree(&self) -> ByteTree {
+        Leaf(ByteBuf::from(self.0.to_digits::<u8>(Order::LsfBe)))
+    }
+}
+
+impl<P: RugCtxParams> FromByteTree<RugCtx<P>> for IntegerX {
+    fn from_byte_tree(tree: &ByteTree, ctx: &RugCtx<P>) -> Result<IntegerX, ByteError> {
+        let bytes = tree.leaf()?;
+        ctx.exp_from_bytes(bytes).map_err(ByteError::Msg)
     }
 }
 
@@ -359,7 +357,7 @@ mod tests {
     #[test]
     fn test_elgamal() {
         let ctx = RugCtx::<P2048>::new();
-        let plaintext = ctx.rnd_exp();
+        let plaintext = ctx.rnd_plaintext();
         test_elgamal_generic(&ctx, plaintext);
     }
 
@@ -378,14 +376,14 @@ mod tests {
     #[test]
     fn test_vdecryption() {
         let ctx = RugCtx::<P2048>::new();
-        let plaintext = ctx.rnd_exp();
+        let plaintext = ctx.rnd_plaintext();
         test_vdecryption_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_distributed() {
         let ctx = RugCtx::<P2048>::new();
-        let plaintext = ctx.rnd_exp();
+        let plaintext = ctx.rnd_plaintext();
         test_distributed_generic(&ctx, plaintext);
     }
 
@@ -394,7 +392,7 @@ mod tests {
         let ctx = RugCtx::<P2048>::new();
         let mut ps = vec![];
         for _ in 0..10 {
-            let p = ctx.rnd_exp();
+            let p = ctx.rnd_plaintext();
             ps.push(p);
         }
         test_distributed_btserde_generic(&ctx, ps);
@@ -415,7 +413,7 @@ mod tests {
     #[test]
     fn test_encrypted_sk() {
         let ctx = RugCtx::<P2048>::new();
-        let plaintext = ctx.rnd_exp();
+        let plaintext = ctx.rnd_plaintext();
         test_encrypted_sk_generic(&ctx, plaintext);
     }
 
@@ -424,7 +422,7 @@ mod tests {
         let trustees = 5usize;
         let threshold = 3usize;
         let ctx = RugCtx::<P2048>::new();
-        let plaintext = ctx.rnd_exp();
+        let plaintext = ctx.rnd_plaintext();
 
         test_threshold_generic(&ctx, trustees, threshold, plaintext);
     }
@@ -456,14 +454,14 @@ mod tests {
     #[test]
     fn test_epk_bytes() {
         let ctx = RugCtx::<P2048>::new();
-        let plaintext = ctx.rnd_exp();
+        let plaintext = ctx.rnd_plaintext();
         test_epk_bytes_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_encode_err() {
         let ctx = RugCtx::<P2048>::new();
-        let result = ctx.encode(&(ctx.exp_modulus() - 1i32).complete());
+        let result = ctx.encode(&(ctx.exp_modulus().0.clone() - 1i32));
         assert!(result.is_err())
     }
 
@@ -495,7 +493,8 @@ mod tests {
 
         for _ in 0..n {
             let plaintext: Integer = ctx.rnd_plaintext();
-            let c = pk.encrypt(&plaintext);
+            let element = ctx.encode(&plaintext).unwrap();
+            let c = pk.encrypt(&element);
             es.push(c);
         }
         let seed = vec![];
@@ -521,28 +520,28 @@ mod tests {
         assert!(ok);
 
         let pk_list = vec![
-            ctx.generator().to_string_radix(16),
-            pk.value.to_string_radix(16),
+            ctx.generator().0.to_string_radix(16),
+            pk.value.0.to_string_radix(16),
         ];
 
-        let hs_list: Vec<String> = hs.iter().map(|h| h.to_string_radix(16)).collect();
+        let hs_list: Vec<String> = hs.iter().map(|h| h.0.to_string_radix(16)).collect();
         let h_list = vec![vec![hs_list[0].clone()], hs_list[1..].to_vec()];
 
         let cs = proof.cs;
-        let cs_list: Vec<String> = cs.iter().map(|c| c.to_string_radix(16)).collect();
+        let cs_list: Vec<String> = cs.iter().map(|c| c.0.to_string_radix(16)).collect();
 
-        let c_hats: Vec<String> = proof.c_hats.iter().map(|c| c.to_string_radix(16)).collect();
-        let t3 = proof.t.t3.to_string_radix(16);
+        let c_hats: Vec<String> = proof.c_hats.iter().map(|c| c.0.to_string_radix(16)).collect();
+        let t3 = proof.t.t3.0.to_string_radix(16);
         let t_hats: Vec<String> = proof
             .t
             .t_hats
             .iter()
-            .map(|c| c.to_string_radix(16))
+            .map(|c| c.0.to_string_radix(16))
             .collect();
-        let t1 = proof.t.t1.to_string_radix(16);
-        let t2 = proof.t.t2.to_string_radix(16);
-        let t4_1 = proof.t.t4_1.to_string_radix(16);
-        let t4_2 = proof.t.t4_2.to_string_radix(16);
+        let t1 = proof.t.t1.0.to_string_radix(16);
+        let t2 = proof.t.t2.0.to_string_radix(16);
+        let t4_1 = proof.t.t4_1.0.to_string_radix(16);
+        let t4_2 = proof.t.t4_2.0.to_string_radix(16);
 
         let t_list = vec![
             c_hats,
@@ -553,42 +552,42 @@ mod tests {
             vec![t4_1, t4_2],
         ];
 
-        let ciphers_in_a: Vec<String> = es.iter().map(|c| c.mhr.to_string_radix(16)).collect();
-        let ciphers_in_b: Vec<String> = es.iter().map(|c| c.gr.to_string_radix(16)).collect();
+        let ciphers_in_a: Vec<String> = es.iter().map(|c| c.mhr.0.to_string_radix(16)).collect();
+        let ciphers_in_b: Vec<String> = es.iter().map(|c| c.gr.0.to_string_radix(16)).collect();
 
         let ciphers_out_a: Vec<String> =
-            e_primes.iter().map(|c| c.mhr.to_string_radix(16)).collect();
+            e_primes.iter().map(|c| c.mhr.0.to_string_radix(16)).collect();
         let ciphers_out_b: Vec<String> =
-            e_primes.iter().map(|c| c.gr.to_string_radix(16)).collect();
+            e_primes.iter().map(|c| c.gr.0.to_string_radix(16)).collect();
 
         let ciphers_in = vec![ciphers_in_a, ciphers_in_b];
         let ciphers_out = vec![ciphers_out_a, ciphers_out_b];
 
-        let s1 = proof.s.s1.to_string_radix(16);
-        let s2 = proof.s.s2.to_string_radix(16);
-        let s3 = proof.s.s3.to_string_radix(16);
-        let s4 = proof.s.s4.to_string_radix(16);
+        let s1 = proof.s.s1.0.to_string_radix(16);
+        let s2 = proof.s.s2.0.to_string_radix(16);
+        let s3 = proof.s.s3.0.to_string_radix(16);
+        let s4 = proof.s.s4.0.to_string_radix(16);
         let s_hats: Vec<String> = proof
             .s
             .s_hats
             .iter()
-            .map(|c| c.to_string_radix(16))
+            .map(|c| c.0.to_string_radix(16))
             .collect();
         let s_primes: Vec<String> = proof
             .s
             .s_primes
             .iter()
-            .map(|c| c.to_string_radix(16))
+            .map(|c| c.0.to_string_radix(16))
             .collect();
 
         let s_list = vec![vec![s3], s_hats, vec![s1], vec![s2], s_primes, vec![s4]];
 
-        let us_list: Vec<String> = us.iter().map(|u| u.to_string_radix(16)).collect();
-        let challenge: Vec<String> = vec![c.to_string_radix(16)];
+        let us_list: Vec<String> = us.iter().map(|u| u.0.to_string_radix(16)).collect();
+        let challenge: Vec<String> = vec![c.0.to_string_radix(16)];
 
         let group = vec![
-            ctx.modulus().to_string_radix(16),
-            ctx.exp_modulus().to_string_radix(16),
+            ctx.modulus().0.to_string_radix(16),
+            ctx.exp_modulus().0.to_string_radix(16),
         ];
 
         let transcript = CoqVerifierTranscript {

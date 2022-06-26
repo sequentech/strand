@@ -24,29 +24,30 @@ pub trait Ctx: Sync + Sized + Clone {
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E>;
 
     fn is_valid_element(&self, element: &Self::E) -> bool;
+    fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str>;
+    fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str>;
+    
     fn new() -> Self;
 }
 
-pub trait Element<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree {
+pub trait Element<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree<C> {
     fn mul(&self, other: &C::E) -> C::E;
     fn div(&self, other: &C::E, modulus: &C::E) -> C::E;
     fn inv(&self, modulus: &C::E) -> C::E;
     fn mod_pow(&self, exp: &C::X, modulus: &C::E) -> C::E;
-    fn modulo(&self, modulus: &C::E) -> C::E;
+    fn modulo(&self, modulus: &C::E) -> C::E;    
 
     fn mul_identity() -> C::E;
 }
 
-pub trait Exponent<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree {
+pub trait Exponent<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree<C> {
     fn add(&self, other: &C::X) -> C::X;
     fn sub(&self, other: &C::X) -> C::X;
     fn mul(&self, other: &C::X) -> C::X;
     fn div(&self, other: &C::X, modulus: &C::X) -> C::X;
     fn inv(&self, modulus: &C::X) -> C::X;
     fn modulo(&self, modulus: &C::X) -> C::X;
-
+    
     fn add_identity() -> C::X;
     fn mul_identity() -> C::X;
-
-    fn to_string(&self) -> String;
 }

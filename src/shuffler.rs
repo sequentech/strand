@@ -7,7 +7,6 @@ use rand::Rng;
 use rayon::prelude::*;
 use std::sync::Mutex;
 
-use crate::byte_tree::ByteTree::*;
 use crate::byte_tree::{ByteTree, ToByteTree};
 use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::{Ciphertext, PublicKey};
@@ -572,8 +571,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             .par()
             .map(|i| {
                 let next: Vec<ByteTree> = vec![
-                    Leaf(ByteBuf::from(prefix_hash.clone())),
-                    Leaf(ByteBuf::from(i.to_le_bytes())),
+                    ByteTree::Leaf(ByteBuf::from(prefix_hash.clone())),
+                    ByteTree::Leaf(ByteBuf::from(i.to_le_bytes())),
                 ];
                 let bytes = ByteTree::Tree(next).to_hashable_bytes();
 

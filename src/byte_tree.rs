@@ -22,26 +22,48 @@ quick_error! {
         Signature(err: ed25519_dalek::SignatureError) {
             from()
         }
-        /*Enum(err: num_enum::TryFromPrimitiveError<StatementType>) {
-            from()
-        }*/
-        Msg(message: String) {
+        Msg(message: &'static str) {
             from()
         }
     }
 }
+
+
 
 const LEAF: u8 = 0;
 const TREE: u8 = 1;
 
 #[derive(Serialize, Deserialize)]
 pub enum ByteTree {
-    Leaf(ByteBuf),
+    Leaf(ByteBuf),    
     Tree(Vec<ByteTree>),
+    /* Leaf(DataType, ByteBuf),
+    UntypedLeaf(ByteBuf),
+    Tree(DataType, Vec<ByteTree>),
+    UntypedTree(Vec<ByteTree>),*/
 }
+/*
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[repr(u8)]
+pub enum DataType {
+    Array,
+    Ciphertext,
+    Element,
+    Exponent,
+    EncryptedKey,
+    EncryptedKeyBytes,
+    EncryptedKeyIv,
+    PrivateKey,
+    PublicKey,
+    Schnorr,
+    ChaumPedersen,
+    ShuffleProof,
+    Commitments,
+    Responses
+}
+use DataType::*;*/
 
-use ByteTree::Leaf;
-use ByteTree::Tree;
+use ByteTree::*;
 
 // OPT: try to move instead of copy
 impl ByteTree {
@@ -49,7 +71,7 @@ impl ByteTree {
         if let Leaf(bytes) = self {
             Ok(bytes)
         } else {
-            Err(ByteError::Msg(String::from("ByteTree: unexpected Tree")))
+            Err(ByteError::Msg("ByteTree: unexpected Tree"))
         }
     }
 
@@ -58,16 +80,46 @@ impl ByteTree {
             if trees.len() == length {
                 Ok(trees)
             } else {
-                Err(ByteError::Msg(String::from("ByteTree: size mismatch")))
+                Err(ByteError::Msg("ByteTree: size mismatch"))
             }
         } else {
-            Err(ByteError::Msg(String::from("ByteTree: unexpected Leaf")))
+            Err(ByteError::Msg("ByteTree: unexpected Leaf"))
+        }
+    }
+    
+    /*pub(crate) fn leaf(&self, type_: DataType) -> Result<&Vec<u8>, ByteError> {
+        if let Leaf(typ, bytes) = self {
+            if type_ == *typ {
+                Ok(bytes)
+            }
+            else {
+                Err(ByteError::Msg(&format!("ByteTree: type mismatch {:?}, {:?}", type_, typ)))
+            }
+        } else {
+            Err(ByteError::Msg("ByteTree: unexpected Tree"))
         }
     }
 
+    pub(crate) fn tree(&self, type_: DataType, length: usize) -> Result<&Vec<ByteTree>, ByteError> {
+        if let Tree(typ, trees) = self {
+            if type_ != *typ {
+                return Err(ByteError::Msg(&format!("ByteTree: type mismatch {:?}, {:?}", type_, typ)))
+            }
+            
+            if trees.len() == length {
+                Ok(trees)
+            } else {
+                Err(ByteError::Msg("ByteTree: size mismatch"))
+            }
+        } else {
+            Err(ByteError::Msg("ByteTree: unexpected Leaf"))
+        }
+    }*/
+
+    // FIXME hashable bytes uses metadata
     pub(crate) fn to_hashable_bytes(&self) -> Vec<u8> {
         match self {
-            Leaf(bytes) => {
+            Leaf(bytes) /*| UntypedLeaf(bytes)*/ => {
                 let mut next: Vec<u8> = vec![];
                 let length = bytes.len() as u64;
                 next.push(LEAF);
@@ -77,7 +129,7 @@ impl ByteTree {
                 next
             }
 
-            Tree(trees) => {
+            Tree(trees) /*| UntypedTree(trees)*/ => {
                 let mut next: Vec<u8> = vec![];
                 let length = trees.len() as u64;
                 next.push(TREE);
@@ -94,11 +146,14 @@ impl ByteTree {
 pub trait ToByteTree {
     fn to_byte_tree(&self) -> ByteTree;
 }
-pub trait FromByteTree {
-    fn from_byte_tree(tree: &ByteTree) -> Result<Self, ByteError>
+pub trait FromByteTree<C: Ctx> {
+    fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<Self, ByteError>
     where
         Self: Sized;
 }
+
+pub trait ToFromBTree<C: Ctx>: ToByteTree + FromByteTree<C> {}
+impl<C: Ctx, T: ToByteTree + FromByteTree<C>> ToFromBTree<C> for T {}
 
 impl<T: ToByteTree + Sync> ToByteTree for Vec<T> {
     fn to_byte_tree(&self) -> ByteTree {
@@ -107,29 +162,29 @@ impl<T: ToByteTree + Sync> ToByteTree for Vec<T> {
     }
 }
 
-impl<T: FromByteTree + Send> FromByteTree for Vec<T> {
-    fn from_byte_tree(tree: &ByteTree) -> Result<Vec<T>, ByteError> {
+impl<C: Ctx, T: FromByteTree<C> + Send> FromByteTree<C> for Vec<T> {
+    fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<Vec<T>, ByteError> {
         if let Tree(trees) = tree {
             trees
                 .par()
-                .map(|b| T::from_byte_tree(b))
+                .map(|b| T::from_byte_tree(b, ctx))
                 .collect::<Result<Vec<T>, ByteError>>()
         } else {
-            Err(ByteError::Msg(String::from(
+            Err(ByteError::Msg(
                 "ByteTree: unexpected Leaf constructing Vec<T: FromByteTree>",
-            )))
+            ))
         }
     }
 }
 
-impl ToByteTree for Vec<u8> {
+/*impl ToByteTree for Vec<u8> {
     fn to_byte_tree(&self) -> ByteTree {
         Leaf(ByteBuf::from(self.to_vec()))
     }
 }
 
-impl FromByteTree for Vec<u8> {
-    fn from_byte_tree(tree: &ByteTree) -> Result<Vec<u8>, ByteError> {
+impl<C: Ctx> FromByteTree<C> for Vec<u8> {
+    fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<Vec<u8>, ByteError> {
         if let Leaf(bytes) = tree {
             Ok(bytes.to_vec())
         } else {
@@ -138,7 +193,7 @@ impl FromByteTree for Vec<u8> {
             )))
         }
     }
-}
+}*/
 
 /*
 impl ToByteTree for [u8; 64] {
@@ -152,14 +207,11 @@ pub trait BTreeSer {
     fn ser(&self) -> Vec<u8>;
 }
 
-pub trait BTreeDeser {
-    fn deser(bytes: &[u8]) -> Result<Self, ByteError>
+pub trait BTreeDeser<C: Ctx> {
+    fn deser(bytes: &[u8], ctx: &C) -> Result<Self, ByteError>
     where
         Self: Sized;
 }
-
-pub trait ToFromBTree: ToByteTree + FromByteTree {}
-impl<T: ToByteTree + FromByteTree> ToFromBTree for T {}
 
 impl<T: ToByteTree> BTreeSer for T {
     fn ser(&self) -> Vec<u8> {
@@ -168,10 +220,15 @@ impl<T: ToByteTree> BTreeSer for T {
     }
 }
 
-impl<T: FromByteTree> BTreeDeser for T {
-    fn deser(bytes: &[u8]) -> Result<T, ByteError> {
+
+/*impl<C: Ctx, E: Element<C>> BTreeDeser<C> for E {
+    
+}*/
+
+impl<C: Ctx, T: FromByteTree<C>> BTreeDeser<C> for T {
+    fn deser(bytes: &[u8], ctx: &C) -> Result<T, ByteError> {
         let tree: ByteTree = bincode::deserialize(bytes)?;
-        T::from_byte_tree(&tree)
+        T::from_byte_tree(&tree, ctx)
     }
 }
 
@@ -179,6 +236,7 @@ impl<T: ToByteTree + Sync> ToByteTree for [T] {
     fn to_byte_tree(&self) -> ByteTree {
         let tree = self.par().map(|e| e.to_byte_tree()).collect();
         ByteTree::Tree(tree)
+        // ByteTree::Tree(Array, tree)
     }
 }
 
@@ -189,11 +247,19 @@ impl<C: Ctx> ToByteTree for EncryptedPrivateKey<C> {
             ByteTree::Leaf(ByteBuf::from(self.iv)),
         ];
         ByteTree::Tree(trees)
+        /*let trees: Vec<ByteTree> = vec![
+            ByteTree::Leaf(EncryptedKeyBytes, ByteBuf::from(self.bytes.clone())),
+            ByteTree::Leaf(EncryptedKeyIv, ByteBuf::from(self.iv)),
+        ];
+        ByteTree::Tree(EncryptedKey, trees)*/
     }
 }
 
-impl<C: Ctx> FromByteTree for EncryptedPrivateKey<C> {
-    fn from_byte_tree(tree: &ByteTree) -> Result<EncryptedPrivateKey<C>, ByteError> {
+impl<C: Ctx> FromByteTree<C> for EncryptedPrivateKey<C> {
+    fn from_byte_tree(tree: &ByteTree, _ctx: &C) -> Result<EncryptedPrivateKey<C>, ByteError> {
+        /*let trees = tree.tree(EncryptedKey, 2)?;
+        let bytes = trees[0].leaf(EncryptedKeyBytes)?.to_vec();
+        let iv_vec = trees[1].leaf(EncryptedKeyIv)?;*/
         let trees = tree.tree(2)?;
         let bytes = trees[0].leaf()?.to_vec();
         let iv_vec = trees[1].leaf()?;
@@ -210,15 +276,16 @@ impl<C: Ctx> ToByteTree for PrivateKey<C> {
     fn to_byte_tree(&self) -> ByteTree {
         let trees: Vec<ByteTree> =
             vec![self.value.to_byte_tree(), self.public_value.to_byte_tree()];
+        // ByteTree::Tree(PrivateKey, trees)
         ByteTree::Tree(trees)
     }
 }
 
-impl<C: Ctx> FromByteTree for PrivateKey<C> {
-    fn from_byte_tree(tree: &ByteTree) -> Result<PrivateKey<C>, ByteError> {
+impl<C: Ctx> FromByteTree<C> for PrivateKey<C> {
+    fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<PrivateKey<C>, ByteError> {
         let trees = tree.tree(2)?;
-        let value = C::X::from_byte_tree(&trees[0])?;
-        let public_value = C::E::from_byte_tree(&trees[1])?;
+        let value = C::X::from_byte_tree(&trees[0], ctx)?;
+        let public_value = C::E::from_byte_tree(&trees[1], ctx)?;
         let ctx = C::new();
         let ret = PrivateKey {
             value,
@@ -236,18 +303,19 @@ where
 {
     fn to_byte_tree(&self) -> ByteTree {
         let trees: Vec<ByteTree> = vec![self.mhr.to_byte_tree(), self.gr.to_byte_tree()];
+        // ByteTree::Tree(Ciphertext, trees)
         ByteTree::Tree(trees)
     }
 }
 
-impl<C: Ctx> FromByteTree for Ciphertext<C>
+impl<C: Ctx> FromByteTree<C> for Ciphertext<C>
 where
     C::E: ToByteTree,
 {
-    fn from_byte_tree(tree: &ByteTree) -> Result<Ciphertext<C>, ByteError> {
+    fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<Ciphertext<C>, ByteError> {
         let trees = tree.tree(2)?;
-        let mhr = C::E::from_byte_tree(&trees[0])?;
-        let gr = C::E::from_byte_tree(&trees[1])?;
+        let mhr = C::E::from_byte_tree(&trees[0], ctx)?;
+        let gr = C::E::from_byte_tree(&trees[1], ctx)?;
         Ok(Ciphertext { mhr, gr })
         /* let ctx = C::get();
         let ok = ctx.is_valid_element(&mhr) && ctx.is_valid_element(&gr);
@@ -265,14 +333,15 @@ impl<C: Ctx> ToByteTree for PublicKey<C> {
     fn to_byte_tree(&self) -> ByteTree {
         // let trees: Vec<ByteTree> = vec![self.value.to_byte_tree(), self.ctx.to_byte_tree()];
         let trees: Vec<ByteTree> = vec![self.value.to_byte_tree()];
+        // ByteTree::Tree(PublicKey, trees)
         ByteTree::Tree(trees)
     }
 }
 
-impl<C: Ctx> FromByteTree for PublicKey<C> {
-    fn from_byte_tree(tree: &ByteTree) -> Result<PublicKey<C>, ByteError> {
+impl<C: Ctx> FromByteTree<C> for PublicKey<C> {
+    fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<PublicKey<C>, ByteError> {
         let trees = tree.tree(1)?;
-        let value = C::E::from_byte_tree(&trees[0])?;
+        let value = C::E::from_byte_tree(&trees[0], ctx)?;
         // let ret = PublicKey { value, ctx };
         let ctx = C::new();
         let ret = PublicKey { value, ctx };
@@ -288,17 +357,18 @@ impl<C: Ctx> ToByteTree for Schnorr<C> {
             self.challenge.to_byte_tree(),
             self.response.to_byte_tree(),
         ];
+        // ByteTree::Tree(Schnorr, trees)
         ByteTree::Tree(trees)
     }
 }
 
-impl<C: Ctx> FromByteTree for Schnorr<C> {
-    fn from_byte_tree(tree: &ByteTree) -> Result<Schnorr<C>, ByteError> {
+impl<C: Ctx> FromByteTree<C> for Schnorr<C> {
+    fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<Schnorr<C>, ByteError> {
         let trees = tree.tree(3)?;
 
-        let commitment = C::E::from_byte_tree(&trees[0])?;
-        let challenge = C::X::from_byte_tree(&trees[1])?;
-        let response = C::X::from_byte_tree(&trees[2])?;
+        let commitment = C::E::from_byte_tree(&trees[0], ctx)?;
+        let challenge = C::X::from_byte_tree(&trees[1], ctx)?;
+        let response = C::X::from_byte_tree(&trees[2], ctx)?;
         let ret = Schnorr {
             commitment,
             challenge,
@@ -317,18 +387,19 @@ impl<C: Ctx> ToByteTree for ChaumPedersen<C> {
             self.challenge.to_byte_tree(),
             self.response.to_byte_tree(),
         ];
+        // ByteTree::Tree(ChaumPedersen, trees)
         ByteTree::Tree(trees)
     }
 }
 
-impl<C: Ctx> FromByteTree for ChaumPedersen<C> {
-    fn from_byte_tree(tree: &ByteTree) -> Result<ChaumPedersen<C>, ByteError> {
+impl<C: Ctx> FromByteTree<C> for ChaumPedersen<C> {
+    fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<ChaumPedersen<C>, ByteError> {
         let trees = tree.tree(4)?;
 
-        let commitment1 = C::E::from_byte_tree(&trees[0])?;
-        let commitment2 = C::E::from_byte_tree(&trees[1])?;
-        let challenge = C::X::from_byte_tree(&trees[2])?;
-        let response = C::X::from_byte_tree(&trees[3])?;
+        let commitment1 = C::E::from_byte_tree(&trees[0], ctx)?;
+        let commitment2 = C::E::from_byte_tree(&trees[1], ctx)?;
+        let challenge = C::X::from_byte_tree(&trees[2], ctx)?;
+        let response = C::X::from_byte_tree(&trees[3], ctx)?;
         let ret = ChaumPedersen {
             commitment1,
             commitment2,
@@ -349,17 +420,18 @@ impl<C: Ctx> ToByteTree for ShuffleProof<C> {
             self.c_hats.to_byte_tree(),
         ];
 
+        // ByteTree::Tree(ShuffleProof, trees)
         ByteTree::Tree(trees)
     }
 }
 
-impl<C: Ctx> FromByteTree for ShuffleProof<C> {
-    fn from_byte_tree(tree: &ByteTree) -> Result<ShuffleProof<C>, ByteError> {
+impl<C: Ctx> FromByteTree<C> for ShuffleProof<C> {
+    fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<ShuffleProof<C>, ByteError> {
         let trees = tree.tree(4)?;
-        let t = Commitments::<C>::from_byte_tree(&trees[0])?;
-        let s = Responses::<C>::from_byte_tree(&trees[1])?;
-        let cs = Vec::<C::E>::from_byte_tree(&trees[2])?;
-        let c_hats = Vec::<C::E>::from_byte_tree(&trees[3])?;
+        let t = Commitments::<C>::from_byte_tree(&trees[0], ctx)?;
+        let s = Responses::<C>::from_byte_tree(&trees[1], ctx)?;
+        let cs = Vec::<C::E>::from_byte_tree(&trees[2], ctx)?;
+        let c_hats = Vec::<C::E>::from_byte_tree(&trees[3], ctx)?;
 
         let ret = ShuffleProof { t, s, cs, c_hats };
 
@@ -377,19 +449,20 @@ impl<C: Ctx> ToByteTree for Commitments<C> {
             self.t4_2.to_byte_tree(),
             self.t_hats.to_byte_tree(),
         ];
+        // ByteTree::Tree(Commitments, trees)
         ByteTree::Tree(trees)
     }
 }
 
-impl<C: Ctx> FromByteTree for Commitments<C> {
-    fn from_byte_tree(tree: &ByteTree) -> Result<Commitments<C>, ByteError> {
+impl<C: Ctx> FromByteTree<C> for Commitments<C> {
+    fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<Commitments<C>, ByteError> {
         let trees = tree.tree(6)?;
-        let t1 = C::E::from_byte_tree(&trees[0])?;
-        let t2 = C::E::from_byte_tree(&trees[1])?;
-        let t3 = C::E::from_byte_tree(&trees[2])?;
-        let t4_1 = C::E::from_byte_tree(&trees[3])?;
-        let t4_2 = C::E::from_byte_tree(&trees[4])?;
-        let t_hats = Vec::<C::E>::from_byte_tree(&trees[5])?;
+        let t1 = C::E::from_byte_tree(&trees[0], ctx)?;
+        let t2 = C::E::from_byte_tree(&trees[1], ctx)?;
+        let t3 = C::E::from_byte_tree(&trees[2], ctx)?;
+        let t4_1 = C::E::from_byte_tree(&trees[3], ctx)?;
+        let t4_2 = C::E::from_byte_tree(&trees[4], ctx)?;
+        let t_hats = Vec::<C::E>::from_byte_tree(&trees[5], ctx)?;
 
         let ret = Commitments {
             t1,
@@ -414,19 +487,20 @@ impl<C: Ctx> ToByteTree for Responses<C> {
             self.s_hats.to_byte_tree(),
             self.s_primes.to_byte_tree(),
         ];
+        // ByteTree::Tree(Responses, trees)
         ByteTree::Tree(trees)
     }
 }
 
-impl<C: Ctx> FromByteTree for Responses<C> {
-    fn from_byte_tree(tree: &ByteTree) -> Result<Responses<C>, ByteError> {
+impl<C: Ctx> FromByteTree<C> for Responses<C> {
+    fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<Responses<C>, ByteError> {
         let trees = tree.tree(6)?;
-        let s1 = <C::X>::from_byte_tree(&trees[0])?;
-        let s2 = <C::X>::from_byte_tree(&trees[1])?;
-        let s3 = <C::X>::from_byte_tree(&trees[2])?;
-        let s4 = <C::X>::from_byte_tree(&trees[3])?;
-        let s_hats = Vec::<C::X>::from_byte_tree(&trees[4])?;
-        let s_primes = Vec::<C::X>::from_byte_tree(&trees[5])?;
+        let s1 = <C::X>::from_byte_tree(&trees[0], ctx)?;
+        let s2 = <C::X>::from_byte_tree(&trees[1], ctx)?;
+        let s3 = <C::X>::from_byte_tree(&trees[2], ctx)?;
+        let s4 = <C::X>::from_byte_tree(&trees[3], ctx)?;
+        let s_hats = Vec::<C::X>::from_byte_tree(&trees[4], ctx)?;
+        let s_primes = Vec::<C::X>::from_byte_tree(&trees[5], ctx)?;
 
         let ret = Responses {
             s1,
@@ -454,7 +528,7 @@ pub(crate) mod tests {
     pub(crate) fn test_ciphertext_bytes_generic<C: Ctx>(ctx: &C) {
         let c = util::random_ballots(1, ctx).remove(0);
         let bytes = c.ser();
-        let back = Ciphertext::<C>::deser(&bytes).unwrap();
+        let back = Ciphertext::<C>::deser(&bytes, ctx).unwrap();
 
         assert!(c.mhr == back.mhr && c.gr == back.gr);
     }
@@ -464,12 +538,12 @@ pub(crate) mod tests {
         let pk = PublicKey::from_element(&sk.public_value, ctx);
 
         let bytes = sk.ser();
-        let back = PrivateKey::<C>::deser(&bytes).unwrap();
+        let back = PrivateKey::<C>::deser(&bytes, ctx).unwrap();
 
         assert!(sk == back);
 
         let bytes = pk.ser();
-        let back = PublicKey::<C>::deser(&bytes).unwrap();
+        let back = PublicKey::<C>::deser(&bytes, ctx).unwrap();
 
         assert!(pk == back);
     }
@@ -484,7 +558,7 @@ pub(crate) mod tests {
         assert!(verified);
 
         let bytes = schnorr.ser();
-        let back = Schnorr::<C>::deser(&bytes).unwrap();
+        let back = Schnorr::<C>::deser(&bytes, ctx).unwrap();
         assert!(schnorr == back);
 
         let verified = zkp.schnorr_verify(&public, &g, &back, &vec![]);
@@ -503,7 +577,7 @@ pub(crate) mod tests {
         assert!(verified);
 
         let bytes = proof.ser();
-        let back = ChaumPedersen::<C>::deser(&bytes).unwrap();
+        let back = ChaumPedersen::<C>::deser(&bytes, ctx).unwrap();
         assert!(proof == back);
 
         let verified = zkp.cp_verify(&public1, &public2, None, &g2, &back, &vec![]);
@@ -520,7 +594,7 @@ pub(crate) mod tests {
         let sym_key = symmetric::gen_key();
         let enc_sk = sk.to_encrypted(sym_key);
         let enc_sk_b = enc_sk.ser();
-        let back = EncryptedPrivateKey::deser(&enc_sk_b).unwrap();
+        let back = EncryptedPrivateKey::deser(&enc_sk_b, ctx).unwrap();
         assert!(enc_sk == back);
 
         let sk_d = PrivateKey::from_encrypted(sym_key, back, ctx);
