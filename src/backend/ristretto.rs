@@ -153,8 +153,7 @@ impl Ctx for RistrettoCtx {
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
         let b32 = util::to_u8_32(bytes)?;
-        Scalar::from_canonical_bytes(b32)
-            .ok_or_else(|| "Failed constructing scalar")
+        Scalar::from_canonical_bytes(b32).ok_or_else(|| "Failed constructing scalar")
     }
     fn new() -> RistrettoCtx {
         RistrettoCtx
@@ -245,7 +244,6 @@ impl FromByteTree<RistrettoCtx> for RistrettoPoint {
     fn from_byte_tree(tree: &ByteTree, ctx: &RistrettoCtx) -> Result<RistrettoPoint, ByteError> {
         let bytes = tree.leaf()?;
         ctx.element_from_bytes(bytes).map_err(ByteError::Msg)
-        
     }
 }
 

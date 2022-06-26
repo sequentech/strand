@@ -52,8 +52,7 @@ pub(crate) fn to_u8_32(input: &[u8]) -> Result<[u8; 32], &'static str> {
         let mut bytes = [0u8; 32];
         bytes.copy_from_slice(input);
         Ok(bytes)
-    }
-    else {
+    } else {
         Err("Not 32 bytes")
     }
 }

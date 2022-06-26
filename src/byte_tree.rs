@@ -28,14 +28,12 @@ quick_error! {
     }
 }
 
-
-
 const LEAF: u8 = 0;
 const TREE: u8 = 1;
 
 #[derive(Serialize, Deserialize)]
 pub enum ByteTree {
-    Leaf(ByteBuf),    
+    Leaf(ByteBuf),
     Tree(Vec<ByteTree>),
     /* Leaf(DataType, ByteBuf),
     UntypedLeaf(ByteBuf),
@@ -86,7 +84,7 @@ impl ByteTree {
             Err(ByteError::Msg("ByteTree: unexpected Leaf"))
         }
     }
-    
+
     /*pub(crate) fn leaf(&self, type_: DataType) -> Result<&Vec<u8>, ByteError> {
         if let Leaf(typ, bytes) = self {
             if type_ == *typ {
@@ -105,7 +103,7 @@ impl ByteTree {
             if type_ != *typ {
                 return Err(ByteError::Msg(&format!("ByteTree: type mismatch {:?}, {:?}", type_, typ)))
             }
-            
+
             if trees.len() == length {
                 Ok(trees)
             } else {
@@ -220,9 +218,8 @@ impl<T: ToByteTree> BTreeSer for T {
     }
 }
 
-
 /*impl<C: Ctx, E: Element<C>> BTreeDeser<C> for E {
-    
+
 }*/
 
 impl<C: Ctx, T: FromByteTree<C>> BTreeDeser<C> for T {

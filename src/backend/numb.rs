@@ -172,8 +172,7 @@ impl<P: BigintCtxParams> Element<BigintCtx<P>> for BigUintE {
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
         let inverse = (&self.0).invm(&modulus.0);
-        BigUintE(inverse
-            .expect("there is always an inverse for prime p"))
+        BigUintE(inverse.expect("there is always an inverse for prime p"))
     }
     #[inline(always)]
     fn mod_pow(&self, other: &BigUintX, modulus: &Self) -> Self {
@@ -209,8 +208,7 @@ impl<P: BigintCtxParams> Exponent<BigintCtx<P>> for BigUintX {
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
         let inverse = (&self.0).invm(&modulus.0);
-        BigUintX(inverse
-            .expect("there is always an inverse for prime p"))
+        BigUintX(inverse.expect("there is always an inverse for prime p"))
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {

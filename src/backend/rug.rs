@@ -42,8 +42,10 @@ impl<P: RugCtxParams> RugCtx<P> {
                 next.extend(&index.to_le_bytes());
                 next.extend(&count.to_le_bytes());
                 let elem: Integer = self.hash_to_element(&next);
-                let g = elem.pow_mod(self.params.co_factor(), &self.modulus().0).unwrap();
-                    // Element::<RugCtx<P>>::mod_pow(&elem, self.params.co_factor(), self.modulus());
+                let g = elem
+                    .pow_mod(self.params.co_factor(), &self.modulus().0)
+                    .unwrap();
+                // Element::<RugCtx<P>>::mod_pow(&elem, self.params.co_factor(), self.modulus());
                 if g >= two {
                     ret.push(IntegerE(g));
                     break;
@@ -113,7 +115,8 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         hasher.update(bytes);
         let hashed = hasher.finalize();
 
-        let (_, rem) = Integer::from_digits(&hashed, Order::Lsf).div_rem(self.exp_modulus().0.clone());
+        let (_, rem) =
+            Integer::from_digits(&hashed, Order::Lsf).div_rem(self.exp_modulus().0.clone());
 
         IntegerX(rem)
     }
@@ -159,7 +162,7 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         let ret = Integer::from_digits(bytes, Order::LsfBe);
         Ok(IntegerE(ret))
     }
-    fn exp_from_bytes(&self, bytes: &[u8], ) -> Result<Self::X, &'static str> {
+    fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
         let ret = Integer::from_digits(bytes, Order::LsfBe);
         Ok(IntegerX(ret))
     }
@@ -181,9 +184,12 @@ impl<P: RugCtxParams> Element<RugCtx<P>> for IntegerE {
     }
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
-        IntegerE(self.0.clone()
-            .invert(&modulus.0)
-            .expect("there is always an inverse for prime p"))
+        IntegerE(
+            self.0
+                .clone()
+                .invert(&modulus.0)
+                .expect("there is always an inverse for prime p"),
+        )
     }
     #[inline(always)]
     fn mod_pow(&self, other: &IntegerX, modulus: &Self) -> Self {
@@ -229,9 +235,12 @@ impl<P: RugCtxParams> Exponent<RugCtx<P>> for IntegerX {
     }
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
-        IntegerX(self.0.clone()
-            .invert(&modulus.0)
-            .expect("there is always an inverse for prime p"))
+        IntegerX(
+            self.0
+                .clone()
+                .invert(&modulus.0)
+                .expect("there is always an inverse for prime p"),
+        )
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
@@ -530,7 +539,11 @@ mod tests {
         let cs = proof.cs;
         let cs_list: Vec<String> = cs.iter().map(|c| c.0.to_string_radix(16)).collect();
 
-        let c_hats: Vec<String> = proof.c_hats.iter().map(|c| c.0.to_string_radix(16)).collect();
+        let c_hats: Vec<String> = proof
+            .c_hats
+            .iter()
+            .map(|c| c.0.to_string_radix(16))
+            .collect();
         let t3 = proof.t.t3.0.to_string_radix(16);
         let t_hats: Vec<String> = proof
             .t
@@ -555,10 +568,14 @@ mod tests {
         let ciphers_in_a: Vec<String> = es.iter().map(|c| c.mhr.0.to_string_radix(16)).collect();
         let ciphers_in_b: Vec<String> = es.iter().map(|c| c.gr.0.to_string_radix(16)).collect();
 
-        let ciphers_out_a: Vec<String> =
-            e_primes.iter().map(|c| c.mhr.0.to_string_radix(16)).collect();
-        let ciphers_out_b: Vec<String> =
-            e_primes.iter().map(|c| c.gr.0.to_string_radix(16)).collect();
+        let ciphers_out_a: Vec<String> = e_primes
+            .iter()
+            .map(|c| c.mhr.0.to_string_radix(16))
+            .collect();
+        let ciphers_out_b: Vec<String> = e_primes
+            .iter()
+            .map(|c| c.gr.0.to_string_radix(16))
+            .collect();
 
         let ciphers_in = vec![ciphers_in_a, ciphers_in_b];
         let ciphers_out = vec![ciphers_out_a, ciphers_out_b];
