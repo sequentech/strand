@@ -1,4 +1,6 @@
-// use crate::backend::num_bigint::BigintCtx;
+use rand::RngCore;
+use wasm_bindgen::prelude::*;
+
 use crate::backend::numb::{BigintCtx, P2048};
 use crate::backend::ristretto::RistrettoCtx;
 use crate::backend::tests::*;
@@ -9,8 +11,6 @@ use crate::shuffler::Shuffler;
 use crate::threshold::tests::test_threshold_generic;
 use crate::util;
 use crate::zkp::Zkp;
-use rand::RngCore;
-use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 extern "C" {

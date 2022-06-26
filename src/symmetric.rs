@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 use aes::cipher::{block_padding::Pkcs7, BlockDecryptMut, BlockEncryptMut, KeyIvInit};
+use rand::RngCore;
 type Aes256CbcEnc = cbc::Encryptor<aes::Aes256>;
 type Aes256CbcDec = cbc::Decryptor<aes::Aes256>;
 
 use crate::rnd::StrandRng;
-use rand::RngCore;
 
 pub fn encrypt(key: [u8; 32], bytes: &[u8]) -> (Vec<u8>, [u8; 16]) {
     let mut csprng = StrandRng;

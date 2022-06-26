@@ -142,16 +142,25 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E> {
         self.generators_fips(size, contest, seed)
     }
-    fn is_valid_element(&self, element: &Self::E) -> bool {
-        element.0.legendre(&self.modulus().0) == 1
-    }
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
         let ret = BigUint::from_bytes_le(bytes);
-        Ok(BigUintE(ret))
+        let one: BigUint = One::one();
+        if (ret < one) || ret >= self.modulus().0 {
+            Err("Out of range")
+        } else if ret.legendre(&self.modulus().0) != 1 {
+            Err("Not a quadratic residue")
+        } else {
+            Ok(BigUintE(ret))
+        }
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
         let ret = BigUint::from_bytes_le(bytes);
-        Ok(BigUintX(ret))
+        let zero: BigUint = Zero::zero();
+        if (ret < zero) || ret >= self.exp_modulus().0 {
+            Err("Out of range")
+        } else {
+            Ok(BigUintX(ret))
+        }
     }
     fn new() -> BigintCtx<P> {
         let params = P::new();

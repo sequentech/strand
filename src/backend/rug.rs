@@ -155,16 +155,23 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E> {
         self.generators_fips(size, contest, seed)
     }
-    fn is_valid_element(&self, element: &Self::E) -> bool {
-        element.0.legendre(&self.modulus().0) == 1
-    }
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
         let ret = Integer::from_digits(bytes, Order::MsfLe);
-        Ok(IntegerE(ret))
+        if (ret < 1) || ret >= self.modulus().0 {
+            Err("Out of range")
+        } else if ret.legendre(&self.modulus().0) != 1 {
+            Err("Not a quadratic residue")
+        } else {
+            Ok(IntegerE(ret))
+        }
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
         let ret = Integer::from_digits(bytes, Order::MsfLe);
-        Ok(IntegerX(ret))
+        if (ret < 0) || ret >= self.exp_modulus().0 {
+            Err("Out of range")
+        } else {
+            Ok(IntegerX(ret))
+        }
     }
     fn new() -> RugCtx<P> {
         let params = P::new();

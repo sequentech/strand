@@ -1,12 +1,12 @@
-// SPDX-FileCopyrightText: 2021 David Ruescas <david@sequenttech.io>
+// SPDX-FileCopyrightText: 2021 David Ruescas <david@sequentech.io>
 //
 // SPDX-License-Identifier: AGPL-3.0-only
+use std::marker::PhantomData;
 
 use crate::byte_tree::{BTreeDeser, BTreeSer};
 use crate::context::{Ctx, Element};
 use crate::symmetric;
 use crate::zkp::{ChaumPedersen, Zkp};
-use std::marker::PhantomData;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Ciphertext<C: Ctx> {

@@ -35,31 +35,7 @@ const TREE: u8 = 1;
 pub enum ByteTree {
     Leaf(ByteBuf),
     Tree(Vec<ByteTree>),
-    /* Leaf(DataType, ByteBuf),
-    UntypedLeaf(ByteBuf),
-    Tree(DataType, Vec<ByteTree>),
-    UntypedTree(Vec<ByteTree>),*/
 }
-/*
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
-#[repr(u8)]
-pub enum DataType {
-    Array,
-    Ciphertext,
-    Element,
-    Exponent,
-    EncryptedKey,
-    EncryptedKeyBytes,
-    EncryptedKeyIv,
-    PrivateKey,
-    PublicKey,
-    Schnorr,
-    ChaumPedersen,
-    ShuffleProof,
-    Commitments,
-    Responses
-}
-use DataType::*;*/
 
 use ByteTree::*;
 
@@ -85,39 +61,9 @@ impl ByteTree {
         }
     }
 
-    /*pub(crate) fn leaf(&self, type_: DataType) -> Result<&Vec<u8>, ByteError> {
-        if let Leaf(typ, bytes) = self {
-            if type_ == *typ {
-                Ok(bytes)
-            }
-            else {
-                Err(ByteError::Msg(&format!("ByteTree: type mismatch {:?}, {:?}", type_, typ)))
-            }
-        } else {
-            Err(ByteError::Msg("ByteTree: unexpected Tree"))
-        }
-    }
-
-    pub(crate) fn tree(&self, type_: DataType, length: usize) -> Result<&Vec<ByteTree>, ByteError> {
-        if let Tree(typ, trees) = self {
-            if type_ != *typ {
-                return Err(ByteError::Msg(&format!("ByteTree: type mismatch {:?}, {:?}", type_, typ)))
-            }
-
-            if trees.len() == length {
-                Ok(trees)
-            } else {
-                Err(ByteError::Msg("ByteTree: size mismatch"))
-            }
-        } else {
-            Err(ByteError::Msg("ByteTree: unexpected Leaf"))
-        }
-    }*/
-
-    // FIXME hashable bytes uses metadata
     pub(crate) fn to_hashable_bytes(&self) -> Vec<u8> {
         match self {
-            Leaf(bytes) /*| UntypedLeaf(bytes)*/ => {
+            Leaf(bytes) => {
                 let mut next: Vec<u8> = vec![];
                 let length = bytes.len() as u64;
                 next.push(LEAF);
@@ -127,7 +73,7 @@ impl ByteTree {
                 next
             }
 
-            Tree(trees) /*| UntypedTree(trees)*/ => {
+            Tree(trees) => {
                 let mut next: Vec<u8> = vec![];
                 let length = trees.len() as u64;
                 next.push(TREE);
@@ -153,6 +99,17 @@ pub trait FromByteTree<C: Ctx> {
 pub trait ToFromBTree<C: Ctx>: ToByteTree + FromByteTree<C> {}
 impl<C: Ctx, T: ToByteTree + FromByteTree<C>> ToFromBTree<C> for T {}
 
+
+pub trait BTreeSer {
+    fn ser(&self) -> Vec<u8>;
+}
+
+pub trait BTreeDeser<C: Ctx> {
+    fn deser(bytes: &[u8], ctx: &C) -> Result<Self, ByteError>
+    where
+        Self: Sized;
+}
+
 impl<T: ToByteTree + Sync> ToByteTree for Vec<T> {
     fn to_byte_tree(&self) -> ByteTree {
         let tree = self.par().map(|e| e.to_byte_tree()).collect();
@@ -175,52 +132,12 @@ impl<C: Ctx, T: FromByteTree<C> + Send> FromByteTree<C> for Vec<T> {
     }
 }
 
-/*impl ToByteTree for Vec<u8> {
-    fn to_byte_tree(&self) -> ByteTree {
-        Leaf(ByteBuf::from(self.to_vec()))
-    }
-}
-
-impl<C: Ctx> FromByteTree<C> for Vec<u8> {
-    fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<Vec<u8>, ByteError> {
-        if let Leaf(bytes) = tree {
-            Ok(bytes.to_vec())
-        } else {
-            Err(ByteError::Msg(String::from(
-                "ByteTree: unexpected Tree constructing Vec<u8>",
-            )))
-        }
-    }
-}*/
-
-/*
-impl ToByteTree for [u8; 64] {
-    fn to_byte_tree(&self) -> ByteTree {
-        ByteTree::Leaf(ByteBuf::from(self.to_vec()))
-    }
-}
-*/
-
-pub trait BTreeSer {
-    fn ser(&self) -> Vec<u8>;
-}
-
-pub trait BTreeDeser<C: Ctx> {
-    fn deser(bytes: &[u8], ctx: &C) -> Result<Self, ByteError>
-    where
-        Self: Sized;
-}
-
 impl<T: ToByteTree> BTreeSer for T {
     fn ser(&self) -> Vec<u8> {
         let tree = self.to_byte_tree();
         bincode::serialize(&tree).unwrap()
     }
 }
-
-/*impl<C: Ctx, E: Element<C>> BTreeDeser<C> for E {
-
-}*/
 
 impl<C: Ctx, T: FromByteTree<C>> BTreeDeser<C> for T {
     fn deser(bytes: &[u8], ctx: &C) -> Result<T, ByteError> {
@@ -233,7 +150,6 @@ impl<T: ToByteTree + Sync> ToByteTree for [T] {
     fn to_byte_tree(&self) -> ByteTree {
         let tree = self.par().map(|e| e.to_byte_tree()).collect();
         ByteTree::Tree(tree)
-        // ByteTree::Tree(Array, tree)
     }
 }
 
@@ -244,19 +160,11 @@ impl<C: Ctx> ToByteTree for EncryptedPrivateKey<C> {
             ByteTree::Leaf(ByteBuf::from(self.iv)),
         ];
         ByteTree::Tree(trees)
-        /*let trees: Vec<ByteTree> = vec![
-            ByteTree::Leaf(EncryptedKeyBytes, ByteBuf::from(self.bytes.clone())),
-            ByteTree::Leaf(EncryptedKeyIv, ByteBuf::from(self.iv)),
-        ];
-        ByteTree::Tree(EncryptedKey, trees)*/
     }
 }
 
 impl<C: Ctx> FromByteTree<C> for EncryptedPrivateKey<C> {
     fn from_byte_tree(tree: &ByteTree, _ctx: &C) -> Result<EncryptedPrivateKey<C>, ByteError> {
-        /*let trees = tree.tree(EncryptedKey, 2)?;
-        let bytes = trees[0].leaf(EncryptedKeyBytes)?.to_vec();
-        let iv_vec = trees[1].leaf(EncryptedKeyIv)?;*/
         let trees = tree.tree(2)?;
         let bytes = trees[0].leaf()?.to_vec();
         let iv_vec = trees[1].leaf()?;
@@ -273,7 +181,6 @@ impl<C: Ctx> ToByteTree for PrivateKey<C> {
     fn to_byte_tree(&self) -> ByteTree {
         let trees: Vec<ByteTree> =
             vec![self.value.to_byte_tree(), self.public_value.to_byte_tree()];
-        // ByteTree::Tree(PrivateKey, trees)
         ByteTree::Tree(trees)
     }
 }
@@ -300,7 +207,6 @@ where
 {
     fn to_byte_tree(&self) -> ByteTree {
         let trees: Vec<ByteTree> = vec![self.mhr.to_byte_tree(), self.gr.to_byte_tree()];
-        // ByteTree::Tree(Ciphertext, trees)
         ByteTree::Tree(trees)
     }
 }
@@ -314,23 +220,12 @@ where
         let mhr = C::E::from_byte_tree(&trees[0], ctx)?;
         let gr = C::E::from_byte_tree(&trees[1], ctx)?;
         Ok(Ciphertext { mhr, gr })
-        /* let ctx = C::get();
-        let ok = ctx.is_valid_element(&mhr) && ctx.is_valid_element(&gr);
-        if ok {
-            Ok(Ciphertext { mhr, gr })
-        } else {
-            Err(ByteError::Msg(String::from(
-                "ByteTree: quadratic non-residue",
-            )))
-        }*/
     }
 }
 
 impl<C: Ctx> ToByteTree for PublicKey<C> {
     fn to_byte_tree(&self) -> ByteTree {
-        // let trees: Vec<ByteTree> = vec![self.value.to_byte_tree(), self.ctx.to_byte_tree()];
         let trees: Vec<ByteTree> = vec![self.value.to_byte_tree()];
-        // ByteTree::Tree(PublicKey, trees)
         ByteTree::Tree(trees)
     }
 }
@@ -339,7 +234,6 @@ impl<C: Ctx> FromByteTree<C> for PublicKey<C> {
     fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<PublicKey<C>, ByteError> {
         let trees = tree.tree(1)?;
         let value = C::E::from_byte_tree(&trees[0], ctx)?;
-        // let ret = PublicKey { value, ctx };
         let ctx = C::new();
         let ret = PublicKey { value, ctx };
 
@@ -354,7 +248,6 @@ impl<C: Ctx> ToByteTree for Schnorr<C> {
             self.challenge.to_byte_tree(),
             self.response.to_byte_tree(),
         ];
-        // ByteTree::Tree(Schnorr, trees)
         ByteTree::Tree(trees)
     }
 }
@@ -384,7 +277,6 @@ impl<C: Ctx> ToByteTree for ChaumPedersen<C> {
             self.challenge.to_byte_tree(),
             self.response.to_byte_tree(),
         ];
-        // ByteTree::Tree(ChaumPedersen, trees)
         ByteTree::Tree(trees)
     }
 }
@@ -417,7 +309,6 @@ impl<C: Ctx> ToByteTree for ShuffleProof<C> {
             self.c_hats.to_byte_tree(),
         ];
 
-        // ByteTree::Tree(ShuffleProof, trees)
         ByteTree::Tree(trees)
     }
 }
@@ -446,7 +337,6 @@ impl<C: Ctx> ToByteTree for Commitments<C> {
             self.t4_2.to_byte_tree(),
             self.t_hats.to_byte_tree(),
         ];
-        // ByteTree::Tree(Commitments, trees)
         ByteTree::Tree(trees)
     }
 }
@@ -484,7 +374,6 @@ impl<C: Ctx> ToByteTree for Responses<C> {
             self.s_hats.to_byte_tree(),
             self.s_primes.to_byte_tree(),
         ];
-        // ByteTree::Tree(Responses, trees)
         ByteTree::Tree(trees)
     }
 }
@@ -519,7 +408,6 @@ pub(crate) mod tests {
     use crate::byte_tree::*;
     use crate::symmetric;
     use crate::zkp::Zkp;
-
     // use ed25519_dalek::Keypair;
 
     pub(crate) fn test_ciphertext_bytes_generic<C: Ctx>(ctx: &C) {

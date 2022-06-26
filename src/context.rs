@@ -23,7 +23,6 @@ pub trait Ctx: Sync + Sized + Clone {
     fn hash_to_exp(&self, bytes: &[u8]) -> Self::X;
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E>;
 
-    fn is_valid_element(&self, element: &Self::E) -> bool;
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str>;
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str>;
 

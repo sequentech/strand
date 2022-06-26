@@ -2,9 +2,11 @@
 // SPDX-FileCopyrightText: 2021 David Ruescas <david@sequentech.io>
 //
 // SPDX-License-Identifier: AGPL-3.0-only
+use ed25519_dalek::{Digest, Sha512};
 use rand::Rng;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
+use serde_bytes::ByteBuf;
 use std::sync::Mutex;
 
 use crate::byte_tree::{ByteTree, ToByteTree};
@@ -12,8 +14,6 @@ use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::{Ciphertext, PublicKey};
 use crate::rnd::StrandRng;
 use crate::util::Par;
-use ed25519_dalek::{Digest, Sha512};
-use serde_bytes::ByteBuf;
 
 pub(crate) struct YChallengeInput<'a, C: Ctx> {
     pub es: &'a [Ciphertext<C>],

@@ -142,9 +142,6 @@ impl Ctx for RistrettoCtx {
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E> {
         self.generators_shake(size, contest, seed)
     }
-    fn is_valid_element(&self, _element: &Self::E) -> bool {
-        true
-    }
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
         let b32 = util::to_u8_32(bytes)?;
         CompressedRistretto(b32)

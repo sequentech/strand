@@ -1,8 +1,9 @@
 #![allow(clippy::too_many_arguments)]
+use serde_bytes::ByteBuf;
+
 use crate::byte_tree::ByteTree;
 use crate::byte_tree::ToByteTree;
 use crate::context::{Ctx, Element, Exponent};
-use serde_bytes::ByteBuf;
 
 pub struct Zkp<C: Ctx> {
     pub(crate) ctx: C,
