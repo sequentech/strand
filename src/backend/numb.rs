@@ -285,9 +285,9 @@ impl BigintCtxParams for P2048 {
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct BigUintE(BigUint);
+pub struct BigUintE(pub BigUint);
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct BigUintX(BigUint);
+pub struct BigUintX(pub BigUint);
 
 impl ToByteTree for BigUintE {
     fn to_byte_tree(&self) -> ByteTree {

@@ -11,3 +11,5 @@ Cargo.lock
 
 /__pycache__/
 rust-toolchain
+# VS Code
+.DS_Store
