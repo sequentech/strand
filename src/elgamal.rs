@@ -24,14 +24,14 @@ impl<C: Ctx> Ciphertext<C> {
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct PublicKey<C: Ctx> {
-    pub(crate) value: C::E,
+    pub(crate) element: C::E,
     pub(crate) ctx: C,
 }
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct PrivateKey<C: Ctx> {
     pub(crate) value: C::X,
-    pub(crate) public_value: C::E,
+    pub(crate) pk_element: C::E,
     pub(crate) ctx: C,
 }
 
@@ -45,23 +45,23 @@ pub struct EncryptedPrivateKey<C: Ctx> {
 impl<C: Ctx> PublicKey<C> {
     pub fn encrypt(&self, plaintext: &C::E) -> Ciphertext<C> {
         let randomness = self.ctx.rnd_exp();
-        self.encrypt_ext(plaintext, &randomness)
+        self.encrypt_with_randomness(plaintext, &randomness)
     }
-    pub fn encrypt_exponential(&self, plaintext: &C::X, randomness: &C::X) -> Ciphertext<C> {
-        self.encrypt_ext(&self.ctx.gmod_pow(plaintext), randomness)
+    pub fn encrypt_exponential(&self, plaintext: &C::X) -> Ciphertext<C> {
+        self.encrypt(&self.ctx.gmod_pow(plaintext))
     }
-    pub fn encrypt_ext(&self, plaintext: &C::E, randomness: &C::X) -> Ciphertext<C> {
+    pub fn encrypt_with_randomness(&self, plaintext: &C::E, randomness: &C::X) -> Ciphertext<C> {
         let ctx = &self.ctx;
         Ciphertext {
             mhr: plaintext
-                .mul(&ctx.emod_pow(&self.value, randomness))
+                .mul(&ctx.emod_pow(&self.element, randomness))
                 .modulo(ctx.modulus()),
             gr: ctx.gmod_pow(randomness),
         }
     }
-    pub fn from_element(pk_value: &C::E, ctx: &C) -> PublicKey<C> {
+    pub fn from_element(element: &C::E, ctx: &C) -> PublicKey<C> {
         PublicKey {
-            value: pk_value.clone(),
+            element: element.clone(),
             ctx: (*ctx).clone(),
         }
     }
@@ -84,7 +84,7 @@ impl<C: Ctx> PrivateKey<C> {
 
         let proof = zkp.cp_prove(
             &self.value,
-            &self.public_value,
+            &self.pk_element,
             dec_factor,
             None,
             &c.gr,
@@ -105,10 +105,10 @@ impl<C: Ctx> PrivateKey<C> {
         PrivateKey::from(&secret, ctx)
     }
     pub fn from(secret: &C::X, ctx: &C) -> PrivateKey<C> {
-        let public_value = ctx.gmod_pow(secret);
+        let pk_element = ctx.gmod_pow(secret);
         PrivateKey {
             value: secret.clone(),
-            public_value,
+            pk_element,
             ctx: (*ctx).clone(),
         }
     }
@@ -130,22 +130,22 @@ impl<C: Ctx> PrivateKey<C> {
         let key_bytes = symmetric::decrypt(key, encrypted.iv, &encrypted.bytes);
         // FIXME handle this error
         let value = C::X::deser(&key_bytes, ctx).unwrap();
-        let public_value = ctx.gmod_pow(&value);
+        let pk_element = ctx.gmod_pow(&value);
 
         PrivateKey {
             value,
-            public_value,
+            pk_element,
             ctx: (*ctx).clone(),
         }
     }
 
-    pub fn public_value(&self) -> &C::E {
-        &self.public_value
+    pub fn pk_element(&self) -> &C::E {
+        &self.pk_element
     }
 
-    pub fn get_public(&self) -> PublicKey<C> {
+    pub fn get_pk(&self) -> PublicKey<C> {
         PublicKey {
-            value: self.public_value.clone(),
+            element: self.pk_element.clone(),
             ctx: self.ctx.clone(),
         }
     }

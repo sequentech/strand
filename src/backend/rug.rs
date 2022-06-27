@@ -6,7 +6,7 @@ use rand::RngCore;
 use rug::{
     integer::Order,
     rand::{RandGen, RandState},
-    Complete, Integer,
+    Integer,
 };
 use serde_bytes::ByteBuf;
 
@@ -72,6 +72,11 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     type X = IntegerX;
     type P = Integer;
 
+    fn new() -> RugCtx<P> {
+        let params = P::new();
+        RugCtx { params }
+    }
+
     #[inline(always)]
     fn generator(&self) -> &Self::E {
         self.params.generator()
@@ -110,16 +115,6 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     fn rnd_plaintext(&self) -> Self::P {
         self.rnd_exp().0
     }
-    fn hash_to_exp(&self, bytes: &[u8]) -> Self::X {
-        let mut hasher = Sha512::new();
-        hasher.update(bytes);
-        let hashed = hasher.finalize();
-
-        let (_, rem) =
-            Integer::from_digits(&hashed, Order::Lsf).div_rem(self.exp_modulus().0.clone());
-
-        IntegerX(rem)
-    }
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
         if plaintext >= &(self.exp_modulus().0.clone() - 1i32) {
             return Err("Failed to encode, out of range");
@@ -149,9 +144,6 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
             element.0.clone() - 1i32
         }
     }
-    fn exp_from_u64(&self, value: u64) -> Self::X {
-        IntegerX(Integer::from(value))
-    }
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E> {
         self.generators_fips(size, contest, seed)
     }
@@ -173,9 +165,18 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
             Ok(IntegerX(ret))
         }
     }
-    fn new() -> RugCtx<P> {
-        let params = P::new();
-        RugCtx { params }
+    fn hash_to_exp(&self, bytes: &[u8]) -> Self::X {
+        let mut hasher = Sha512::new();
+        hasher.update(bytes);
+        let hashed = hasher.finalize();
+
+        let (_, rem) =
+            Integer::from_digits(&hashed, Order::Lsf).div_rem(self.exp_modulus().0.clone());
+
+        IntegerX(rem)
+    }
+    fn exp_from_u64(&self, value: u64) -> Self::X {
+        IntegerX(Integer::from(value))
     }
 }
 
@@ -362,8 +363,8 @@ mod tests {
     use crate::backend::tests::*;
     use crate::byte_tree::tests::*;
     use crate::context::Ctx;
+    use crate::elgamal::Ciphertext;
     use crate::elgamal::PrivateKey;
-    use crate::elgamal::{Ciphertext, PublicKey};
     use crate::shuffler::gen_permutation;
     use crate::shuffler::PermutationData;
     use crate::shuffler::Shuffler;
@@ -502,7 +503,7 @@ mod tests {
         let ctx = RugCtx::<P2048>::new();
 
         let sk = PrivateKey::gen(&ctx);
-        let pk = sk.get_public();
+        let pk = sk.get_pk();
 
         let n = 100;
         let mut es: Vec<Ciphertext<RugCtx<P2048>>> = Vec::with_capacity(n);
@@ -537,7 +538,7 @@ mod tests {
 
         let pk_list = vec![
             ctx.generator().0.to_string_radix(16),
-            pk.value.0.to_string_radix(16),
+            pk.element.0.to_string_radix(16),
         ];
 
         let hs_list: Vec<String> = hs.iter().map(|h| h.0.to_string_radix(16)).collect();

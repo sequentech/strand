@@ -38,7 +38,7 @@ pub(crate) mod tests {
 
     pub(crate) fn test_elgamal_generic<C: Ctx>(ctx: &C, data: C::P) {
         let sk = PrivateKey::gen(ctx);
-        let pk = sk.get_public();
+        let pk = sk.get_pk();
 
         let plaintext = ctx.encode(&data).unwrap();
 
@@ -84,7 +84,7 @@ pub(crate) mod tests {
     pub(crate) fn test_vdecryption_generic<C: Ctx>(ctx: &C, data: C::P) {
         let zkp = Zkp::new(ctx);
         let sk = PrivateKey::gen(ctx);
-        let pk = sk.get_public();
+        let pk = sk.get_pk();
 
         let plaintext = ctx.encode(&data).unwrap();
 
@@ -93,7 +93,7 @@ pub(crate) mod tests {
 
         let dec_factor = c.mhr.div(&d, &ctx.modulus()).modulo(&ctx.modulus());
 
-        let verified = zkp.cp_verify(&pk.value, &dec_factor, None, &c.gr, &proof, &vec![]);
+        let verified = zkp.cp_verify(&pk.element, &dec_factor, None, &c.gr, &proof, &vec![]);
         let recovered = ctx.decode(&d);
         assert!(verified);
         assert_eq!(data, recovered);
@@ -106,15 +106,15 @@ pub(crate) mod tests {
         let (pk1, proof1) = km1.share(&vec![]);
         let (pk2, proof2) = km2.share(&vec![]);
 
-        let verified1 = zkp.schnorr_verify(&pk1.value, &ctx.generator(), &proof1, &vec![]);
-        let verified2 = zkp.schnorr_verify(&pk2.value, &ctx.generator(), &proof2, &vec![]);
+        let verified1 = zkp.schnorr_verify(&pk1.element, &ctx.generator(), &proof1, &vec![]);
+        let verified2 = zkp.schnorr_verify(&pk2.element, &ctx.generator(), &proof2, &vec![]);
         assert!(verified1);
         assert!(verified2);
 
         let plaintext = ctx.encode(&data).unwrap();
 
-        let pk1_value = &pk1.value.clone();
-        let pk2_value = &pk2.value.clone();
+        let pk1_value = &pk1.element.clone();
+        let pk2_value = &pk2.element.clone();
         let pks = vec![pk1, pk2];
 
         let pk_combined = Keymaker::combine_pks(ctx, pks);
@@ -166,8 +166,8 @@ pub(crate) mod tests {
         assert!(verified1);
         assert!(verified2);
 
-        let pk1_value = &share1_pk_d.value.clone();
-        let pk2_value = &share2_pk_d.value.clone();
+        let pk1_value = &share1_pk_d.element.clone();
+        let pk2_value = &share2_pk_d.element.clone();
         let pks = vec![share1_pk_d, share2_pk_d];
 
         let pk_combined = Keymaker::combine_pks(ctx, pks);
@@ -212,7 +212,7 @@ pub(crate) mod tests {
 
     pub(crate) fn test_shuffle_generic<C: Ctx>(ctx: &C) {
         let sk = PrivateKey::gen(ctx);
-        let pk = sk.get_public();
+        let pk = sk.get_pk();
 
         let es = util::random_ballots(10, ctx);
         let seed = vec![];
@@ -233,7 +233,7 @@ pub(crate) mod tests {
 
     pub(crate) fn test_shuffle_btserde_generic<C: Ctx>(ctx: &C) {
         let sk = PrivateKey::gen(ctx);
-        let pk = sk.get_public();
+        let pk = sk.get_pk();
 
         let es = util::random_ballots(10, ctx);
         let seed = vec![];
@@ -272,7 +272,7 @@ pub(crate) mod tests {
 
     pub(crate) fn test_encrypted_sk_generic<C: Ctx>(ctx: &C, data: C::P) {
         let sk = PrivateKey::gen(ctx);
-        let pk: PublicKey<C> = sk.get_public();
+        let pk: PublicKey<C> = sk.get_pk();
         let plaintext = ctx.encode(&data).unwrap();
         let c = pk.encrypt(&plaintext);
         let sym_key = symmetric::gen_key();

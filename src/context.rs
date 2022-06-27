@@ -1,3 +1,36 @@
+//!
+//! The interface is composed of three abstractions on which other functionality is built:
+//! - [Ctx](crate::context::Ctx): a cryptographic context most closely corresponds to the underlying group in which
+//! modular arithmetic operations take place, and where discrete log assumptions hold.
+//! - [Element](crate::context::Element): An element of the underlying group whose main operations are multiplication and modular
+//! exponentiation. If the group is an elliptic curve, the corresponding terms are addition and multiplication.
+//! - [Exponent](crate::context::Exponent): An "exponent" that is used in modular exponentiation (or scalar multiplication
+//! for elliptic curves). It is a member of the groups' associated ring, or in the case of elliptic curves,
+//! a scalar.
+//!
+//! # Examples
+//!
+//! ```
+//! // This example shows how to obtain a context instance,
+//! // generate an ElGamal keypair, and encrypt/decrypt.
+//! use strand::context::Ctx;
+//! use strand::backend::numb::{BigintCtx, P2048};
+//! use strand::elgamal::{PrivateKey, PublicKey};
+//!
+//! // obtain a context for a 2048-bit prime, with num_bigint backend
+//! let ctx = BigintCtx::<P2048>::new();
+//! // generate an ElGamal keypair
+//! let sk = PrivateKey::gen(&ctx);
+//! let pk = sk.get_pk();
+//! // encrypt and decrypt
+//! let plaintext = ctx.rnd_plaintext();
+//! let encoded = ctx.encode(&plaintext).unwrap();
+//! let ciphertext = pk.encrypt(&encoded);
+//! let decrypted = sk.decrypt(&ciphertext);
+//! let plaintext_ = ctx.decode(&decrypted);
+//! assert_eq!(plaintext, plaintext_);
+//! ```
+
 use crate::byte_tree::ToFromBTree;
 // use crate::zkp::Zkp;
 use std::marker::{Send, Sync};

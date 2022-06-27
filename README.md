@@ -35,11 +35,9 @@ The library supports pluggable [discrete log](https://en.wikipedia.org/wiki/Deci
 
 ## building
 
-### Default features
-
 ```cargo build```
 
-### Parallel operations
+### Build with parallelism
 
 Uses rayon's parallel collections for compute intensive operations
 

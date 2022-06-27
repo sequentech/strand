@@ -106,7 +106,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
                 let a = c
                     .mhr
-                    .mul(&self.pk.value.mod_pow(&r, ctx.modulus()))
+                    .mul(&self.pk.element.mod_pow(&r, ctx.modulus()))
                     .modulo(ctx.modulus());
                 let b = c.gr.mul(&ctx.gmod_pow(&r)).modulo(ctx.modulus());
 
@@ -258,7 +258,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         }
 
         let t3 = (ctx.gmod_pow(&omegas[2])).mul(&t3_temp).modulo(gmod);
-        let t4_1 = (self.pk.value.inv(gmod).mod_pow(&omegas[3], gmod))
+        let t4_1 = (self.pk.element.inv(gmod).mod_pow(&omegas[3], gmod))
             .mul(&t4_1_temp)
             .modulo(gmod);
         let t4_2 = (ctx.generator().inv(gmod).mod_pow(&omegas[3], gmod))
@@ -427,7 +427,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             .modulo(gmod);
 
         let t_prime41 = (a_prime.inv(gmod).mod_pow(&c, gmod))
-            .mul(&self.pk.value.inv(gmod).mod_pow(&proof.s.s4, gmod))
+            .mul(&self.pk.element.inv(gmod).mod_pow(&proof.s.s4, gmod))
             .mul(&t_tilde41_temp)
             .modulo(gmod);
 
@@ -593,7 +593,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             y.e_primes.to_byte_tree(),
             y.cs.to_byte_tree(),
             y.c_hats.to_byte_tree(),
-            y.pk.value.to_byte_tree(),
+            y.pk.element.to_byte_tree(),
             t.t1.to_byte_tree(),
             t.t2.to_byte_tree(),
             t.t3.to_byte_tree(),

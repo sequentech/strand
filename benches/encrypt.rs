@@ -13,7 +13,7 @@ fn encrypt<C: Ctx>(ctx: &C, pk: &PublicKey<C>, data: C::P, n: usize) {
     for _ in 0..n {
         let plaintext = ctx.encode(&data).unwrap();
         let randomness = ctx.rnd_exp();
-        let c = pk.encrypt_ext(&plaintext, &randomness);
+        let c = pk.encrypt_with_randomness(&plaintext, &randomness);
 
         let _proof = zkp.schnorr_prove(&randomness, &c.gr(), ctx.generator(), &vec![]);
     }
@@ -47,18 +47,18 @@ cfg_if::cfg_if! {
 fn bench_encrypt(c: &mut Criterion) {
     let rctx = RistrettoCtx;
     let rsk = PrivateKey::gen(&rctx);
-    let rpk = rsk.get_public();
+    let rpk = rsk.get_pk();
 
     let bctx = BigintCtx::<P2048>::new();
     let bsk = PrivateKey::gen(&bctx);
-    let bpk = bsk.get_public();
+    let bpk = bsk.get_pk();
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "rug")] {
             use strand::backend::rug::P2048 as RP2048;
             let gctx = RugCtx::<RP2048>::new();
             let gsk = PrivateKey::gen(&gctx);
-            let gpk = gsk.get_public();
+            let gpk = gsk.get_pk();
         }
     }
 

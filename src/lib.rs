@@ -1,17 +1,29 @@
+#![doc = include_str!("../README.md")]
+// #![warn(missing_docs)]
 #[macro_use]
 extern crate quick_error;
 extern crate cfg_if;
 
+/// Provides cryptographic backends, currently multiplicative groups and elliptic curves.
 pub mod backend;
-mod byte_tree;
+/// Defines a generic interface to concrete backends.
 pub mod context;
+/// ElGamal encryption.
 pub mod elgamal;
-mod keymaker;
-mod rnd;
+/// Support for distributed Elgamal.
+pub mod keymaker;
+/// Wikstrom proof of shuffle.
 pub mod shuffler;
-mod symmetric;
-mod threshold;
+/// Support for threshold ElGamal.
+pub mod threshold;
+/// Miscellaneous functions.
 pub mod util;
 #[cfg(feature = "wasm")]
+/// Webassembly API.
 pub mod wasm;
+/// Schnorr and Chaum-Pedersen zero knowledge proofs.
 pub mod zkp;
+
+mod byte_tree;
+mod rnd;
+mod symmetric;

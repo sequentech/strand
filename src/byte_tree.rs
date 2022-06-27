@@ -99,7 +99,6 @@ pub trait FromByteTree<C: Ctx> {
 pub trait ToFromBTree<C: Ctx>: ToByteTree + FromByteTree<C> {}
 impl<C: Ctx, T: ToByteTree + FromByteTree<C>> ToFromBTree<C> for T {}
 
-
 pub trait BTreeSer {
     fn ser(&self) -> Vec<u8>;
 }
@@ -179,8 +178,7 @@ impl<C: Ctx> FromByteTree<C> for EncryptedPrivateKey<C> {
 
 impl<C: Ctx> ToByteTree for PrivateKey<C> {
     fn to_byte_tree(&self) -> ByteTree {
-        let trees: Vec<ByteTree> =
-            vec![self.value.to_byte_tree(), self.public_value.to_byte_tree()];
+        let trees: Vec<ByteTree> = vec![self.value.to_byte_tree(), self.pk_element.to_byte_tree()];
         ByteTree::Tree(trees)
     }
 }
@@ -189,11 +187,11 @@ impl<C: Ctx> FromByteTree<C> for PrivateKey<C> {
     fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<PrivateKey<C>, ByteError> {
         let trees = tree.tree(2)?;
         let value = C::X::from_byte_tree(&trees[0], ctx)?;
-        let public_value = C::E::from_byte_tree(&trees[1], ctx)?;
+        let pk_element = C::E::from_byte_tree(&trees[1], ctx)?;
         let ctx = C::new();
         let ret = PrivateKey {
             value,
-            public_value,
+            pk_element,
             ctx,
         };
 
@@ -225,7 +223,7 @@ where
 
 impl<C: Ctx> ToByteTree for PublicKey<C> {
     fn to_byte_tree(&self) -> ByteTree {
-        let trees: Vec<ByteTree> = vec![self.value.to_byte_tree()];
+        let trees: Vec<ByteTree> = vec![self.element.to_byte_tree()];
         ByteTree::Tree(trees)
     }
 }
@@ -233,9 +231,9 @@ impl<C: Ctx> ToByteTree for PublicKey<C> {
 impl<C: Ctx> FromByteTree<C> for PublicKey<C> {
     fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<PublicKey<C>, ByteError> {
         let trees = tree.tree(1)?;
-        let value = C::E::from_byte_tree(&trees[0], ctx)?;
+        let element = C::E::from_byte_tree(&trees[0], ctx)?;
         let ctx = C::new();
-        let ret = PublicKey { value, ctx };
+        let ret = PublicKey { element, ctx };
 
         Ok(ret)
     }
@@ -420,7 +418,7 @@ pub(crate) mod tests {
 
     pub(crate) fn test_key_bytes_generic<C: Ctx + Eq>(ctx: &C) {
         let sk = PrivateKey::gen(ctx);
-        let pk = PublicKey::from_element(&sk.public_value, ctx);
+        let pk = PublicKey::from_element(&sk.pk_element, ctx);
 
         let bytes = sk.ser();
         let back = PrivateKey::<C>::deser(&bytes, ctx).unwrap();
@@ -471,7 +469,7 @@ pub(crate) mod tests {
 
     pub(crate) fn test_epk_bytes_generic<C: Ctx + Eq>(ctx: &C, plaintext: C::P) {
         let sk = PrivateKey::gen(ctx);
-        let pk: PublicKey<C> = PublicKey::from_element(&sk.public_value, ctx);
+        let pk: PublicKey<C> = PublicKey::from_element(&sk.pk_element, ctx);
 
         let encoded = ctx.encode(&plaintext).unwrap();
         let c = pk.encrypt(&encoded);

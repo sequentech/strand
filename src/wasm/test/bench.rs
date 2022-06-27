@@ -84,7 +84,7 @@ pub fn bench_enc_pok(n: u32) {
 
 fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
     let sk = PrivateKey::gen(&ctx);
-    let pk: PublicKey<C> = sk.get_public();
+    let pk: PublicKey<C> = sk.get_pk();
 
     log("gen ballots..");
     let es = util::random_ballots(n, &ctx);
@@ -158,7 +158,7 @@ fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
 fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P, n: u32) {
     let zkp = Zkp::new(&ctx);
     let sk = PrivateKey::gen(&ctx);
-    let pk: PublicKey<C> = sk.get_public();
+    let pk: PublicKey<C> = sk.get_pk();
 
     log("encode..");
     let now = performance.now();
@@ -170,7 +170,7 @@ fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P, n: u32) {
         log("encrypt..");
         let now = performance.now();
         let randomness = ctx.rnd_exp();
-        let c = pk.encrypt_ext(&plaintext, &randomness);
+        let c = pk.encrypt_with_randomness(&plaintext, &randomness);
         log(&format!("{}", performance.now() - now));
         log("prove..");
         let now = performance.now();
