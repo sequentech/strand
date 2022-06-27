@@ -14,7 +14,7 @@
 //! // This example shows how to obtain a context instance,
 //! // generate an ElGamal keypair, and encrypt/decrypt.
 //! use strand::context::Ctx;
-//! use strand::backend::numb::{BigintCtx, P2048};
+//! use strand::backend::num_bigint::{BigintCtx, P2048};
 //! use strand::elgamal::{PrivateKey, PublicKey};
 //!
 //! // obtain a context for a 2048-bit prime, with num_bigint backend

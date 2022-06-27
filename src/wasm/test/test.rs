@@ -1,7 +1,7 @@
 use rand::RngCore;
 use wasm_bindgen::prelude::*;
 
-use crate::backend::numb::{BigintCtx, P2048};
+use crate::backend::num_bigint::{BigintCtx, P2048};
 use crate::backend::ristretto::RistrettoCtx;
 use crate::backend::tests::*;
 use crate::context::{Ctx, Element};

@@ -2,8 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-pub mod numb;
-// pub mod num_bigint;
+pub mod num_bigint;
 pub mod ristretto;
 #[cfg(feature = "rug")]
 pub mod rug;
