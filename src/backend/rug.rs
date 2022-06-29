@@ -1,6 +1,19 @@
-// SPDX-FileCopyrightText: 2021 David Ruescas <david@nvotes.com>
-//
-// SPDX-License-Identifier: AGPL-3.0-only
+//! # Examples
+//!
+//! ```
+//! // This example shows how to obtain a context to use the rug backend.
+//! use strand::context::{Ctx, Element};
+//! use strand::backend::rug::{RugCtx, P2048};
+//! let ctx = RugCtx::<P2048>::new();
+//! // do some stuff..
+//! let g = ctx.generator();
+//! let m = ctx.modulus();
+//! let a = ctx.rnd_exp();
+//! let b = ctx.rnd_exp();
+//! let g_ab = g.mod_pow(&a, &m).mod_pow(&b, &m);
+//! let g_ba = g.mod_pow(&b, &m).mod_pow(&a, &m);
+//! assert_eq!(g_ab, g_ba);
+//! ```
 use ed25519_dalek::{Digest, Sha512};
 use rand::RngCore;
 use rug::{
@@ -9,6 +22,7 @@ use rug::{
     Integer,
 };
 use serde_bytes::ByteBuf;
+use std::marker::PhantomData;
 
 use crate::backend::constants::*;
 use crate::byte_tree::ByteTree::Leaf;
@@ -23,7 +37,7 @@ pub struct RugCtx<P: RugCtxParams> {
 
 impl<P: RugCtxParams> RugCtx<P> {
     // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf A.2.3
-    fn generators_fips(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<IntegerE> {
+    fn generators_fips(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<IntegerE<P>> {
         let mut ret = Vec::with_capacity(size);
         let two = Integer::from(2i32);
 
@@ -47,7 +61,7 @@ impl<P: RugCtxParams> RugCtx<P> {
                     .unwrap();
                 // Element::<RugCtx<P>>::mod_pow(&elem, self.params.co_factor(), self.modulus());
                 if g >= two {
-                    ret.push(IntegerE(g));
+                    ret.push(IntegerE::new(g));
                     break;
                 }
             }
@@ -68,8 +82,8 @@ impl<P: RugCtxParams> RugCtx<P> {
 }
 
 impl<P: RugCtxParams> Ctx for RugCtx<P> {
-    type E = IntegerE;
-    type X = IntegerX;
+    type E = IntegerE<P>;
+    type X = IntegerX<P>;
     type P = Integer;
 
     fn new() -> RugCtx<P> {
@@ -110,7 +124,7 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         let mut gen = StrandRandgen(StrandRng);
         let mut state = RandState::new_custom(&mut gen);
 
-        IntegerX(self.exp_modulus().0.clone().random_below(&mut state))
+        IntegerX::new(self.exp_modulus().0.clone().random_below(&mut state))
     }
     fn rnd_plaintext(&self) -> Self::P {
         self.rnd_exp().0
@@ -133,7 +147,7 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         } else {
             self.modulus().0.clone() - notzero
         };
-        let r = IntegerE(result);
+        let r = IntegerE::new(result);
         Ok(Element::<RugCtx<P>>::modulo(&r, self.modulus()))
     }
     fn decode(&self, element: &Self::E) -> Self::P {
@@ -154,7 +168,7 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         } else if ret.legendre(&self.modulus().0) != 1 {
             Err("Not a quadratic residue")
         } else {
-            Ok(IntegerE(ret))
+            Ok(IntegerE::new(ret))
         }
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
@@ -162,7 +176,7 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         if (ret < 0) || ret >= self.exp_modulus().0 {
             Err("Out of range")
         } else {
-            Ok(IntegerX(ret))
+            Ok(IntegerX::new(ret))
         }
     }
     fn hash_to_exp(&self, bytes: &[u8]) -> Self::X {
@@ -173,26 +187,26 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         let (_, rem) =
             Integer::from_digits(&hashed, Order::Lsf).div_rem(self.exp_modulus().0.clone());
 
-        IntegerX(rem)
+        IntegerX::new(rem)
     }
     fn exp_from_u64(&self, value: u64) -> Self::X {
-        IntegerX(Integer::from(value))
+        IntegerX::new(Integer::from(value))
     }
 }
 
-impl<P: RugCtxParams> Element<RugCtx<P>> for IntegerE {
+impl<P: RugCtxParams> Element<RugCtx<P>> for IntegerE<P> {
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
-        IntegerE(Integer::from(self.0.clone() * other.0.clone()))
+        IntegerE::new(Integer::from(self.0.clone() * other.0.clone()))
     }
     #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {
         let inverse = Element::<RugCtx<P>>::inv(other, modulus);
-        IntegerE(self.0.clone() * inverse.0.clone())
+        IntegerE::new(self.0.clone() * inverse.0.clone())
     }
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
-        IntegerE(
+        IntegerE::new(
             self.0
                 .clone()
                 .invert(&modulus.0)
@@ -200,12 +214,12 @@ impl<P: RugCtxParams> Element<RugCtx<P>> for IntegerE {
         )
     }
     #[inline(always)]
-    fn mod_pow(&self, other: &IntegerX, modulus: &Self) -> Self {
+    fn mod_pow(&self, other: &IntegerX<P>, modulus: &Self) -> Self {
         let ret = self.0.clone().pow_mod(&other.0, &modulus.0);
         // From https://docs.rs/rug/latest/rug/struct.Integer.html#method.pow_mod
         // "If the exponent is negative, then the number must have an inverse for an answer to exist.
         // When the exponent is positive and the modulo is not zero, an answer always exists."
-        IntegerE(ret.expect("an answer always exists for prime p"))
+        IntegerE::new(ret.expect("an answer always exists for prime p"))
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
@@ -216,34 +230,34 @@ impl<P: RugCtxParams> Element<RugCtx<P>> for IntegerE {
         // thus if self is >= 0 then the result >= 0, and remainder === modulo
         let (_, rem) = self.0.clone().div_rem(modulus.0.clone());
 
-        IntegerE(rem)
+        IntegerE::new(rem)
     }
     fn mul_identity() -> Self {
-        IntegerE(Integer::from(1))
+        IntegerE::new(Integer::from(1))
     }
 }
 
-impl<P: RugCtxParams> Exponent<RugCtx<P>> for IntegerX {
+impl<P: RugCtxParams> Exponent<RugCtx<P>> for IntegerX<P> {
     #[inline(always)]
     fn add(&self, other: &Self) -> Self {
-        IntegerX(Integer::from(self.0.clone() + other.0.clone()))
+        IntegerX::new(Integer::from(self.0.clone() + other.0.clone()))
     }
     #[inline(always)]
     fn sub(&self, other: &Self) -> Self {
-        IntegerX(Integer::from(self.0.clone() - other.0.clone()))
+        IntegerX::new(Integer::from(self.0.clone() - other.0.clone()))
     }
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
-        IntegerX(Integer::from(self.0.clone() * other.0.clone()))
+        IntegerX::new(Integer::from(self.0.clone() * other.0.clone()))
     }
     #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {
         let inverse = Exponent::<RugCtx<P>>::inv(other, modulus);
-        IntegerX(self.0.clone() * inverse.0)
+        IntegerX::new(self.0.clone() * inverse.0)
     }
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
-        IntegerX(
+        IntegerX::new(
             self.0
                 .clone()
                 .invert(&modulus.0)
@@ -259,14 +273,14 @@ impl<P: RugCtxParams> Exponent<RugCtx<P>> for IntegerX {
         // thus if self is >= 0 then the result >= 0, and remainder === modulo
         let (_, rem) = self.0.clone().div_rem(modulus.0.clone());
 
-        IntegerX(rem)
+        IntegerX::new(rem)
     }
 
-    fn add_identity() -> IntegerX {
-        IntegerX(Integer::from(0i32))
+    fn add_identity() -> Self {
+        IntegerX::new(Integer::from(0i32))
     }
-    fn mul_identity() -> IntegerX {
-        IntegerX(Integer::from(1i32))
+    fn mul_identity() -> Self {
+        IntegerX::new(Integer::from(1i32))
     }
 }
 
@@ -278,32 +292,32 @@ impl RandGen for StrandRandgen {
     }
 }
 
-pub trait RugCtxParams: Clone + Send + Sync {
-    fn generator(&self) -> &IntegerE;
-    fn modulus(&self) -> &IntegerE;
-    fn exp_modulus(&self) -> &IntegerX;
+pub trait RugCtxParams: Clone + Send + Sync + Eq {
+    fn generator(&self) -> &IntegerE<Self>;
+    fn modulus(&self) -> &IntegerE<Self>;
+    fn exp_modulus(&self) -> &IntegerX<Self>;
     fn co_factor(&self) -> &Integer;
     fn new() -> Self;
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct P2048 {
-    generator: IntegerE,
-    modulus: IntegerE,
-    exp_modulus: IntegerX,
+    generator: IntegerE<Self>,
+    modulus: IntegerE<Self>,
+    exp_modulus: IntegerX<Self>,
     co_factor: Integer,
 }
 impl RugCtxParams for P2048 {
     #[inline(always)]
-    fn generator(&self) -> &IntegerE {
+    fn generator(&self) -> &IntegerE<Self> {
         &self.generator
     }
     #[inline(always)]
-    fn modulus(&self) -> &IntegerE {
+    fn modulus(&self) -> &IntegerE<Self> {
         &self.modulus
     }
     #[inline(always)]
-    fn exp_modulus(&self) -> &IntegerX {
+    fn exp_modulus(&self) -> &IntegerX<Self> {
         &self.exp_modulus
     }
     #[inline(always)]
@@ -311,9 +325,9 @@ impl RugCtxParams for P2048 {
         &self.co_factor
     }
     fn new() -> P2048 {
-        let p = IntegerE(Integer::from_str_radix(P_VERIFICATUM_STR_2048, 10).unwrap());
-        let q = IntegerX(Integer::from_str_radix(Q_VERIFICATUM_STR_2048, 10).unwrap());
-        let g = IntegerE(Integer::from_str_radix(G_VERIFICATUM_STR_2048, 10).unwrap());
+        let p = IntegerE::new(Integer::from_str_radix(P_VERIFICATUM_STR_2048, 10).unwrap());
+        let q = IntegerX::new(Integer::from_str_radix(Q_VERIFICATUM_STR_2048, 10).unwrap());
+        let g = IntegerE::new(Integer::from_str_radix(G_VERIFICATUM_STR_2048, 10).unwrap());
         let co_factor = Integer::from_str_radix(SAFEPRIME_COFACTOR, 16).unwrap();
         assert!(g.0.legendre(&p.0) == 1);
 
@@ -327,31 +341,42 @@ impl RugCtxParams for P2048 {
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct IntegerE(Integer);
+pub struct IntegerE<P: RugCtxParams>(Integer, PhantomData<RugCtx<P>>);
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct IntegerX(Integer);
+pub struct IntegerX<P: RugCtxParams>(Integer, PhantomData<RugCtx<P>>);
 
-impl ToByteTree for IntegerE {
+impl<P: RugCtxParams> IntegerE<P> {
+    fn new(value: Integer) -> IntegerE<P> {
+        IntegerE(value, PhantomData)
+    }
+}
+impl<P: RugCtxParams> IntegerX<P> {
+    fn new(value: Integer) -> IntegerX<P> {
+        IntegerX(value, PhantomData)
+    }
+}
+
+impl<P: RugCtxParams> ToByteTree for IntegerE<P> {
     fn to_byte_tree(&self) -> ByteTree {
         Leaf(ByteBuf::from(self.0.to_digits::<u8>(Order::MsfLe)))
     }
 }
 
-impl<P: RugCtxParams> FromByteTree<RugCtx<P>> for IntegerE {
-    fn from_byte_tree(tree: &ByteTree, ctx: &RugCtx<P>) -> Result<IntegerE, ByteError> {
+impl<P: RugCtxParams> FromByteTree<RugCtx<P>> for IntegerE<P> {
+    fn from_byte_tree(tree: &ByteTree, ctx: &RugCtx<P>) -> Result<IntegerE<P>, ByteError> {
         let bytes = tree.leaf()?;
         ctx.element_from_bytes(bytes).map_err(ByteError::Msg)
     }
 }
 
-impl ToByteTree for IntegerX {
+impl<P: RugCtxParams> ToByteTree for IntegerX<P> {
     fn to_byte_tree(&self) -> ByteTree {
         Leaf(ByteBuf::from(self.0.to_digits::<u8>(Order::MsfLe)))
     }
 }
 
-impl<P: RugCtxParams> FromByteTree<RugCtx<P>> for IntegerX {
-    fn from_byte_tree(tree: &ByteTree, ctx: &RugCtx<P>) -> Result<IntegerX, ByteError> {
+impl<P: RugCtxParams> FromByteTree<RugCtx<P>> for IntegerX<P> {
+    fn from_byte_tree(tree: &ByteTree, ctx: &RugCtx<P>) -> Result<IntegerX<P>, ByteError> {
         let bytes = tree.leaf()?;
         ctx.exp_from_bytes(bytes).map_err(ByteError::Msg)
     }

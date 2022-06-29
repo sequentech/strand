@@ -4,6 +4,7 @@
 //! # Examples
 //!
 //! ```
+//! // This example shows different operations related to ElGamal encryption.
 //! use strand::context::Ctx;
 //! use strand::backend::num_bigint::{BigintCtx, P2048};
 //! use strand::elgamal::{PrivateKey, PublicKey};

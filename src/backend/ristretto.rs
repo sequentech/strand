@@ -1,3 +1,19 @@
+//! # Examples
+//!
+//! ```
+//! // This example shows how to obtain a context to use the ristretto backend.
+//! use strand::context::{Ctx, Element};
+//! use strand::backend::ristretto::RistrettoCtx;
+//! let ctx = RistrettoCtx;
+//! // do some stuff..
+//! let g = ctx.generator();
+//! let m = ctx.modulus();
+//! let a = ctx.rnd_exp();
+//! let b = ctx.rnd_exp();
+//! let g_ab = g.mod_pow(&a, &m).mod_pow(&b, &m);
+//! let g_ba = g.mod_pow(&b, &m).mod_pow(&a, &m);
+//! assert_eq!(g_ab, g_ba);
+//! ```
 use curve25519_dalek::constants::BASEPOINT_ORDER;
 use curve25519_dalek::constants::RISTRETTO_BASEPOINT_POINT;
 use curve25519_dalek::constants::RISTRETTO_BASEPOINT_TABLE;

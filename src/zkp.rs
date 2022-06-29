@@ -1,7 +1,8 @@
 //! # Examples
 //!
 //! ```
-//! use strand::context::Ctx;
+//! // This example shows how to construct and verify proofs.
+//! use strand::context::{Ctx, Element};
 //! use strand::backend::num_bigint::{BigintCtx, P2048};
 //! use strand::elgamal::{PrivateKey, PublicKey};
 //! use strand::zkp::Zkp;
@@ -14,6 +15,12 @@
 //! // prove knowledge of discrete logarithm
 //! let proof = zkp.schnorr_prove(&exponent, &power, &g, &vec![]);
 //! let verified = zkp.schnorr_verify(&power, &g, &proof, &vec![]);
+//! assert!(verified);
+//! // prove equality of discrete logarithms
+//! let g2 = ctx.rnd();
+//! let power2 = g2.mod_pow(&exponent, &ctx.modulus());
+//! let proof = zkp.cp_prove(&exponent, &power, &power2, None, &g2, &vec![]);
+//! let verified = zkp.cp_verify(&power, &power2, None, &g2, &proof, &vec![]);
 //! assert!(verified);
 //! ```
 #![allow(clippy::too_many_arguments)]

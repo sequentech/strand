@@ -1,15 +1,22 @@
 //! # Examples
 //!
 //! ```
+//! // This example shows how to obtain a context to use the num_bigint backend.
 //! use strand::context::{Ctx, Element};
 //! use strand::backend::num_bigint::{BigintCtx, P2048};
 //! use strand::backend::num_bigint::BigUintE;
 //! let ctx = BigintCtx::<P2048>::new();
-//! let g: &BigUintE = ctx.generator();
+//! // do some stuff..
+//! let g = ctx.generator();
 //! let m = ctx.modulus();
 //! let a = ctx.rnd_exp();
 //! let b = ctx.rnd_exp();
+//! let g_ab = g.mod_pow(&a, &m).mod_pow(&b, &m);
+//! let g_ba = g.mod_pow(&b, &m).mod_pow(&a, &m);
+//! assert_eq!(g_ab, g_ba);
 //! ```
+use std::marker::PhantomData;
+
 use ed25519_dalek::{Digest, Sha512};
 use num_bigint::BigUint;
 use num_bigint::RandBigInt;
@@ -32,7 +39,7 @@ pub struct BigintCtx<P: BigintCtxParams> {
 
 impl<P: BigintCtxParams> BigintCtx<P> {
     // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf A.2.3
-    fn generators_fips(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<BigUintE> {
+    fn generators_fips(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<BigUintE<P>> {
         let mut ret = Vec::with_capacity(size);
         let two = BigUint::from(2u32);
 
@@ -53,7 +60,7 @@ impl<P: BigintCtxParams> BigintCtx<P> {
                 let elem: BigUint = self.hash_to_element(&next);
                 let g = elem.modpow(self.params.co_factor(), &self.modulus().0);
                 if g >= two {
-                    ret.push(BigUintE(g));
+                    ret.push(BigUintE::new(g));
                     break;
                 }
             }
@@ -73,8 +80,8 @@ impl<P: BigintCtxParams> BigintCtx<P> {
 }
 
 impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
-    type E = BigUintE;
-    type X = BigUintX;
+    type E = BigUintE<P>;
+    type X = BigUintX<P>;
     type P = BigUint;
 
     #[inline(always)]
@@ -83,11 +90,11 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     }
     #[inline(always)]
     fn gmod_pow(&self, other: &Self::X) -> Self::E {
-        BigUintE(self.generator().0.modpow(&other.0, &self.modulus().0))
+        BigUintE::new(self.generator().0.modpow(&other.0, &self.modulus().0))
     }
     #[inline(always)]
     fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
-        BigUintE(base.0.modpow(&exponent.0, &self.modulus().0))
+        BigUintE::new(base.0.modpow(&exponent.0, &self.modulus().0))
     }
     #[inline(always)]
     fn modulus(&self) -> &Self::E {
@@ -109,7 +116,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     #[inline(always)]
     fn rnd_exp(&self) -> Self::X {
         let mut gen = StrandRng;
-        BigUintX(gen.gen_biguint_below(&self.exp_modulus().0))
+        BigUintX::new(gen.gen_biguint_below(&self.exp_modulus().0))
     }
     fn rnd_plaintext(&self) -> Self::P {
         self.rnd_exp().0
@@ -120,7 +127,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         let hashed = hasher.finalize();
 
         let num = BigUint::from_bytes_le(&hashed);
-        BigUintX(num.mod_floor(&self.exp_modulus().0))
+        BigUintX::new(num.mod_floor(&self.exp_modulus().0))
     }
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
         let one: BigUint = One::one();
@@ -138,7 +145,10 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         } else {
             &self.modulus().0 - notzero
         };
-        Ok(BigUintE(BigUint::mod_floor(&result, &self.modulus().0)))
+        Ok(BigUintE::new(BigUint::mod_floor(
+            &result,
+            &self.modulus().0,
+        )))
     }
     fn decode(&self, element: &Self::E) -> Self::P {
         let one: BigUint = One::one();
@@ -149,7 +159,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         }
     }
     fn exp_from_u64(&self, value: u64) -> Self::X {
-        BigUintX(BigUint::from(value))
+        BigUintX::new(BigUint::from(value))
     }
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E> {
         self.generators_fips(size, contest, seed)
@@ -162,7 +172,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         } else if ret.legendre(&self.modulus().0) != 1 {
             Err("Not a quadratic residue")
         } else {
-            Ok(BigUintE(ret))
+            Ok(BigUintE::new(ret))
         }
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
@@ -171,7 +181,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         if (ret < zero) || ret >= self.exp_modulus().0 {
             Err("Out of range")
         } else {
-            Ok(BigUintX(ret))
+            Ok(BigUintX::new(ret))
         }
     }
     fn new() -> BigintCtx<P> {
@@ -180,94 +190,94 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     }
 }
 
-impl<P: BigintCtxParams> Element<BigintCtx<P>> for BigUintE {
+impl<P: BigintCtxParams + Eq> Element<BigintCtx<P>> for BigUintE<P> {
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
-        BigUintE(&self.0 * &other.0)
+        BigUintE::new(&self.0 * &other.0)
     }
     #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {
         let inverse = Element::<BigintCtx<P>>::inv(other, modulus);
-        BigUintE(&self.0 * inverse.0)
+        BigUintE::new(&self.0 * inverse.0)
     }
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
         let inverse = (&self.0).invm(&modulus.0);
-        BigUintE(inverse.expect("there is always an inverse for prime p"))
+        BigUintE::new(inverse.expect("there is always an inverse for prime p"))
     }
     #[inline(always)]
-    fn mod_pow(&self, other: &BigUintX, modulus: &Self) -> Self {
-        BigUintE(self.0.modpow(&other.0, &modulus.0))
+    fn mod_pow(&self, other: &BigUintX<P>, modulus: &Self) -> Self {
+        BigUintE::new(self.0.modpow(&other.0, &modulus.0))
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
-        BigUintE(self.0.mod_floor(&modulus.0))
+        BigUintE::new(self.0.mod_floor(&modulus.0))
     }
     fn mul_identity() -> Self {
-        BigUintE(One::one())
+        BigUintE::new(One::one())
     }
 }
 
-impl<P: BigintCtxParams> Exponent<BigintCtx<P>> for BigUintX {
+impl<P: BigintCtxParams + Eq> Exponent<BigintCtx<P>> for BigUintX<P> {
     #[inline(always)]
     fn add(&self, other: &Self) -> Self {
-        BigUintX(&self.0 + &other.0)
+        BigUintX::new(&self.0 + &other.0)
     }
     #[inline(always)]
     fn sub(&self, other: &Self) -> Self {
-        BigUintX(&self.0 - &other.0)
+        BigUintX::new(&self.0 - &other.0)
     }
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
-        BigUintX(&self.0 * &other.0)
+        BigUintX::new(&self.0 * &other.0)
     }
     #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {
         let inverse = Exponent::<BigintCtx<P>>::inv(other, modulus);
-        BigUintX(&self.0 * inverse.0)
+        BigUintX::new(&self.0 * inverse.0)
     }
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
         let inverse = (&self.0).invm(&modulus.0);
-        BigUintX(inverse.expect("there is always an inverse for prime p"))
+        BigUintX::new(inverse.expect("there is always an inverse for prime p"))
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
-        BigUintX(self.0.mod_floor(&modulus.0))
+        BigUintX::new(self.0.mod_floor(&modulus.0))
     }
     fn add_identity() -> Self {
-        BigUintX(Zero::zero())
+        BigUintX::new(Zero::zero())
     }
     fn mul_identity() -> Self {
-        BigUintX(One::one())
+        BigUintX::new(One::one())
     }
 }
 
-pub trait BigintCtxParams: Clone + Send + Sync {
-    fn generator(&self) -> &BigUintE;
-    fn modulus(&self) -> &BigUintE;
-    fn exp_modulus(&self) -> &BigUintX;
+pub trait BigintCtxParams: Clone + Eq + Send + Sync {
+    fn generator(&self) -> &BigUintE<Self>;
+    fn modulus(&self) -> &BigUintE<Self>;
+    fn exp_modulus(&self) -> &BigUintX<Self>;
     fn co_factor(&self) -> &BigUint;
     fn new() -> Self;
 }
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct P2048 {
-    generator: BigUintE,
-    modulus: BigUintE,
-    exp_modulus: BigUintX,
+    generator: BigUintE<Self>,
+    modulus: BigUintE<Self>,
+    exp_modulus: BigUintX<Self>,
     co_factor: BigUint,
 }
 impl BigintCtxParams for P2048 {
     #[inline(always)]
-    fn generator(&self) -> &BigUintE {
+    fn generator(&self) -> &BigUintE<Self> {
         &self.generator
     }
     #[inline(always)]
-    fn modulus(&self) -> &BigUintE {
+    fn modulus(&self) -> &BigUintE<Self> {
         &self.modulus
     }
     #[inline(always)]
-    fn exp_modulus(&self) -> &BigUintX {
+    fn exp_modulus(&self) -> &BigUintX<Self> {
         &self.exp_modulus
     }
     #[inline(always)]
@@ -275,9 +285,9 @@ impl BigintCtxParams for P2048 {
         &self.co_factor
     }
     fn new() -> P2048 {
-        let p = BigUintE(BigUint::from_str_radix(P_VERIFICATUM_STR_2048, 10).unwrap());
-        let q = BigUintX(BigUint::from_str_radix(Q_VERIFICATUM_STR_2048, 10).unwrap());
-        let g = BigUintE(BigUint::from_str_radix(G_VERIFICATUM_STR_2048, 10).unwrap());
+        let p = BigUintE::new(BigUint::from_str_radix(P_VERIFICATUM_STR_2048, 10).unwrap());
+        let q = BigUintX::new(BigUint::from_str_radix(Q_VERIFICATUM_STR_2048, 10).unwrap());
+        let g = BigUintE::new(BigUint::from_str_radix(G_VERIFICATUM_STR_2048, 10).unwrap());
         let co_factor = BigUint::from_str_radix(SAFEPRIME_COFACTOR, 16).unwrap();
         /*
         FIXME revert to this, seems slightly faster due to small generator
@@ -297,33 +307,44 @@ impl BigintCtxParams for P2048 {
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct BigUintE(pub BigUint);
+pub struct BigUintE<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct BigUintX(pub BigUint);
+pub struct BigUintX<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
 
-impl ToByteTree for BigUintE {
+impl<P: BigintCtxParams> BigUintE<P> {
+    fn new(value: BigUint) -> BigUintE<P> {
+        BigUintE(value, PhantomData)
+    }
+}
+impl<P: BigintCtxParams> BigUintX<P> {
+    fn new(value: BigUint) -> BigUintX<P> {
+        BigUintX(value, PhantomData)
+    }
+}
+
+impl<P: BigintCtxParams> ToByteTree for BigUintE<P> {
     fn to_byte_tree(&self) -> ByteTree {
         // Leaf(DataType::Element, ByteBuf::from(self.to_bytes_le()))
         Leaf(ByteBuf::from(self.0.to_bytes_le()))
     }
 }
 
-impl<P: BigintCtxParams> FromByteTree<BigintCtx<P>> for BigUintE {
-    fn from_byte_tree(tree: &ByteTree, ctx: &BigintCtx<P>) -> Result<BigUintE, ByteError> {
+impl<P: BigintCtxParams> FromByteTree<BigintCtx<P>> for BigUintE<P> {
+    fn from_byte_tree(tree: &ByteTree, ctx: &BigintCtx<P>) -> Result<BigUintE<P>, ByteError> {
         let bytes = tree.leaf()?;
         ctx.element_from_bytes(bytes).map_err(ByteError::Msg)
     }
 }
 
-impl ToByteTree for BigUintX {
+impl<P: BigintCtxParams> ToByteTree for BigUintX<P> {
     fn to_byte_tree(&self) -> ByteTree {
         // Leaf(DataType::Exponent, ByteBuf::from(self.to_bytes_le()))
         Leaf(ByteBuf::from(self.0.to_bytes_le()))
     }
 }
 
-impl<P: BigintCtxParams> FromByteTree<BigintCtx<P>> for BigUintX {
-    fn from_byte_tree(tree: &ByteTree, ctx: &BigintCtx<P>) -> Result<BigUintX, ByteError> {
+impl<P: BigintCtxParams> FromByteTree<BigintCtx<P>> for BigUintX<P> {
+    fn from_byte_tree(tree: &ByteTree, ctx: &BigintCtx<P>) -> Result<BigUintX<P>, ByteError> {
         let bytes = tree.leaf()?;
         ctx.exp_from_bytes(bytes).map_err(ByteError::Msg)
     }
