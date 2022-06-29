@@ -379,6 +379,13 @@ mod tests {
     }
 
     #[test]
+    fn test_elgamal_enc_pok() {
+        let ctx = RugCtx::<P2048>::new();
+        let plaintext = ctx.rnd_plaintext();
+        test_elgamal_enc_pok_generic(&ctx, plaintext);
+    }
+
+    #[test]
     fn test_schnorr() {
         let ctx = RugCtx::<P2048>::new();
         test_schnorr_generic(&ctx);

@@ -2,9 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
+/// Multiplicative group backend implemented through [num_bigint](https://docs.rs/num-bigint/latest/num_bigint/).
 pub mod num_bigint;
+/// Elliptic curve backend on top of [ristretto](https://ristretto.group/ristretto.html) implemented through [curve25519_dalek](https://doc.dalek.rs/curve25519_dalek/ristretto/index.html).
 pub mod ristretto;
 #[cfg(feature = "rug")]
+/// Multiplicative group backend implemented through [rug](https://docs.rs/rug/1.16.0/rug/).
 pub mod rug;
 
 pub(crate) mod constants {
@@ -48,6 +51,23 @@ pub(crate) mod tests {
         assert_eq!(data, recovered);
     }
 
+    pub(crate) fn test_elgamal_enc_pok_generic<C: Ctx>(ctx: &C, data: C::P) {
+        let sk = PrivateKey::gen(ctx);
+        let pk = sk.get_pk();
+
+        let plaintext = ctx.encode(&data).unwrap();
+        let label = vec![];
+
+        let (c, proof) = pk.encrypt_and_pok(&plaintext, &label);
+        let d = sk.decrypt(&c);
+        let zkp = Zkp::new(ctx);
+        let proof_ok = zkp.encryption_popk_verify(&c.mhr, &c.gr, ctx.generator(), &proof, &label);
+        assert!(proof_ok);
+
+        let recovered = ctx.decode(&d);
+        assert_eq!(data, recovered);
+    }
+
     pub(crate) fn test_schnorr_generic<C: Ctx>(ctx: &C) {
         let zkp = Zkp::new(ctx);
         let g = ctx.generator();
@@ -71,7 +91,6 @@ pub(crate) mod tests {
         let public1 = g1.mod_pow(&secret, &ctx.modulus());
         let public2 = g2.mod_pow(&secret, &ctx.modulus());
         let proof = zkp.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
-        // let proof = ctx.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
         let verified = zkp.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
 
         assert!(verified);
@@ -92,7 +111,16 @@ pub(crate) mod tests {
 
         let dec_factor = c.mhr.div(&d, &ctx.modulus()).modulo(&ctx.modulus());
 
-        let verified = zkp.cp_verify(&pk.element, &dec_factor, None, &c.gr, &proof, &vec![]);
+        // let verified = zkp.cp_verify(&pk.element, &dec_factor, None, &c.gr, &proof, &vec![]);
+        let verified = zkp.verify_decryption(
+            &pk.element,
+            &dec_factor,
+            None,
+            &c.mhr,
+            &c.gr,
+            &proof,
+            &vec![],
+        );
         let recovered = ctx.decode(&d);
         assert!(verified);
         assert_eq!(data, recovered);
@@ -122,8 +150,10 @@ pub(crate) mod tests {
         let (dec_f1, proof1) = km1.decryption_factor(&c, &vec![]);
         let (dec_f2, proof2) = km2.decryption_factor(&c, &vec![]);
 
-        let verified1 = zkp.cp_verify(pk1_value, &dec_f1, None, &c.gr, &proof1, &vec![]);
-        let verified2 = zkp.cp_verify(pk2_value, &dec_f2, None, &c.gr, &proof2, &vec![]);
+        let verified1 =
+            zkp.verify_decryption(pk1_value, &dec_f1, None, &c.mhr, &c.gr, &proof1, &vec![]);
+        let verified2 =
+            zkp.verify_decryption(pk2_value, &dec_f2, None, &c.mhr, &c.gr, &proof2, &vec![]);
         assert!(verified1);
         assert!(verified2);
 

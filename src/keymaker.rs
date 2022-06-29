@@ -68,11 +68,12 @@ impl<C: Ctx> Keymaker<C> {
     pub fn decryption_factor(&self, c: &Ciphertext<C>, label: &[u8]) -> (C::E, ChaumPedersen<C>) {
         let dec_factor = self.sk.decryption_factor(c);
         let zkp = Zkp::new(&self.ctx);
-        let proof = zkp.cp_prove(
+        let proof = zkp.decryption_proof(
             &self.sk.value,
             &self.pk.element,
             &dec_factor,
             None,
+            &c.mhr,
             &c.gr,
             label,
         );
@@ -133,10 +134,11 @@ impl<C: Ctx> Keymaker<C> {
         let notok = (0..decs.len())
             .par()
             .map(|i| {
-                zkp.cp_verify(
+                zkp.verify_decryption(
                     pk_value,
                     &decs[i],
                     None,
+                    &ciphertexts[i].mhr,
                     &ciphertexts[i].gr,
                     &proofs[i],
                     label,

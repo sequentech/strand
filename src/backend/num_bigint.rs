@@ -1,3 +1,15 @@
+//! # Examples
+//!
+//! ```
+//! use strand::context::{Ctx, Element};
+//! use strand::backend::num_bigint::{BigintCtx, P2048};
+//! use strand::backend::num_bigint::BigUintE;
+//! let ctx = BigintCtx::<P2048>::new();
+//! let g: &BigUintE = ctx.generator();
+//! let m = ctx.modulus();
+//! let a = ctx.rnd_exp();
+//! let b = ctx.rnd_exp();
+//! ```
 use ed25519_dalek::{Digest, Sha512};
 use num_bigint::BigUint;
 use num_bigint::RandBigInt;
@@ -330,6 +342,13 @@ mod tests {
         let ctx = BigintCtx::<P2048>::new();
         let plaintext = ctx.rnd_plaintext();
         test_elgamal_generic(&ctx, plaintext);
+    }
+
+    #[test]
+    fn test_elgamal_enc_pok() {
+        let ctx = BigintCtx::<P2048>::new();
+        let plaintext = ctx.rnd_plaintext();
+        test_elgamal_enc_pok_generic(&ctx, plaintext);
     }
 
     #[test]

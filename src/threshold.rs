@@ -8,6 +8,7 @@
 // use rayon::prelude::*;
 
 use crate::context::{Ctx, Element, Exponent};
+use crate::elgamal::Ciphertext;
 use crate::zkp::{ChaumPedersen, Zkp};
 
 pub struct KeymakerT<C: Ctx> {
@@ -116,13 +117,13 @@ impl<C: Ctx> KeymakerT<C> {
         sum.modulo(self.ctx.exp_modulus())
     }
 
-    fn decryption_factor(&self, b: &C::E, label: &[u8]) -> (C::E, ChaumPedersen<C>) {
+    fn decryption_factor(&self, c: &Ciphertext<C>, label: &[u8]) -> (C::E, ChaumPedersen<C>) {
         let zkp = Zkp::new(&self.ctx);
         let share = self.secret_share();
         let v_key = self.verification_key();
-        let factor = b.mod_pow(&share, self.ctx.modulus());
-        let proof = zkp.cp_prove(&share, &v_key, &factor, None, b, label);
-        // let ok = self.ctx.cp_verify(&v_key, &factor, None, b, &proof, &vec![]);
+        let factor = c.gr.mod_pow(&share, self.ctx.modulus());
+        let proof = zkp.decryption_proof(&share, &v_key, &factor, None, &c.mhr, &c.gr, label);
+        // let ok = zkp.decryption_verify(&v_key, &factor, None, &c.mhr, &c.gr, &proof, label);
         // assert!(ok);
         (factor, proof)
     }
@@ -159,8 +160,6 @@ impl<C: Ctx> KeymakerT<C> {
         }
 
         numerator.div(&denominator, ctx.exp_modulus())
-        // .mul(&denominator.inv(&ctx.exp_modulus()))
-        // .modulo(&ctx.exp_modulus())
     }
 }
 
@@ -216,8 +215,8 @@ pub(crate) mod tests {
 
         for i in 0..present.len() {
             let v_key = trustees[present[i] - 1].verification_key();
-            let (base, proof) = trustees[present[i] - 1].decryption_factor(&c.gr, &[]);
-            let ok = zkp.cp_verify(&v_key, &base, None, &c.gr, &proof, &vec![]);
+            let (base, proof) = trustees[present[i] - 1].decryption_factor(&c, &[]);
+            let ok = zkp.verify_decryption(&v_key, &base, None, &c.mhr, &c.gr, &proof, &vec![]);
             assert!(ok);
 
             let lagrange = KeymakerT::lagrange(present[i], &present, ctx);
@@ -236,8 +235,8 @@ pub(crate) mod tests {
 
         for i in 0..present.len() {
             let v_key = trustees[present[i] - 1].verification_key();
-            let (base, proof) = trustees[present[i] - 1].decryption_factor(&c.gr, &[]);
-            let ok = zkp.cp_verify(&v_key, &base, None, &c.gr, &proof, &vec![]);
+            let (base, proof) = trustees[present[i] - 1].decryption_factor(&c, &[]);
+            let ok = zkp.verify_decryption(&v_key, &base, None, &c.mhr, &c.gr, &proof, &vec![]);
             assert!(ok);
 
             let lagrange = KeymakerT::lagrange(present[i], &present, ctx);

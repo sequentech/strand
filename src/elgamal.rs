@@ -1,33 +1,81 @@
 // SPDX-FileCopyrightText: 2021 David Ruescas <david@sequentech.io>
 //
 // SPDX-License-Identifier: AGPL-3.0-only
+//! # Examples
+//!
+//! ```
+//! use strand::context::Ctx;
+//! use strand::backend::num_bigint::{BigintCtx, P2048};
+//! use strand::elgamal::{PrivateKey, PublicKey};
+//! use strand::zkp::Zkp;
+//!
+//! let ctx = BigintCtx::<P2048>::new();
+//! // generate an ElGamal keypair
+//! let sk1 = PrivateKey::gen(&ctx);
+//! let pk1 = sk1.get_pk();
+//! // or construct a public key from a provided element
+//! let pk2_element = ctx.rnd();
+//! let pk2 = PublicKey::from_element(&pk2_element, &ctx);
+//!
+//! let plaintext = ctx.rnd_plaintext();
+//! let encoded = ctx.encode(&plaintext).unwrap();
+//!
+//! // encrypt, generates randomness internally
+//! let ciphertext = pk1.encrypt(&encoded);
+//!
+//! // or encrypt with provided randomness
+//! let randomness = ctx.rnd_exp();
+//! let ciphertext = pk1.encrypt_with_randomness(&encoded, &randomness);
+//!
+//! // encrypt and prove knowledge of plaintext (enc + pok)
+//! let (c, proof) = pk1.encrypt_and_pok(&encoded, &vec![]);
+//! // verify
+//! let zkp = Zkp::new(&ctx);
+//! let proof_ok = zkp.encryption_popk_verify(c.mhr(), c.gr(), ctx.generator(), &proof, &vec![]);
+//! assert!(proof_ok);
+//! let decrypted = sk1.decrypt(&c);
+//! let plaintext_ = ctx.decode(&decrypted);
+//! assert_eq!(plaintext, plaintext_);
+//! ```
+
 use std::marker::PhantomData;
 
 use crate::byte_tree::{BTreeDeser, BTreeSer};
 use crate::context::{Ctx, Element};
 use crate::symmetric;
-use crate::zkp::{ChaumPedersen, Zkp};
+use crate::zkp::{ChaumPedersen, Schnorr, Zkp};
 
+/// An ElGamal ciphertext.
+///
+/// Composed of two group elements, computed as
+///
+/// (m * h^r, g^r)
+///
+/// where m = message, h = public key, g = generator, r = randomness.
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Ciphertext<C: Ctx> {
     pub(crate) mhr: C::E,
     pub(crate) gr: C::E,
 }
 impl<C: Ctx> Ciphertext<C> {
+    /// Returns the ciphertext part computed as m * h^r.
     pub fn mhr(&self) -> &C::E {
         &self.mhr
     }
+    /// Returns the ciphertext part computed as g^r.
     pub fn gr(&self) -> &C::E {
         &self.gr
     }
 }
 
+/// An ElGamal public key.
 #[derive(Eq, PartialEq, Debug)]
 pub struct PublicKey<C: Ctx> {
     pub(crate) element: C::E,
     pub(crate) ctx: C,
 }
 
+/// An ElGamal private key.
 #[derive(Eq, PartialEq, Debug)]
 pub struct PrivateKey<C: Ctx> {
     pub(crate) value: C::X,
@@ -35,6 +83,7 @@ pub struct PrivateKey<C: Ctx> {
     pub(crate) ctx: C,
 }
 
+#[doc(hidden)]
 #[derive(Eq, PartialEq)]
 pub struct EncryptedPrivateKey<C: Ctx> {
     pub(crate) bytes: Vec<u8>,
@@ -46,6 +95,14 @@ impl<C: Ctx> PublicKey<C> {
     pub fn encrypt(&self, plaintext: &C::E) -> Ciphertext<C> {
         let randomness = self.ctx.rnd_exp();
         self.encrypt_with_randomness(plaintext, &randomness)
+    }
+    pub fn encrypt_and_pok(&self, plaintext: &C::E, label: &[u8]) -> (Ciphertext<C>, Schnorr<C>) {
+        let zkp = Zkp::new(&self.ctx);
+        let randomness = self.ctx.rnd_exp();
+        let c = self.encrypt_with_randomness(plaintext, &randomness);
+        let proof = zkp.encryption_popk(&randomness, &c.mhr, &c.gr, self.ctx.generator(), label);
+
+        (c, proof)
     }
     pub fn encrypt_exponential(&self, plaintext: &C::X) -> Ciphertext<C> {
         self.encrypt(&self.ctx.gmod_pow(plaintext))
@@ -82,11 +139,12 @@ impl<C: Ctx> PrivateKey<C> {
 
         let dec_factor = &c.gr.mod_pow(&self.value, modulus);
 
-        let proof = zkp.cp_prove(
+        let proof = zkp.decryption_proof(
             &self.value,
             &self.pk_element,
             dec_factor,
             None,
+            &c.mhr,
             &c.gr,
             label,
         );

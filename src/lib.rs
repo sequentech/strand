@@ -4,7 +4,7 @@
 extern crate quick_error;
 extern crate cfg_if;
 
-/// Provides cryptographic backends, currently multiplicative groups and elliptic curves.
+/// Provides cryptographic backends, currently multiplicative groups and ristretto elliptic curve.
 pub mod backend;
 /// Defines a generic interface to concrete backends.
 pub mod context;

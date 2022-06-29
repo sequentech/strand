@@ -276,6 +276,17 @@ mod tests {
     }
 
     #[test]
+    fn test_elgamal_enc_pok() {
+        let mut csprng = StrandRng;
+
+        let ctx = RistrettoCtx;
+        let mut fill = [0u8; 30];
+        csprng.fill_bytes(&mut fill);
+        let plaintext = util::to_u8_30(&fill.to_vec());
+        test_elgamal_enc_pok_generic(&ctx, plaintext);
+    }
+
+    #[test]
     fn test_schnorr() {
         let ctx = RistrettoCtx;
         test_schnorr_generic(&ctx);
