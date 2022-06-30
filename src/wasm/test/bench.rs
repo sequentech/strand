@@ -174,7 +174,7 @@ fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P, n: u32) {
         log(&format!("{}", performance.now() - now));
         log("prove..");
         let now = performance.now();
-        let _proof = zkp.schnorr_prove(&randomness, &c.gr, ctx.generator(), &vec![]);
+        let _proof = zkp.schnorr_prove(&randomness, &c.gr, Some(ctx.generator()), &vec![]);
         log(&format!("{}", performance.now() - now));
     }
     postMessage(&format!(

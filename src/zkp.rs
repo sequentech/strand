@@ -13,10 +13,10 @@
 //! let g = ctx.generator();
 //! let power = ctx.gmod_pow(&exponent);
 //! // prove knowledge of discrete logarithm
-//! let proof = zkp.schnorr_prove(&exponent, &power, &g, &vec![]);
-//! let verified = zkp.schnorr_verify(&power, &g, &proof, &vec![]);
+//! let proof = zkp.schnorr_prove(&exponent, &power, Some(&g), &vec![]);
+//! let verified = zkp.schnorr_verify(&power, Some(&g), &proof, &vec![]);
 //! assert!(verified);
-//! // prove equality of discrete logarithms
+//! // prove equality of discrete logarithms, using default generator (None)
 //! let g2 = ctx.rnd();
 //! let power2 = g2.mod_pow(&exponent, &ctx.modulus());
 //! let proof = zkp.cp_prove(&exponent, &power, &power2, None, &g2, &vec![]);
@@ -45,7 +45,6 @@ impl<C: Ctx> Zkp<C> {
         secret: &C::X,
         mhr: &C::E,
         gr: &C::E,
-        g: &C::E,
         label: &[u8],
     ) -> Schnorr<C> {
         let values = [mhr].to_vec();
@@ -53,14 +52,13 @@ impl<C: Ctx> Zkp<C> {
         tree.push(ByteTree::Leaf(ByteBuf::from(label.to_vec())));
         let context = ByteTree::Tree(tree);
 
-        self.schnorr_prove_private(secret, gr, g, context)
+        self.schnorr_prove_private(secret, gr, None, context)
     }
 
     pub fn encryption_popk_verify(
         &self,
         mhr: &C::E,
         gr: &C::E,
-        g: &C::E,
         proof: &Schnorr<C>,
         label: &[u8],
     ) -> bool {
@@ -69,7 +67,7 @@ impl<C: Ctx> Zkp<C> {
         tree.push(ByteTree::Leaf(ByteBuf::from(label.to_vec())));
         let context = ByteTree::Tree(tree);
 
-        self.schnorr_verify_private(gr, g, proof, context)
+        self.schnorr_verify_private(gr, None, proof, context)
     }
 
     pub fn decryption_proof(
@@ -77,7 +75,6 @@ impl<C: Ctx> Zkp<C> {
         secret: &C::X,
         pk: &C::E,
         dec_factor: &C::E,
-        generator: Option<&C::E>,
         mhr: &C::E,
         gr: &C::E,
         label: &[u8],
@@ -87,14 +84,13 @@ impl<C: Ctx> Zkp<C> {
         tree.push(ByteTree::Leaf(ByteBuf::from(label.to_vec())));
         let context = ByteTree::Tree(tree);
 
-        self.cp_prove_private(secret, pk, dec_factor, generator, gr, context)
+        self.cp_prove_private(secret, pk, dec_factor, None, gr, context)
     }
 
     pub fn verify_decryption(
         &self,
         pk: &C::E,
         dec_factor: &C::E,
-        generator: Option<&C::E>,
         mhr: &C::E,
         gr: &C::E,
         proof: &ChaumPedersen<C>,
@@ -105,7 +101,7 @@ impl<C: Ctx> Zkp<C> {
         tree.push(ByteTree::Leaf(ByteBuf::from(label.to_vec())));
         let context = ByteTree::Tree(tree);
 
-        self.cp_verify_private(pk, dec_factor, generator, gr, proof, context)
+        self.cp_verify_private(pk, dec_factor, None, gr, proof, context)
     }
 
     /// Prove knowledge of discrete logarithm.
@@ -113,7 +109,7 @@ impl<C: Ctx> Zkp<C> {
         &self,
         secret: &C::X,
         public: &C::E,
-        g: &C::E,
+        g: Option<&C::E>,
         label: &[u8],
     ) -> Schnorr<C> {
         let context = ByteTree::Leaf(ByteBuf::from(label.to_vec()));
@@ -123,7 +119,7 @@ impl<C: Ctx> Zkp<C> {
     pub fn schnorr_verify(
         &self,
         public: &C::E,
-        g: &C::E,
+        g: Option<&C::E>,
         proof: &Schnorr<C>,
         label: &[u8],
     ) -> bool {
@@ -163,12 +159,21 @@ impl<C: Ctx> Zkp<C> {
         &self,
         secret: &C::X,
         public: &C::E,
-        g: &C::E,
+        g: Option<&C::E>,
         context: ByteTree,
     ) -> Schnorr<C> {
         let r = self.ctx.rnd_exp();
-        let commitment = g.mod_pow(&r, self.ctx.modulus());
-        let challenge: C::X = self.schnorr_proof_challenge(g, public, &commitment, context);
+        let commitment = if let Some(g) = g {
+            g.mod_pow(&r, self.ctx.modulus())
+        } else {
+            self.ctx.gmod_pow(&r)
+        };
+        let challenge: C::X = self.schnorr_proof_challenge(
+            g.unwrap_or_else(|| self.ctx.generator()),
+            public,
+            &commitment,
+            context,
+        );
         let response = r.add(&challenge.mul(secret)).modulo(self.ctx.exp_modulus());
 
         Schnorr {
@@ -182,13 +187,22 @@ impl<C: Ctx> Zkp<C> {
     fn schnorr_verify_private(
         &self,
         public: &C::E,
-        g: &C::E,
+        g: Option<&C::E>,
         proof: &Schnorr<C>,
         context: ByteTree,
     ) -> bool {
-        let challenge_ = self.schnorr_proof_challenge(g, public, &proof.commitment, context);
+        let challenge_ = self.schnorr_proof_challenge(
+            g.unwrap_or_else(|| self.ctx.generator()),
+            public,
+            &proof.commitment,
+            context,
+        );
         let ok1 = challenge_.eq(&proof.challenge);
-        let lhs = g.mod_pow(&proof.response, self.ctx.modulus());
+        let lhs = if let Some(g) = g {
+            g.mod_pow(&proof.response, self.ctx.modulus())
+        } else {
+            self.ctx.gmod_pow(&proof.response)
+        };
         let rhs = proof
             .commitment
             .mul(&public.mod_pow(&proof.challenge, self.ctx.modulus()))

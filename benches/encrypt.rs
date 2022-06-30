@@ -15,7 +15,7 @@ fn encrypt<C: Ctx>(ctx: &C, pk: &PublicKey<C>, data: C::P, n: usize) {
         let randomness = ctx.rnd_exp();
         let c = pk.encrypt_with_randomness(&plaintext, &randomness);
 
-        let _proof = zkp.schnorr_prove(&randomness, &c.gr(), ctx.generator(), &vec![]);
+        let _proof = zkp.schnorr_prove(&randomness, &c.gr(), Some(ctx.generator()), &vec![]);
     }
 }
 

@@ -41,7 +41,7 @@ impl<C: Ctx> Keymaker<C> {
     pub fn share(&self, label: &[u8]) -> (PublicKey<C>, Schnorr<C>) {
         let zkp = Zkp::new(&self.ctx);
         let pk = PublicKey::from_element(&self.pk.element, &self.ctx);
-        let proof = zkp.schnorr_prove(&self.sk.value, &pk.element, self.ctx.generator(), label);
+        let proof = zkp.schnorr_prove(&self.sk.value, &pk.element, None, label);
 
         (pk, proof)
     }
@@ -52,7 +52,7 @@ impl<C: Ctx> Keymaker<C> {
 
     pub fn verify_share(ctx: &C, pk: &PublicKey<C>, proof: &Schnorr<C>, label: &[u8]) -> bool {
         let zkp = Zkp::new(ctx);
-        zkp.schnorr_verify(&pk.element, ctx.generator(), proof, label)
+        zkp.schnorr_verify(&pk.element, None, proof, label)
     }
 
     pub fn combine_pks(ctx: &C, pks: Vec<PublicKey<C>>) -> PublicKey<C> {
@@ -72,7 +72,6 @@ impl<C: Ctx> Keymaker<C> {
             &self.sk.value,
             &self.pk.element,
             &dec_factor,
-            None,
             &c.mhr,
             &c.gr,
             label,
@@ -137,7 +136,6 @@ impl<C: Ctx> Keymaker<C> {
                 zkp.verify_decryption(
                     pk_value,
                     &decs[i],
-                    None,
                     &ciphertexts[i].mhr,
                     &ciphertexts[i].gr,
                     &proofs[i],

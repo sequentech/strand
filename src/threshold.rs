@@ -122,7 +122,7 @@ impl<C: Ctx> KeymakerT<C> {
         let share = self.secret_share();
         let v_key = self.verification_key();
         let factor = c.gr.mod_pow(&share, self.ctx.modulus());
-        let proof = zkp.decryption_proof(&share, &v_key, &factor, None, &c.mhr, &c.gr, label);
+        let proof = zkp.decryption_proof(&share, &v_key, &factor, &c.mhr, &c.gr, label);
         // let ok = zkp.decryption_verify(&v_key, &factor, None, &c.mhr, &c.gr, &proof, label);
         // assert!(ok);
         (factor, proof)
@@ -216,7 +216,7 @@ pub(crate) mod tests {
         for i in 0..present.len() {
             let v_key = trustees[present[i] - 1].verification_key();
             let (base, proof) = trustees[present[i] - 1].decryption_factor(&c, &[]);
-            let ok = zkp.verify_decryption(&v_key, &base, None, &c.mhr, &c.gr, &proof, &vec![]);
+            let ok = zkp.verify_decryption(&v_key, &base, &c.mhr, &c.gr, &proof, &vec![]);
             assert!(ok);
 
             let lagrange = KeymakerT::lagrange(present[i], &present, ctx);
@@ -236,7 +236,7 @@ pub(crate) mod tests {
         for i in 0..present.len() {
             let v_key = trustees[present[i] - 1].verification_key();
             let (base, proof) = trustees[present[i] - 1].decryption_factor(&c, &[]);
-            let ok = zkp.verify_decryption(&v_key, &base, None, &c.mhr, &c.gr, &proof, &vec![]);
+            let ok = zkp.verify_decryption(&v_key, &base, &c.mhr, &c.gr, &proof, &vec![]);
             assert!(ok);
 
             let lagrange = KeymakerT::lagrange(present[i], &present, ctx);

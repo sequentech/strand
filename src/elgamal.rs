@@ -32,7 +32,7 @@
 //! let (c, proof) = pk1.encrypt_and_pok(&encoded, &vec![]);
 //! // verify
 //! let zkp = Zkp::new(&ctx);
-//! let proof_ok = zkp.encryption_popk_verify(c.mhr(), c.gr(), ctx.generator(), &proof, &vec![]);
+//! let proof_ok = zkp.encryption_popk_verify(c.mhr(), c.gr(), &proof, &vec![]);
 //! assert!(proof_ok);
 //! let decrypted = sk1.decrypt(&c);
 //! let plaintext_ = ctx.decode(&decrypted);
@@ -101,7 +101,7 @@ impl<C: Ctx> PublicKey<C> {
         let zkp = Zkp::new(&self.ctx);
         let randomness = self.ctx.rnd_exp();
         let c = self.encrypt_with_randomness(plaintext, &randomness);
-        let proof = zkp.encryption_popk(&randomness, &c.mhr, &c.gr, self.ctx.generator(), label);
+        let proof = zkp.encryption_popk(&randomness, &c.mhr, &c.gr, label);
 
         (c, proof)
     }
@@ -144,7 +144,6 @@ impl<C: Ctx> PrivateKey<C> {
             &self.value,
             &self.pk_element,
             dec_factor,
-            None,
             &c.mhr,
             &c.gr,
             label,

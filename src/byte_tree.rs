@@ -436,15 +436,15 @@ pub(crate) mod tests {
         let g = ctx.generator();
         let secret = ctx.rnd_exp();
         let public = g.mod_pow(&secret, &ctx.modulus());
-        let schnorr = zkp.schnorr_prove(&secret, &public, &g, &vec![]);
-        let verified = zkp.schnorr_verify(&public, &g, &schnorr, &vec![]);
+        let schnorr = zkp.schnorr_prove(&secret, &public, Some(&g), &vec![]);
+        let verified = zkp.schnorr_verify(&public, Some(&g), &schnorr, &vec![]);
         assert!(verified);
 
         let bytes = schnorr.ser();
         let back = Schnorr::<C>::deser(&bytes, ctx).unwrap();
         assert!(schnorr == back);
 
-        let verified = zkp.schnorr_verify(&public, &g, &back, &vec![]);
+        let verified = zkp.schnorr_verify(&public, Some(&g), &back, &vec![]);
         assert!(verified);
     }
 
