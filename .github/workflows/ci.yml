@@ -9,7 +9,7 @@ on: [push, pull_request]
 
 jobs:
   check:
-    name: Check
+    name: Code analysis
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -28,7 +28,7 @@ jobs:
           command: check
   
   test:
-    name: Test
+    name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -75,7 +75,7 @@ jobs:
 
   # based on https://github.com/actions-rs/example
   coverage:
-    name: Coverage
+    name: Test Coverage
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

@@ -39,6 +39,25 @@ The library supports pluggable [discrete log](https://en.wikipedia.org/wiki/Deci
 * Serialization of intermediate byte trees using [bincode](https://crates.io/crates/bincode) and serde.
 * Randomness is sourced from [rand::rngs::OsRng](https://docs.rs/rand/latest/rand/rngs/struct.OsRng.html), in wasm builds [getrandom](https://crates.io/crates/getrandom) is backed by [Crypto.getRandomValues](https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues)
 
+## Continuous Integration
+
+There are multiple checks executed through the usage of Github Actions to verify
+the health of the code when pushed:
+1. **Compiler warning/errors**: checked using `cargo check` and 
+`cargo check ---tests`. Use `cargo fix` and `cargo fix --tests` to fix the 
+issues that appear.
+2. **Unit tests**: check that all unit tests pass using `cargo test`.
+3. **Code style**: check that the code style follows standard Rust format, using
+`cargo fmt -- --check`. Fix it using `cargo fmt`.
+4. **Code linting**: Lint that checks for common Rust mistakes using 
+`cargo clippy`. You can try to fix automatically most of those mistakes using
+`cargo clippy --fix -Z unstable-options`.
+5. **Code coverage**: Detects code coverage with [grcov] and pushes the 
+information (in master branch) to [codecov].
+1. **License compliance**: Check using [REUSE] for license compliance within
+the project, verifying that every file is REUSE-compliant and thus has a 
+copyright notice header.
+
 ## building
 
 ```cargo build```
