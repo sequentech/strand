@@ -1,6 +1,6 @@
 <!--
-SPDX-FileCopyrightText: 2022 David Ruescas <david@nvotes.com>
-SPDX-FileCopyrightText: 2022 Eduardo Robles <edu@nvotes.com>
+SPDX-FileCopyrightText: 2022 David Ruescas <david@sequentech.io>
+SPDX-FileCopyrightText: 2022 Eduardo Robles <edu@nsequentech.io>
 
 SPDX-License-Identifier: AGPL-3.0-only
 -->

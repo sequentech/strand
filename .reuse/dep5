@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: braid
-Upstream-Contact: David Ruescas <david@nvotes.com>
+Upstream-Contact: David Ruescas <david@sequentech.io>
 Source: https://github.com/sequentech/strand
 
 # Sample paragraph, commented out:

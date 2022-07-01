@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2022 David Ruescas <david@nvotes.com>
+// SPDX-FileCopyrightText: 2022 David Ruescas <david@sequentech.io>
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 use crate::context::Ctx;

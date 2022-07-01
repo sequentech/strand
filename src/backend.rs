@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2022 David Ruescas <david@nvotes.com>
+// SPDX-FileCopyrightText: 2022 David Ruescas <david@sequentech.io>
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 /// Multiplicative group backend implemented through [num_bigint](https://docs.rs/num-bigint/latest/num_bigint/).
