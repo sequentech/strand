@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 David Ruescas <david@nvotes.com>
+//
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Examples
 //!
 //! ```

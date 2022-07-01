@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 // SPDX-FileCopyrightText: 2021 David Ruescas <david@sequenttech.io>
 //
 // SPDX-License-Identifier: AGPL-3.0-only

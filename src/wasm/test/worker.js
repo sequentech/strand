@@ -1,3 +1,9 @@
+/**
+SPDX-FileCopyrightText: 2022 David Ruescas <david@nvotes.com>
+SPDX-FileCopyrightText: 2022 Eduardo Robles <edu@nvotes.com>
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
 import * as pkg from "../../../pkg/index.js";
 pkg.default().then(_ => {
     var parameters = {}
