@@ -5,6 +5,10 @@ SPDX-FileCopyrightText: 2022 Eduardo Robles <edu@nsequentech.io>
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 # strand
+[![Build Status][build-badge]][build-link]
+[![codecov][codecov-badge]][codecov]
+[![Dependency status][dependencies-badge]][dependencies-link]
+[![License][license-badge]][license-link]
 
 Strand is a cryptographic library for use in secure online voting protocols. 
 
@@ -52,13 +56,19 @@ issues that appear.
 4. **Code linting**: Lint that checks for common Rust mistakes using 
 `cargo clippy`. You can try to fix automatically most of those mistakes using
 `cargo clippy --fix -Z unstable-options`.
-5. **Code coverage**: Detects code coverage with [grcov] and pushes the 
-information (in master branch) to [codecov].
-1. **License compliance**: Check using [REUSE] for license compliance within
+5. **Code coverage**: Detects code coverage with [cargo-tarpaulin] and pushes
+the information (in master branch) to [codecov].
+6. **License compliance**: Check using [REUSE] for license compliance within
 the project, verifying that every file is REUSE-compliant and thus has a 
 copyright notice header.
+7. **Dependencies scan**: Audit dependencies for security vulnerabilities in the
+[RustSec Advisory Database], unmaintained dependencies, incompatible licenses
+and banned packages using [cargo-deny]. Use `cargo deny fix` or
+`cargo deny --allow-incompatible` to try to solve the detected issues.
+8. **Benchmark performance**: Check benchmark performance and alert on
+regressions using `cargo bench` and [github-action-benchmark].
 
-# Development environment
+## Development environment
 
 strand uses the [Nix Package Manager](https://nixos.org/) as its package
 builder. To build strand, **first [install Nix](https://nixos.org/)** correctly
@@ -70,11 +80,10 @@ After you have installed Nix, enter the development environment with:
 nix develop
 ```
 
-## Maintenance
+## Updating Cargo.toml
 
-Use the following [cargo-edit](https://crates.io/crates/cargo-edit)) command
-to upgrade dependencies to latest available version. This can be done within
-the `nix develop` environment:
+Use the following [cargo-edit] command to upgrade dependencies to latest
+available version. This can be done within the `nix develop` environment:
 
 ```bash
 cargo upgrade -Z preserve-precision
@@ -101,3 +110,17 @@ See [here](https://github.com/sequentech/strand/tree/main/src/wasm/test).
 ## benchmarks
 
 See [here](https://github.com/sequentech/strand/tree/main/benches).
+
+[cargo-deny]: https://github.com/EmbarkStudios/cargo-deny
+[cargo-edit]: https://crates.io/crates/cargo-edit
+[codecov]: https://codecov.io/
+[REUSE]: https://reuse.software/
+[tarpaulin]: https://github.com/xd009642/tarpaulin
+[github-action-benchmark]: https://github.com/benchmark-action/github-action-benchmark
+[build-badge]: https://github.com/sequentech/strand/workflows/CI/badge.svg?branch=master&event=push
+[build-link]: https://github.com/sequentech/strand/actions?query=workflow%3ACI
+[codecov-badge]: https://codecov.io/gh/sequentech/strand/branch/master/graph/badge.svg
+[license-badge]: https://img.shields.io/github/license/sequentech/strand?label=license
+[license-link]: https://github.com/sequentech/strand/blob/master/LICENSE
+[dependencies-badge]: https://deps.rs/repo/github/sequentech/strand/status.svg
+[dependencies-link]: https://deps.rs/repo/github/sequentech/strand

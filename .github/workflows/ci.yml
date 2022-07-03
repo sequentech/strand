@@ -163,8 +163,8 @@ jobs:
           toolchain: nightly
           override: true
 
-      - name: Run cargo bench
-        run: cargo +nightly bench | tee output.txt
+      - name: Run cargo bench with rayon
+        run: cargo +nightly bench --features=rayon | tee output.txt
 
       - name: Download previous benchmark data
         uses: actions/cache@v1
