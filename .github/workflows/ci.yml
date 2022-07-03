@@ -5,7 +5,8 @@
 
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
 
 jobs:
   check:
@@ -124,6 +125,7 @@ jobs:
   #        arguments: --all-features
 
   license_reuse:
+    name: Source-code licensing
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
