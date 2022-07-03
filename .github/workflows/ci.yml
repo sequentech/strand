@@ -96,6 +96,7 @@ jobs:
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
+          profile: minimal
           toolchain: stable
           override: true
 
@@ -106,7 +107,6 @@ jobs:
           version: '0.15.0'
           args: '-- --test-threads 1'
 
-      # update code coverage in codecov.io
       - uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: True
@@ -148,3 +148,39 @@ jobs:
       run: |
         pip install --user reuse
         ~/.local/bin/reuse lint
+
+  benchmark:
+    name: Benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+
+      - name: Run cargo bench
+        run: cargo +nightly bench | tee output.txt
+
+      - name: Download previous benchmark data
+        uses: actions/cache@v1
+        with:
+          path: ./cache
+          key: cargo-bench
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: cargo-bench
+          tool: 'cargo'
+          output-file-path: output.txt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          alert-threshold: '150%'
+          external-data-json-path: ./cache/benchmark-data.json
+          comment-always: true
+          fail-on-alert: true
+          alert-comment-cc-users: '@ruescasd,@edulix'
