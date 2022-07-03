@@ -107,11 +107,10 @@ jobs:
           args: '-- --test-threads 1'
 
       # update code coverage in codecov.io
-      - uses: codecov/codecov-action@v1
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - uses: codecov/codecov-action@v3
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: True
+          verbose: true
 
       - name: Archive code coverage results
         uses: actions/upload-artifact@v1
