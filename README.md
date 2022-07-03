@@ -58,6 +58,28 @@ information (in master branch) to [codecov].
 the project, verifying that every file is REUSE-compliant and thus has a 
 copyright notice header.
 
+# Development environment
+
+strand uses the [Nix Package Manager](https://nixos.org/) as its package
+builder. To build strand, **first [install Nix](https://nixos.org/)** correctly
+in your system.
+
+After you have installed Nix, enter the development environment with:
+
+```bash
+nix develop
+```
+
+## Maintenance
+
+Use the following [cargo-edit](https://crates.io/crates/cargo-edit)) command
+to upgrade dependencies to latest available version. This can be done within
+the `nix develop` environment:
+
+```bash
+cargo upgrade -Z preserve-precision
+```
+
 ## building
 
 ```cargo build```
