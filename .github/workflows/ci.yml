@@ -9,27 +9,8 @@ on:
   push:
 
 jobs:
-  check:
-    name: Code analysis
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-
-      - name: Static code analysis with cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-  
   test:
-    name: Unit Tests
+    name: Run Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -47,8 +28,27 @@ jobs:
         with:
           command: test
 
+  check:
+    name: 'Static Analysis: cargo check'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Run cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+
   lints:
-    name: Lints
+    name: 'Static Analysis: cargo fmt & clippy'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -62,17 +62,28 @@ jobs:
           override: true
           components: rustfmt, clippy
 
+      - name: Install extra dependencies
+        run: cargo install clippy-sarif sarif-fmt
+
       - name: Check code styling with cargo fmt
         uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all -- --check
 
-      - name: Check code linting with cargo clippy
-        uses: actions-rs/cargo@v1
+      - name: Run cargo clippy
+        run:
+          cargo clippy
+            --message-format=json
+            -- -D warnings | clippy-sarif | tee rust-clippy-results.sarif | sarif-fmt
+        continue-on-error: true
+
+      - name: Upload analysis results to GitHub
+        uses: github/codeql-action/upload-sarif@v2
         with:
-          command: clippy
-          args: -- -D warnings
+          sarif_file: rust-clippy-results.sarif
+          wait-for-processing: true
+          category: cargo-clippy
 
   # based on https://github.com/actions-rs/example
   coverage:
@@ -125,15 +136,17 @@ jobs:
   #        arguments: --all-features
 
   license_reuse:
-    name: Source-code licensing
+    name: Check licensing
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v2
+
     - name: Setup Python
       uses: actions/setup-python@v2
       with:
         python-version: 3.8
+
     - name: Check files license compliance with REUSE
       run: |
         pip install --user reuse
