@@ -57,7 +57,10 @@
           ) { 
             buildInputs = 
               packages.strand.nativeBuildInputs ++
-              [ pkgs.bash ]; 
+              [
+                pkgs.bash
+                pkgs.act
+              ];
           };
         }
     );
