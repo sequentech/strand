@@ -119,7 +119,7 @@ See [here](https://github.com/sequentech/strand/tree/main/benches).
 [cargo-edit]: https://crates.io/crates/cargo-edit
 [codecov]: https://codecov.io/
 [REUSE]: https://reuse.software/
-[tarpaulin]: https://github.com/xd009642/tarpaulin
+[cargo-tarpaulin]: https://github.com/xd009642/tarpaulin
 [github-action-benchmark]: https://github.com/benchmark-action/github-action-benchmark
 [Contributor License Agreement]: https://cla-assistant.io/sequentech/strand?pullRequest=27
 [CLA Assistant bot]: https://github.com/cla-assistant/cla-assistant
