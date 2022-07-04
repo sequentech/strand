@@ -127,11 +127,11 @@ See [here](https://github.com/sequentech/strand/tree/main/benches).
 [slack-badge]: https://img.shields.io/badge/Join_us_on_Slack!-sequent--talk-blue.svg?longCache=true&logo=slack
 [slack-link]: https://join.slack.com/t/sequentech/shared_invite/zt-1bve9z0px-IF4Je04NJM8AEkCAcdBVWg
 
-[build-badge]: https://github.com/sequentech/strand/workflows/CI/badge.svg?branch=master&event=push
+[build-badge]: https://github.com/sequentech/strand/workflows/CI/badge.svg?branch=main&event=push
 [build-link]: https://github.com/sequentech/strand/actions?query=workflow%3ACI
 
-[codecov-badge]: https://codecov.io/gh/sequentech/strand/branch/master/graph/badge.svg
-[codecov-link]: https://codecov.io/
+[codecov-badge]: https://codecov.io/gh/sequentech/strand/branch/main/graph/badge.svg?token=W5QNYDEJCX
+[codecov-link]: https://codecov.io/gh/sequentech/strand
 
 [dependencies-badge]: https://deps.rs/repo/github/sequentech/strand/status.svg
 [dependencies-link]: https://deps.rs/repo/github/sequentech/strand
