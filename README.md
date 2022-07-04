@@ -20,30 +20,30 @@ The following primitives are implemented
 
 * ElGamal and exponential ElGamal encryption.
 
-* Fixed distributed and [threshold distributed ElGamal](https://members.loria.fr/VCortier/files/Papers/WPES2013.pdf).
+* Fixed distributed and [threshold distributed ElGamal].
 
-* [Wikstrom](http://www.csc.kth.se/~terelius/TeWi10Full.pdf) [shuffle](https://eprint.iacr.org/2011/168.pdf) [proofs](https://www.ifca.ai/fc17/voting/papers/voting17_HLKD17.pdf).
+* [Wikstrom] [shuffle] [proofs].
 
 * Schnorr and Chaum-Pedersen zero knowledge proofs.
 
 Shuffle proofs have been independently verified
 
-* [Did you mix me? Formally Verifying Verifiable Mix Nets in Electronic Voting](https://eprint.iacr.org/2020/1114.pdf) using [this](https://github.com/nvotes/secure-e-voting-with-coq/tree/master/OCamlBraid).
+* [Did you mix me? - Formally Verifying Verifiable Mix Nets in Electronic Voting] using [OCamlBraid].
 
 ## Group backends
 
-The library supports pluggable [discrete log](https://en.wikipedia.org/wiki/Decisional_Diffie%E2%80%93Hellman_assumption) backends, there are currently three:
+The library supports pluggable [discrete log] backends, there are currently three:
 
-* Curve25519 using the [ristretto group](https://ristretto.group/) via the [curve25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek) library.
-* [Standard multiplicative groups](https://en.wikipedia.org/wiki/Schnorr_group) via the [rug](https://crates.io/crates/rug) arbitrary-precision library, backed by [gmp](https://gmplib.org/).
-* [Standard multiplicative groups](https://en.wikipedia.org/wiki/Schnorr_group) via the [num-bigint](https://crates.io/crates/num-bigint) arbitrary-precision library, in pure rust.
+* Curve25519 using the [ristretto group] via the [curve25519-dalek] library.
+* [Standard multiplicative groups] via the [rug] arbitrary-precision library, backed by [gmp].
+* [Standard multiplicative groups] via the [num-bigint] arbitrary-precision library, in pure rust.
 
 ## Significant dependencies
 
-* Compute intensive portions are parallelized using [rayon](https://github.com/rayon-rs/rayon).
+* Compute intensive portions are parallelized using [rayon].
 * Symmetric encryption using [RustCrypto](https://github.com/RustCrypto/block-ciphers).
 * Serialization of intermediate byte trees using [bincode](https://crates.io/crates/bincode) and serde.
-* Randomness is sourced from [rand::rngs::OsRng](https://docs.rs/rand/latest/rand/rngs/struct.OsRng.html), in wasm builds [getrandom](https://crates.io/crates/getrandom) is backed by [Crypto.getRandomValues](https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues)
+* Randomness is sourced from [rand::rngs::OsRng], in wasm builds [getrandom] is backed by [Crypto.getRandomValues].
 
 ## Continuous Integration
 
@@ -66,7 +66,8 @@ copyright notice header.
 7. **Dependencies scan**: Audit dependencies for security vulnerabilities in the
 [RustSec Advisory Database], unmaintained dependencies, incompatible licenses
 and banned packages using [cargo-deny]. Use `cargo deny fix` or
-`cargo deny --allow-incompatible` to try to solve the detected issues.
+`cargo deny --allow-incompatible` to try to solve the detected issues. We also
+have configured [dependabot] to notify and create PRs on version updates.
 8. **Benchmark performance**: Check benchmark performance and alert on
 regressions using `cargo bench` and [github-action-benchmark].
 9. **CLA compliance**: Check that all committers have signed the 
@@ -74,8 +75,8 @@ regressions using `cargo bench` and [github-action-benchmark].
 
 ## Development environment
 
-strand uses the [Nix Package Manager](https://nixos.org/) as its package
-builder. To build strand, **first [install Nix](https://nixos.org/)** correctly
+strand uses the [Nix Package Manager] as its package
+builder. To build strand, **first [install Nix]** correctly
 in your system.
 
 After you have installed Nix, enter the development environment with:
@@ -123,6 +124,27 @@ See [here](https://github.com/sequentech/strand/tree/main/benches).
 [github-action-benchmark]: https://github.com/benchmark-action/github-action-benchmark
 [Contributor License Agreement]: https://cla-assistant.io/sequentech/strand?pullRequest=27
 [CLA Assistant bot]: https://github.com/cla-assistant/cla-assistant
+[dependabot]:https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuring-dependabot-version-updates
+[RustSec Advisory Database]: https://github.com/RustSec/advisory-db/
+[rayon]: https://github.com/rayon-rs/rayon
+[threshold distributed ElGamal]: https://members.loria.fr/VCortier/files/Papers/WPES2013.pdf
+[Wikstrom]: http://www.csc.kth.se/~terelius/TeWi10Full.pdf
+[shuffle]: https://eprint.iacr.org/2011/168.pdf
+[proofs]: https://www.ifca.ai/fc17/voting/papers/voting17_HLKD17.pdf
+[Did you mix me? - Formally Verifying Verifiable Mix Nets in Electronic Voting]: https://eprint.iacr.org/2020/1114.pdf
+[OCamlBraid]: https://github.com/nvotes/secure-e-voting-with-coq/tree/master/OCamlBraid
+[discrete log]: https://en.wikipedia.org/wiki/Decisional_Diffie%E2%80%93Hellman_assumption
+[ristretto group]: https://ristretto.group/
+[curve25519-dalek]: https://github.com/dalek-cryptography/curve25519-dalek
+[Standard multiplicative groups]: https://en.wikipedia.org/wiki/Schnorr_group
+[rug]: https://crates.io/crates/rug
+[gmp]: https://gmplib.org/
+[num-bigint]: https://crates.io/crates/num-bigint
+[rand::rngs::OsRng]: https://docs.rs/rand/latest/rand/rngs/struct.OsRng.html
+[getrandom]: https://crates.io/crates/getrandom
+[Crypto.getRandomValues]: https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues
+[Nix Package Manager]: https://nixos.org/
+[install Nix]: https://nixos.org/
 
 [slack-badge]: https://img.shields.io/badge/Join_us_on_Slack!-sequent--talk-blue.svg?longCache=true&logo=slack
 [slack-link]: https://join.slack.com/t/sequentech/shared_invite/zt-1bve9z0px-IF4Je04NJM8AEkCAcdBVWg
