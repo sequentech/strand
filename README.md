@@ -124,7 +124,7 @@ See [here](https://github.com/sequentech/strand/tree/main/benches).
 [Contributor License Agreement]: https://cla-assistant.io/sequentech/strand?pullRequest=27
 [CLA Assistant bot]: https://github.com/cla-assistant/cla-assistant
 
-[slack-badge]: https://img.shields.io/badge/Join_us_on_Slack!-ort--talk-blue.svg?longCache=true&logo=slack
+[slack-badge]: https://img.shields.io/badge/Join_us_on_Slack!-sequent--talk-blue.svg?longCache=true&logo=slack
 [slack-link]: https://join.slack.com/t/sequentech/shared_invite/zt-1bve9z0px-IF4Je04NJM8AEkCAcdBVWg
 
 [build-badge]: https://github.com/sequentech/strand/workflows/CI/badge.svg?branch=master&event=push
