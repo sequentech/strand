@@ -5,10 +5,12 @@ SPDX-FileCopyrightText: 2022 Eduardo Robles <edu@nsequentech.io>
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 # strand
+[![Slack][slack-badge]][slack-link]
 [![Build Status][build-badge]][build-link]
-[![codecov][codecov-badge]][codecov]
+[![codecov][codecov-badge]][codecov-link]
 [![Dependency status][dependencies-badge]][dependencies-link]
 [![License][license-badge]][license-link]
+[![REUSE][reuse-badge]][reuse-link]
 
 Strand is a cryptographic library for use in secure online voting protocols. 
 
@@ -117,10 +119,21 @@ See [here](https://github.com/sequentech/strand/tree/main/benches).
 [REUSE]: https://reuse.software/
 [tarpaulin]: https://github.com/xd009642/tarpaulin
 [github-action-benchmark]: https://github.com/benchmark-action/github-action-benchmark
+
+[slack-badge]: https://img.shields.io/badge/Join_us_on_Slack!-ort--talk-blue.svg?longCache=true&logo=slack
+[slack-link]: https://join.slack.com/t/sequentech/shared_invite/zt-1bve9z0px-IF4Je04NJM8AEkCAcdBVWg
+
 [build-badge]: https://github.com/sequentech/strand/workflows/CI/badge.svg?branch=master&event=push
 [build-link]: https://github.com/sequentech/strand/actions?query=workflow%3ACI
+
 [codecov-badge]: https://codecov.io/gh/sequentech/strand/branch/master/graph/badge.svg
-[license-badge]: https://img.shields.io/github/license/sequentech/strand?label=license
-[license-link]: https://github.com/sequentech/strand/blob/master/LICENSE
+[codecov-link]: https://codecov.io/
+
 [dependencies-badge]: https://deps.rs/repo/github/sequentech/strand/status.svg
 [dependencies-link]: https://deps.rs/repo/github/sequentech/strand
+
+[license-badge]: https://img.shields.io/github/license/sequentech/strand?label=license
+[license-link]: https://github.com/sequentech/strand/blob/master/LICENSE
+
+[reuse-badge]: https://api.reuse.software/badge/github.com/sequentech/strand
+[reuse-link]: https://api.reuse.software/info/github.com/sequentech/strand
