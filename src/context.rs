@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 David Ruescas <david@sequentech.io>
+//
+// SPDX-License-Identifier: AGPL-3.0-only
 //!
 //! The interface is composed of three abstractions on which other functionality is built:
 //! - [Ctx](crate::context::Ctx): a cryptographic context most closely corresponds to the underlying

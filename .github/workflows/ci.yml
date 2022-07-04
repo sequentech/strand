@@ -1,0 +1,198 @@
+# SPDX-FileCopyrightText: 2021-2022 Eduardo Robles <edu@sequentech.io>
+# SPDX-FileCopyrightText: 2022 Félix Robles <felix@sequentech.io>
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
+name: CI
+
+on:
+  push:
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Run unit tests with cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+
+  check:
+    name: 'Static Analysis: cargo check'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Run cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+
+  lints:
+    name: 'Static Analysis: cargo fmt & clippy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Install extra dependencies
+        run: cargo install clippy-sarif sarif-fmt
+
+      - name: Check code styling with cargo fmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+      - name: Run cargo clippy
+        run:
+          cargo clippy
+            --message-format=json
+            -- -D warnings | clippy-sarif | tee rust-clippy-results.sarif | sarif-fmt
+        continue-on-error: true
+
+      - name: Upload analysis results to GitHub
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: rust-clippy-results.sarif
+          wait-for-processing: true
+          category: cargo-clippy
+
+  # based on https://github.com/actions-rs/example
+  coverage:
+    name: Test Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Run cargo-tarpaulin
+        uses: actions-rs/tarpaulin@v0.1
+        continue-on-error: true
+        with:
+          version: '0.15.0'
+          args: '-- --test-threads 1'
+
+      - uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: True
+          verbose: true
+
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v1
+        with:
+          name: code-coverage-report
+          path: cobertura.xml
+
+  dependencies:
+    name: Check Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Run cargo deny
+        uses: EmbarkStudios/cargo-deny-action@v1
+        with:
+          log-level: warn
+          command: check
+          arguments: --all-features
+
+  license_reuse:
+    name: Code License
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Check files license compliance with REUSE
+      run: |
+        pip install --user reuse
+        ~/.local/bin/reuse lint
+
+  benchmark:
+    name: Benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Run cargo bench with rayon
+        run: cargo +nightly bench --features=rayon | tee output.txt
+
+      - name: Download previous benchmark data
+        uses: actions/cache@v3
+        with:
+          path: ./cache
+          key: cargo-bench
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: cargo-bench
+          tool: 'cargo'
+          output-file-path: output.txt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          alert-threshold: '150%'
+          external-data-json-path: ./cache/benchmark-data.json
+          comment-always: true
+          fail-on-alert: true
+          alert-comment-cc-users: '@ruescasd,@edulix'

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2022 David Ruescas <david@sequentech.io>
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode};
 use rand::rngs::OsRng;
 use rand::RngCore;

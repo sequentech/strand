@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 David Ruescas <david@sequentech.io>
+//
+// SPDX-License-Identifier: AGPL-3.0-only
 use crate::backend::num_bigint::BigintCtx;
 use crate::backend::ristretto::RistrettoCtx;
 use crate::byte_tree::{ByteTree, ToByteTree};
