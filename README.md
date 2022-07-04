@@ -69,6 +69,8 @@ and banned packages using [cargo-deny]. Use `cargo deny fix` or
 `cargo deny --allow-incompatible` to try to solve the detected issues.
 8. **Benchmark performance**: Check benchmark performance and alert on
 regressions using `cargo bench` and [github-action-benchmark].
+9. **CLA compliance**: Check that all committers have signed the 
+[Contributor License Agreement] using [CLA Assistant bot].
 
 ## Development environment
 
@@ -119,6 +121,8 @@ See [here](https://github.com/sequentech/strand/tree/main/benches).
 [REUSE]: https://reuse.software/
 [tarpaulin]: https://github.com/xd009642/tarpaulin
 [github-action-benchmark]: https://github.com/benchmark-action/github-action-benchmark
+[Contributor License Agreement]: https://cla-assistant.io/sequentech/strand?pullRequest=27
+[CLA Assistant bot]: https://github.com/cla-assistant/cla-assistant
 
 [slack-badge]: https://img.shields.io/badge/Join_us_on_Slack!-ort--talk-blue.svg?longCache=true&logo=slack
 [slack-link]: https://join.slack.com/t/sequentech/shared_invite/zt-1bve9z0px-IF4Je04NJM8AEkCAcdBVWg
