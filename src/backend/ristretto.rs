@@ -20,7 +20,6 @@
 use curve25519_dalek::constants::BASEPOINT_ORDER;
 use curve25519_dalek::constants::RISTRETTO_BASEPOINT_POINT;
 use curve25519_dalek::constants::RISTRETTO_BASEPOINT_TABLE;
-use curve25519_dalek::digest::{ExtendableOutputDirty, Update, XofReader};
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
 use curve25519_dalek::traits::Identity;
@@ -28,6 +27,7 @@ use ed25519_dalek::{Digest, Sha512};
 use rand::RngCore;
 use serde_bytes::ByteBuf;
 use sha3::Shake256;
+use sha3::digest::{ExtendableOutput, Update, XofReader};
 
 use crate::byte_tree::ByteTree::Leaf;
 use crate::byte_tree::*;
@@ -49,9 +49,9 @@ impl RistrettoCtx {
 
         let mut ret: Vec<RistrettoPoint> = Vec::with_capacity(size);
         let mut shake = Shake256::default();
-        shake.update(seed_);
+        shake.update(&seed_);
 
-        let mut reader = shake.finalize_xof_dirty();
+        let mut reader = shake.finalize_xof();
         for _ in 0..size {
             let mut uniform_bytes = [0u8; 64];
             reader.read(&mut uniform_bytes);
