@@ -175,8 +175,14 @@ jobs:
 
       - uses: Swatinem/rust-cache@v1
 
-      - name: Run cargo bench with rayon
-        run: cargo +nightly bench --features=rayon | tee output.txt
+      - name: Run cargo bench
+        # note that we explictly have to mention which benches to run, because
+        # otherwise 
+        run:
+          cargo +nightly bench
+            --bench shuffle
+            --bench encrypt
+            -- --output-format bencher | tee output.txt
 
       - name: Download previous benchmark data
         uses: actions/cache@v3
@@ -189,10 +195,9 @@ jobs:
         with:
           name: cargo-bench
           tool: 'cargo'
-          output-file-path: output.txt
+          output-file-path: ./output.txt
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          alert-threshold: '150%'
           external-data-json-path: ./cache/benchmark-data.json
-          comment-always: true
-          fail-on-alert: true
-          alert-comment-cc-users: '@ruescasd,@edulix'
+          alert-threshold: '150%'
+          comment-on-alert: true
+          fail-on-alert: false
