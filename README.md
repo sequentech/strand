@@ -94,6 +94,8 @@ available version. This can be done within the `nix develop` environment:
 cargo upgrade -Z preserve-precision
 ```
 
+This repository doesn´t include a `Cargo.lock` file as it is intended to work as a library. However for Wasm tests we keep a copy of the file on `Cargo.lock.copy`. If you update Cargo.toml, keep the lock copy file in sync by generating the lock file with `cargo generate-lockfile`, then `mv Cargo.lock Cargo.lock.copy` and commit the changes.
+
 ## building
 
 ```cargo build```
