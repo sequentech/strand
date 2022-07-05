@@ -40,7 +40,7 @@ quick-error = "2.0.0"
 rayon = { version = "1.5", optional = true }
 # wasm
 wasm-bindgen-rayon = {version = "1.0", features = ["no-bundler"], optional = true}
-wasm-bindgen = {version = "0.2", optional = true}
+wasm-bindgen = {version = "=0.2.78", optional = true}
 # lazy_static = "1.4.0"
 # static_init = "1.0.2"
 web-sys = { version = "0.3.4", features = ['Performance'], optional = true}
