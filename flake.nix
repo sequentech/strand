@@ -49,11 +49,17 @@
             wasm-pack -v pack .
             rm -Rf $out/temp_home
             cp pkg/strand-*.tgz $out
-            "; 
+            ";
 
-          cargoLock = {
-            lockFile = ./Cargo.lock;
-          };
+            # see https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md#importing-a-cargolock-file-importing-a-cargolock-file
+            cargoLock = let
+                fixupLockFile = path: (builtins.readFile path);
+            in {
+                lockFileContents = fixupLockFile ./Cargo.lock.copy;
+            };
+            postPatch = ''
+                cp ${./Cargo.lock.copy} Cargo.lock
+            '';
         };
 
         # configure the dev shell
