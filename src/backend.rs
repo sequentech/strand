@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 David Ruescas <david@sequentech.io>
+//
+// SPDX-License-Identifier: AGPL-3.0-only
 /// Multiplicative group backend implemented through [num_bigint](https://docs.rs/num-bigint/latest/num_bigint/).
 pub mod num_bigint;
 /// Elliptic curve backend on top of [ristretto](https://ristretto.group/ristretto.html) implemented through [curve25519_dalek](https://doc.dalek.rs/curve25519_dalek/ristretto/index.html).

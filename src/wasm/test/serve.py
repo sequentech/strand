@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2022 David Ruescas <david@sequentech.io>
+# SPDX-FileCopyrightText: 2022 Eduardo Robles <edu@sequentech.io>
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 class CrossOriginIsolation(SimpleHTTPRequestHandler):
