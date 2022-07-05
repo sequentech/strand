@@ -26,8 +26,8 @@ use curve25519_dalek::traits::Identity;
 use ed25519_dalek::{Digest, Sha512};
 use rand::RngCore;
 use serde_bytes::ByteBuf;
-use sha3::Shake256;
 use sha3::digest::{ExtendableOutput, Update, XofReader};
+use sha3::Shake256;
 
 use crate::byte_tree::ByteTree::Leaf;
 use crate::byte_tree::*;
