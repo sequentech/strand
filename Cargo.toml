@@ -22,7 +22,7 @@ bench = false
 [dependencies]
 # backends
 curve25519-dalek = {version = "3", features = ["serde"]}
-sha3 = "0.9"
+sha3 = "0.10"
 num-bigint = { version = "0.4", features = ["rand"] }
 num-traits = "0.2"
 num-integer = "0.1"

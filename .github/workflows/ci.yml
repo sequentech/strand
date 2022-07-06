@@ -198,5 +198,6 @@ jobs:
           output-file-path: ./output.txt
           github-token: ${{ secrets.GITHUB_TOKEN }}
           external-data-json-path: ./cache/benchmark-data.json
-          comment-always: true
+          alert-threshold: '150%'
+          comment-on-alert: true
           fail-on-alert: false
