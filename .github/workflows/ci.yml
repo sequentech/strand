@@ -105,26 +105,29 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+          components: llvm-tools-preview
 
       - uses: Swatinem/rust-cache@v1
 
-      - name: Run cargo-tarpaulin
-        uses: actions-rs/tarpaulin@v0.1
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Generate code coverage
+        run: cargo llvm-cov --workspace --lcov --output-path lcov.info
         continue-on-error: true
-        with:
-          version: '0.15.0'
-          args: '-- --test-threads 1'
 
       - uses: codecov/codecov-action@v3
         with:
-          fail_ci_if_error: True
+          fail_ci_if_error: false
+          files: lcov.info
           verbose: true
 
       - name: Archive code coverage results
         uses: actions/upload-artifact@v1
+        continue-on-error: true
         with:
           name: code-coverage-report
-          path: cobertura.xml
+          path: lcov.info
 
   dependencies:
     name: Check Dependencies
