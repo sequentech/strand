@@ -119,7 +119,7 @@ jobs:
         continue-on-error: true
         with:
           version: '0.15.0'
-          args: '-- --test-threads 1'
+          args: '-- --test-threads 2'
 
       - uses: codecov/codecov-action@v3
         with:
