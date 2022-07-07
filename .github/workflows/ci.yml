@@ -24,6 +24,11 @@ jobs:
         extra_nix_config: |
           experimental-features = nix-command flakes
 
+    - uses: cachix/cachix-action@v10
+      with:
+        name: sequent-tech
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
     - name: Run unit tests
       run: |
         nix \
@@ -218,6 +223,11 @@ jobs:
         extra_nix_config: |
           experimental-features = nix-command flakes
 
+    - uses: cachix/cachix-action@v10
+      with:
+        name: sequent-tech
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
     # not running this command in https://github.com/nektos/act
     # why? because it doesn't work for some reason
     - name: Print nixpkgs version
@@ -250,6 +260,11 @@ jobs:
         nix_path: nixpkgs=channel:nixos-22.05
         extra_nix_config: |
           experimental-features = nix-command flakes
+
+    - uses: cachix/cachix-action@v10
+      with:
+        name: sequent-tech
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Build the flake
       run: nix --extra-experimental-features "nix-command flakes" build -L
