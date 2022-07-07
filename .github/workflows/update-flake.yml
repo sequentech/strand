@@ -6,7 +6,9 @@ on:
   schedule:
     # minute, hour, day of month, month, day of week
     - cron: '0 0 * * 1'
-
+  push:
+    branches:
+      - flake-lock
 
 jobs:
   lockfile:
