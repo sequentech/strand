@@ -26,7 +26,7 @@ jobs:
 
     - uses: cachix/cachix-action@v10
       with:
-        name: sequent-tech
+        name: sequentech
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Run unit tests
@@ -225,7 +225,7 @@ jobs:
 
     - uses: cachix/cachix-action@v10
       with:
-        name: sequent-tech
+        name: sequentech
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     # not running this command in https://github.com/nektos/act
@@ -263,7 +263,7 @@ jobs:
 
     - uses: cachix/cachix-action@v10
       with:
-        name: sequent-tech
+        name: sequentech
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Build the flake
