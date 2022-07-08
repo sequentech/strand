@@ -7,7 +7,7 @@ describe('wasm test local', () => {
     await browser.url("http://localhost:8080/src/wasm/test/test_noworker.html");
     await browser.waitUntil(
       async () => (await browser.getTitle()).match("strand wasm test"),
-      5000,
+      20000,
       "Title didn't match"
     );
 
@@ -16,7 +16,7 @@ describe('wasm test local', () => {
     await browser.waitUntil(
       async () => (await lognew.getText()) === "ok", 
       { 
-        timeout: 5000,
+        timeout: 20000,
         timeoutMsg: 'Get text timeout' 
       }
     );
