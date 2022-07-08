@@ -8,7 +8,7 @@ const localConfig = {
   services: [['@browserstack/wdio-browserstack-service', { browserstackLocal: true, forcelocal: false }]],
   maxInstances: 10,
   commonCapabilities: {
-    build: 'browserstack-build-17',
+    build: 'browserstack-build-' + process.env.GIT_COMMIT_SHA,
     project: 'strand',
     // "browserstack.networkLogs": 'true',
   },
