@@ -269,13 +269,6 @@ jobs:
     - name: Build the flake
       run: nix --extra-experimental-features "nix-command flakes" build -L
 
-    - name: Archive artifacts
-      if: ${{ !env.ACT }}
-      uses: actions/upload-artifact@v2
-      with:
-        name: strand-${{ matrix.os }}
-        path: /nix/store/*-strand*
-
   browserstack_test:
     name: Browserstack tests
     strategy:
@@ -298,13 +291,6 @@ jobs:
 
     - name: Build the flake
       run: nix --extra-experimental-features "nix-command flakes" build -L
-
-    - name: Archive artifacts
-      if: ${{ !env.ACT }}
-      uses: actions/upload-artifact@v2
-      with:
-        name: strand-${{ matrix.os }}
-        path: /nix/store/*-strand*
 
     - name: Extract wasm files
       run: |
