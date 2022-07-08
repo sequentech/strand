@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 exports.config = {
-  user: 'felixtest_P6cl4FNofZ5',
-  key: 'Cuuy52b1oxCySnKrQ8H8',
+  user: '',
+  key: '',
   updateJob: false,
   exclude: [],
   logLevel: 'warn',
