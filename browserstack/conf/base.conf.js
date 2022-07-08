@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 exports.config = {
-  user: '',
-  key: '',
+  user: process.env.BROWSERSTACK_USERNAME,
+  key: process.env.BROWSERSTACK_ACCESS_KEY,
   updateJob: false,
   exclude: [],
   logLevel: 'warn',
