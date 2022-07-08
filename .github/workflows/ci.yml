@@ -306,6 +306,11 @@ jobs:
         name: strand-${{ matrix.os }}
         path: /nix/store/*-strand*
 
+    - name: Extract wasm files
+      run: |
+        tar -xf result/strand-*.tgz
+        mv package pkg
+
     - name: Set up Python 3.8
       uses: actions/setup-python@v2
       with:
