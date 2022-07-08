@@ -131,7 +131,7 @@ localConfig.capabilities.push(...osx);
 localConfig.capabilities.push(...iphone);
 localConfig.capabilities.push(...ipad);
 localConfig.capabilities.push(...samsung);
-localConfig.capabilities.push(...google);
+//localConfig.capabilities.push(...google);
 
 exports.config = { ...baseConfig, ...localConfig };
 
