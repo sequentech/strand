@@ -335,7 +335,7 @@ jobs:
       run: python3 src/wasm/test/serve.py &
 
     - name: 'Running test on BrowserStack'  # Invokes the actual test script that would run on BrowserStack browsers
-      run: cd browserstack && npm run local  # See sample test script above
+      run: ls -lah && cd browserstack && npm run local  # See sample test script above
 
     - name: 'BrowserStackLocal Stop'  # Terminating the BrowserStackLocal tunnel connection
       uses: browserstack/github-actions/setup-local@master
