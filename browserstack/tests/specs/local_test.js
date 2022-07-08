@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Félix Robles <felix@sequentech.io>
+//
+// SPDX-License-Identifier: AGPL-3.0-only
 describe('wasm test local', () => {
   it('tests pass', async () => {
     // await browser.url("http://localhost:8080/src/wasm/test/test.html?threaded=false&bench=false");

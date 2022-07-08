@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Félix Robles <felix@sequentech.io>
+//
+// SPDX-License-Identifier: AGPL-3.0-only
 describe("wasm test remote", () => {
   it("tests pass", async () => {
     await browser.url("https://david-test.sequentech.io/test.html");

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2022 Félix Robles <felix@sequentech.io>
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
 exports.config = {
   user: 'felixtest_P6cl4FNofZ5',
   key: 'Cuuy52b1oxCySnKrQ8H8',
