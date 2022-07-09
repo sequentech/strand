@@ -38,7 +38,7 @@
       in rec {
         packages.strand-wasm = pkgs.rustPlatform.buildRustPackage {
           pname = "strand-wasm";
-          version = "0.0.3";
+          version = "0.0.1";
           src = ./.;
           nativeBuildInputs = [
             rust-wasm
@@ -58,36 +58,49 @@
             wasm-pack -v pack .
             rm -Rf $out/temp_home
             cp pkg/strand-*.tgz $out
-            ";
+          ";
 
-            # see https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md#importing-a-cargolock-file-importing-a-cargolock-file
-            cargoLock = let
-                fixupLockFile = path: (builtins.readFile path);
-            in {
-                lockFileContents = fixupLockFile ./Cargo.lock.copy;
-            };
-            postPatch = ''
-                cp ${./Cargo.lock.copy} Cargo.lock
-            '';
+          # see https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md#importing-a-cargolock-file-importing-a-cargolock-file
+          cargoLock = let
+              fixupLockFile = path: (builtins.readFile path);
+          in {
+              lockFileContents = fixupLockFile ./Cargo.lock.copy;
+          };
+          postPatch = ''
+              cp ${./Cargo.lock.copy} Cargo.lock
+          '';
         };
         packages.strand-system = pkgs.rustPlatform.buildRustPackage {
           pname = "strand-system";
-          version = "0.0.2";
+          version = "0.0.1";
           src = ./.;
           nativeBuildInputs = [
             rust-system
           ];
 
-            # see https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md#importing-a-cargolock-file-importing-a-cargolock-file
-            cargoLock = let
-                fixupLockFile = path: (builtins.readFile path);
-            in {
-                lockFileContents = fixupLockFile ./Cargo.lock.copy;
-            }; 
-            postPatch = ''
-                cp ${./Cargo.lock.copy} Cargo.lock
-            '';
-        }; 
+          # see https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md#importing-a-cargolock-file-importing-a-cargolock-file
+          cargoLock = let
+              fixupLockFile = path: (builtins.readFile path);
+          in {
+              lockFileContents = fixupLockFile ./Cargo.lock.copy;
+          }; 
+          postPatch = ''
+              cp ${./Cargo.lock.copy} Cargo.lock
+          '';
+        };
+        packages.hello = stdenv.mkDerivation {
+          pname = "hello";
+          version = "0.0.1";
+          buildInputs = [ self.packages.${system}.strand-wasm ];
+          dontUnpack = true; # derivation with no source
+          buildPhase = ''
+            echo '${self.packages.${system}.strand-wasm}'
+          '';
+          installPhase = ''
+            mkdir -p $out
+            ls -lah ${self.packages.${system}.strand-wasm} > $out/foo.txt
+          '';
+        };
         defaultPackage = self.packages.${system}.strand-wasm;
 
         # configure the dev shell
