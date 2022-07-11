@@ -72,6 +72,10 @@ have configured [dependabot] to notify and create PRs on version updates.
 regressions using `cargo bench` and [github-action-benchmark].
 9. **CLA compliance**: Check that all committers have signed the 
 [Contributor License Agreement] using [CLA Assistant bot].
+10. **Browser testing**: Check the library works on different browsers and operating
+systems using [browserstack](https://www.browserstack.com/). Run `npm run local`
+on the `browserstack` folder to try it locally. You'll need to configure the env variables 
+`GIT_COMMIT_SHA`, `BROWSERSTACK_USERNAME`, `BROWSERSTACK_ACCESS_KEY`.
 
 ## Development environment
 
