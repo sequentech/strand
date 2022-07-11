@@ -16,29 +16,34 @@
           inherit system overlays;
         };
         stdenv = pkgs.clangStdenv;
-        rust-wasm = pkgs
+        configureRustTargets = targets : pkgs
           .rust-bin
           .nightly
           ."2022-04-07"
           .default
           .override {
               extensions = [ "rust-src" ];
-              targets = [ "wasm32-unknown-unknown" ];
-          }
-        ;
-        rust-system = pkgs
-          .rust-bin
-          .nightly
-          ."2022-04-07"
-          .default
-          .override {
-              extensions = [ "rust-src" ];
-          }
-        ;
+               ${if (builtins.length targets) > 0 then "targets" else null} = targets;
+
+          };
+        rust-wasm = configureRustTargets [ "wasm32-unknown-unknown" ];
+        rust-system  = configureRustTargets [];
+        # see https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md#importing-a-cargolock-file-importing-a-cargolock-file
+        cargoPatches = {
+            cargoLock = let
+                fixupLockFile = path: (builtins.readFile path);
+            in {
+                lockFileContents = fixupLockFile ./Cargo.lock.copy;
+            };
+            postPatch = ''
+                cp ${./Cargo.lock.copy} Cargo.lock
+            '';
+        };
+        buildRustPackageWithCargo = cargoArgs: pkgs.rustPlatform.buildRustPackage (cargoPatches // cargoArgs);
       in rec {
-        packages.strand-wasm = pkgs.rustPlatform.buildRustPackage {
+        packages.strand-wasm = buildRustPackageWithCargo {
           pname = "strand-wasm";
-          version = "0.0.3";
+          version = "0.0.1";
           src = ./.;
           nativeBuildInputs = [
             rust-wasm
@@ -59,35 +64,15 @@
             rm -Rf $out/temp_home
             cp pkg/strand-*.tgz $out
             ";
-
-            # see https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md#importing-a-cargolock-file-importing-a-cargolock-file
-            cargoLock = let
-                fixupLockFile = path: (builtins.readFile path);
-            in {
-                lockFileContents = fixupLockFile ./Cargo.lock.copy;
-            };
-            postPatch = ''
-                cp ${./Cargo.lock.copy} Cargo.lock
-            '';
         };
-        packages.strand-system = pkgs.rustPlatform.buildRustPackage {
-          pname = "strand-system";
-          version = "0.0.2";
+        packages.strand-lib = buildRustPackageWithCargo {
+          pname = "strand-lib";
+          version = "0.0.1";
           src = ./.;
           nativeBuildInputs = [
             rust-system
           ];
-
-            # see https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md#importing-a-cargolock-file-importing-a-cargolock-file
-            cargoLock = let
-                fixupLockFile = path: (builtins.readFile path);
-            in {
-                lockFileContents = fixupLockFile ./Cargo.lock.copy;
-            }; 
-            postPatch = ''
-                cp ${./Cargo.lock.copy} Cargo.lock
-            '';
-        }; 
+        };
         defaultPackage = self.packages.${system}.strand-wasm;
 
         # configure the dev shell
