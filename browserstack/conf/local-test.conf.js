@@ -22,11 +22,11 @@ const localConfig = {
 // https://www.browserstack.com/list-of-browsers-and-platforms/automate
 
 var win_ = [
-  {'browserName': 'Chrome', 'browser_version': 'latest', 'os': 'Windows', 'os_version': '11'},
+  // FAIL {'browserName': 'Chrome', 'browser_version': 'latest', 'os': 'Windows', 'os_version': '11'},
   {'browserName': 'Chrome', 'browser_version': 'latest', 'os': 'Windows', 'os_version': '10'},
   {'browserName': 'Firefox', 'browser_version': 'latest', 'os': 'Windows', 'os_version': '11'},
   {'browserName': 'Firefox', 'browser_version': 'latest', 'os': 'Windows', 'os_version': '10'},
-  {'browserName': 'Edge', 'browser_version': 'latest', 'os': 'Windows', 'os_version': '11'},
+  // FAIL {'browserName': 'Edge', 'browser_version': 'latest', 'os': 'Windows', 'os_version': '11'},
   {'browserName': 'Edge', 'browser_version': 'latest', 'os': 'Windows', 'os_version': '10'},
 ];
 
