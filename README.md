@@ -102,6 +102,16 @@ This repository doesn´t include a `Cargo.lock` file as it is intended to work a
 
 ## building
 
+This project uses [nix](https://nixos.org/) to create reproducible builds. In order to build the project as a library for the host system, run:
+
+```nix build```
+
+You can build the project as a WASM library with:
+
+```nix build .#strand-wasm```
+
+If you don't want to use nix, you can build the project with:
+
 ```cargo build```
 
 ### Build with parallelism
