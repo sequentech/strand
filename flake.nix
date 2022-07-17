@@ -5,7 +5,7 @@
   description = "Flake to test rust code";
 
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/1c0eb6898ea646f0f760bb710c0b661eac6b1f9a"; # master branch 2022-07-17: 1c0eb6898ea646f0f760bb710c0b661eac6b1f9a
   inputs.flake-utils.url = "github:numtide/flake-utils";
   
   outputs = { self, nixpkgs, flake-utils, rust-overlay }:
