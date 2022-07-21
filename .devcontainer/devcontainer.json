@@ -2,12 +2,22 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/master/containers/docker-existing-dockerfile
 {
 	"name": "strand-project",
-	"dockerComposeFile": "docker-compose.yml",
-	"service": "dev",
-	"workspaceFolder": "/workspace",
-	
+	"dockerFile": "Dockerfile",
+	//"dockerComposeFile": "docker-compose.yml",
+	//"service": "dev",
+	//"workspaceFolder": "/workspace",
+	"containerEnv": {
+		"PROJECT_DIR": "${containerWorkspaceFolder}"
+	},
+	"settings": {
+		"terminal.integrated.shell.linux": "/bin/bash"
+	},
 	"userEnvProbe": "loginShell",
-	"updateRemoteUserUID": false,
+	//"updateRemoteUserUID": false,
+
+	"mounts": [
+		"source=strand_nix,target=/nix,type=volume",
+	  ],
   
 	// build development environment on creation
 	"onCreateCommand": "nix-shell --command 'echo done building nix dev environment'",
@@ -16,7 +26,7 @@
 	"extensions": [
 	  // select nix environment
 	  "arrterian.nix-env-selector",
-  
+	  "bbenoist.nix"
 	  // extra extensions
 	  //"fsevenm.run-it-on",
 	  //"jnoortheen.nix-ide",
