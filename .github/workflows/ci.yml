@@ -38,24 +38,30 @@ jobs:
 
   check:
     name: 'Static Analysis: cargo check'
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+    - uses: actions/checkout@v3.0.2
+    - uses: cachix/install-nix-action@v17
+      with:
+        install_url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.10.0pre20220629_b7eb4ac/install
+        nix_path: nixpkgs=channel:nixos-22.05
+        extra_nix_config: |
+          experimental-features = nix-command flakes
 
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+    - uses: cachix/cachix-action@v10
+      with:
+        name: sequentech
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-      - uses: Swatinem/rust-cache@v1
-
-      - name: Run cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
+    - name: Run cargo check
+      run: |
+        nix \
+          --extra-experimental-features "nix-command flakes" \
+          develop \
+          --command bash -c "cargo check"
 
   lints:
     name: 'Static Analysis: cargo fmt & clippy'
@@ -150,20 +156,30 @@ jobs:
 
   license_reuse:
     name: Code License
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-
-    - name: Setup Python
-      uses: actions/setup-python@v2
+    - uses: actions/checkout@v3.0.2
+    - uses: cachix/install-nix-action@v17
       with:
-        python-version: 3.8
+        install_url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.10.0pre20220629_b7eb4ac/install
+        nix_path: nixpkgs=channel:nixos-22.05
+        extra_nix_config: |
+          experimental-features = nix-command flakes
+
+    - uses: cachix/cachix-action@v10
+      with:
+        name: sequentech
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Check files license compliance with REUSE
       run: |
-        pip install --user reuse
-        ~/.local/bin/reuse lint
+        nix \
+          --extra-experimental-features "nix-command flakes" \
+          develop \
+          --command bash -c "reuse lint"
 
   benchmark:
     name: Benchmark
