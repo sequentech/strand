@@ -79,9 +79,22 @@ on the `browserstack` folder to try it locally. You'll need to configure the env
 
 ## Development environment
 
+Strand uses [Github dev containers] to facilitate development. To start developing strand,
+clone the github repo locally, and open the folder in Visual Studio Code in a container. This
+will configure the same environment that strand developers use, including installing required
+packages and VS Code plugins.
+
+We've tested this dev container for Linux x86_64 and Mac Os arch64 architectures. Unfortunately
+at the moment it doesn't work with Github Codespaces as nix doesn't work on Github Codespaces yet.
+Also the current dev container configuration for strand doesn't allow commiting to the git repo
+from the dev container, you should use git on a local terminal.
+
+## Nix reproducible builds
+
 strand uses the [Nix Package Manager] as its package
 builder. To build strand, **first [install Nix]** correctly
-in your system.
+in your system. If you're running the project on a dev container,
+you shouldn't need to install it.
 
 After you have installed Nix, enter the development environment with:
 
@@ -161,6 +174,7 @@ See [here](https://github.com/sequentech/strand/tree/main/benches).
 [Crypto.getRandomValues]: https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues
 [Nix Package Manager]: https://nixos.org/
 [install Nix]: https://nixos.org/
+[Github dev containers]: https://docs.github.com/en/codespaces/setting-up-your-project-for-codespaces/introduction-to-dev-containers
 
 [slack-badge]: https://img.shields.io/badge/Join_us_on_Slack!-sequent--talk-blue.svg?longCache=true&logo=slack
 [slack-link]: https://join.slack.com/t/sequentech/shared_invite/zt-1bve9z0px-IF4Je04NJM8AEkCAcdBVWg
