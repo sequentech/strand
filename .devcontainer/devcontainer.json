@@ -11,7 +11,7 @@
 	//"updateRemoteUserUID": false,
   
 	// build development environment on creation
-	//"onCreateCommand": "nix-shell --command 'echo done building nix dev environment'",
+	"onCreateCommand": "nix develop --command bash -c 'echo done building nix dev environment'",
   
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
