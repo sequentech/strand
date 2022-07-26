@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022 Felix Robles <felix@sequentech.io>
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # System-wide .bashrc file for interactive bash(1) shells.
 
 # To enable the settings / commands in this file for login shells as well,

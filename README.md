@@ -62,7 +62,7 @@ issues that appear.
 the information (in master branch) to [codecov].
 6. **License compliance**: Check using [REUSE] for license compliance within
 the project, verifying that every file is REUSE-compliant and thus has a 
-copyright notice header.
+copyright notice header. Try fixing it with `reuse lint`.
 7. **Dependencies scan**: Audit dependencies for security vulnerabilities in the
 [RustSec Advisory Database], unmaintained dependencies, incompatible licenses
 and banned packages using [cargo-deny]. Use `cargo deny fix` or

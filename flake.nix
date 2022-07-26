@@ -83,7 +83,7 @@
           nativeBuildInputs = 
             defaultPackage.nativeBuildInputs; 
           buildInputs = 
-            [ pkgs.bash ]; 
+            [ pkgs.bash pkgs.reuse ]; 
         };
       }
     );
