@@ -48,6 +48,7 @@
           nativeBuildInputs = [
             rust-wasm
             pkgs.nodePackages.npm
+            pkgs.binaryen
             pkgs.wasm-pack
             pkgs.wasm-bindgen-cli
           ];
@@ -79,8 +80,9 @@
         devShell = (
           pkgs.mkShell.override { stdenv = pkgs.clangStdenv; }
         ) { 
+          nativeBuildInputs = 
+            defaultPackage.nativeBuildInputs; 
           buildInputs = 
-            defaultPackage.nativeBuildInputs ++
             [ pkgs.bash ]; 
         };
       }

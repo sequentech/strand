@@ -7,11 +7,11 @@ services:
       args:
         USER_UID: ${USER_UID:-1000}
         USER_GID: ${USER_GID:-1000}
-    environment:
+    #environment:
       # list of docker extensions to load before other extensions
-      PRELOAD_EXTENSIONS: "arrterian.nix-env-selector"
+      #PRELOAD_EXTENSIONS: "arrterian.nix-env-selector"
     volumes:
-      - ..:/workspace:cached
+      #- ..:/workspace:cached
       - nix:/nix
     security_opt:
       - label:disable

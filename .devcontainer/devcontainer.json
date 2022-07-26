@@ -2,21 +2,24 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/master/containers/docker-existing-dockerfile
 {
 	"name": "strand-project",
-	"dockerComposeFile": "docker-compose.yml",
-	"service": "dev",
-	"workspaceFolder": "/workspace",
+	"dockerFile": "Dockerfile",
+	"containerEnv": {
+		"PROJECT_DIR": "${containerWorkspaceFolder}"
+	},
+	// "dockerComposeFile": "docker-compose.yml",
+	// "service": "dev",
+	//"workspaceFolder": "/workspace",
 	
 	"userEnvProbe": "loginShell",
-	"updateRemoteUserUID": false,
+	//"updateRemoteUserUID": false,
   
 	// build development environment on creation
-	"onCreateCommand": "nix-shell --command 'echo done building nix dev environment'",
+	//"onCreateCommand": "nix-shell --command 'echo done building nix dev environment'",
   
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
 	  // select nix environment
-	  "arrterian.nix-env-selector",
-  
+	  "arrterian.nix-env-selector"
 	  // extra extensions
 	  //"fsevenm.run-it-on",
 	  //"jnoortheen.nix-ide",
