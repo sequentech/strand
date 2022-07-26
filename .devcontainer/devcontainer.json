@@ -6,9 +6,6 @@
 	"containerEnv": {
 		"PROJECT_DIR": "${containerWorkspaceFolder}"
 	},
-	// "dockerComposeFile": "docker-compose.yml",
-	// "service": "dev",
-	//"workspaceFolder": "/workspace",
 	
 	"userEnvProbe": "loginShell",
 	//"updateRemoteUserUID": false,
@@ -19,10 +16,11 @@
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
 	  // select nix environment
-	  "arrterian.nix-env-selector"
+	  "arrterian.nix-env-selector",
 	  // extra extensions
-	  //"fsevenm.run-it-on",
-	  //"jnoortheen.nix-ide",
-	  //"ms-python.python"
-	],
+	  "jnoortheen.nix-ide",
+	  "rust-lang.rust",
+	  "yzhang.markdown-all-in-one",
+	  "bungcip.better-toml"
+	]
   }
