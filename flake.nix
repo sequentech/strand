@@ -5,7 +5,7 @@
   description = "Flake to test rust code";
 
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/1c0eb6898ea646f0f760bb710c0b661eac6b1f9a"; # master branch 2022-07-17: 1c0eb6898ea646f0f760bb710c0b661eac6b1f9a
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/f26b767ef0776c081b5e642bc3ddb7959772781f"; # master branch 2022-07-26: f26b767ef0776c081b5e642bc3ddb7959772781f
   inputs.flake-utils.url = "github:numtide/flake-utils";
   
   outputs = { self, nixpkgs, flake-utils, rust-overlay }:
@@ -48,6 +48,7 @@
           nativeBuildInputs = [
             rust-wasm
             pkgs.nodePackages.npm
+            pkgs.binaryen
             pkgs.wasm-pack
             pkgs.wasm-bindgen-cli
           ];
@@ -79,9 +80,10 @@
         devShell = (
           pkgs.mkShell.override { stdenv = pkgs.clangStdenv; }
         ) { 
+          nativeBuildInputs = 
+            defaultPackage.nativeBuildInputs; 
           buildInputs = 
-            defaultPackage.nativeBuildInputs ++
-            [ pkgs.bash ]; 
+            [ pkgs.bash pkgs.reuse ]; 
         };
       }
     );
