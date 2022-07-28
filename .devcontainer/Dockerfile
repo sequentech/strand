@@ -20,6 +20,7 @@ RUN apt -y install --no-install-recommends \
     curl \
     git \
     ssh \
+    clang \
     direnv \
     gnupg2 \
     iproute2 \
@@ -61,6 +62,9 @@ COPY etc/direnv.toml /etc
 ENV DIRENV_CONFIG=/etc
 
 USER ${USERNAME}
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 # cache /nix
 VOLUME /nix

@@ -7,8 +7,12 @@
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/f26b767ef0776c081b5e642bc3ddb7959772781f"; # master branch 2022-07-26: f26b767ef0776c081b5e642bc3ddb7959772781f
   inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs.flake-compat = {
+    url = "github:edolstra/flake-compat";
+    flake = false;
+  };
   
-  outputs = { self, nixpkgs, flake-utils, rust-overlay }:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, flake-compat }:
     flake-utils.lib.eachDefaultSystem (system:
       let 
         overlays = [ (import rust-overlay) ];
@@ -83,7 +87,7 @@
           nativeBuildInputs = 
             defaultPackage.nativeBuildInputs; 
           buildInputs = 
-            [ pkgs.bash pkgs.reuse ]; 
+            [ pkgs.bash pkgs.reuse pkgs.cargo-deny ]; 
         };
       }
     );
