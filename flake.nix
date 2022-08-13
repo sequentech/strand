@@ -5,7 +5,7 @@
   description = "Flake to test rust code";
 
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/f26b767ef0776c081b5e642bc3ddb7959772781f"; # master branch 2022-07-26: f26b767ef0776c081b5e642bc3ddb7959772781f
+  inputs.nixpkgs.url = "nixpkgs/nixos-21.11"; # master branch 2022-08-13
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.flake-compat = {
     url = "github:edolstra/flake-compat";
@@ -23,7 +23,7 @@
         configureRustTargets = targets : pkgs
           .rust-bin
           .nightly
-          ."2022-04-07"
+          ."2022-07-05"
           .default
           .override {
               extensions = [ "rust-src" ];
@@ -83,7 +83,7 @@
         # configure the dev shell
         devShell = (
           pkgs.mkShell.override { stdenv = pkgs.clangStdenv; }
-        ) { 
+        ) {
           nativeBuildInputs = 
             defaultPackage.nativeBuildInputs; 
           buildInputs = 
