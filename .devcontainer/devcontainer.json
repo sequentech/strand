@@ -2,13 +2,13 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/master/containers/docker-existing-dockerfile
 {
 	"name": "strand-project",
-	"dockerFile": "Dockerfile",
-	"containerEnv": {
-		"PROJECT_DIR": "${containerWorkspaceFolder}"
-	},
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "dev",
+	"workspaceFolder": "/workspaces/strand",
+	"updateRemoteUserUID": false,
 	
 	"userEnvProbe": "loginShell",
-	//"updateRemoteUserUID": false,
+
   
 	// build development environment on creation
 	"onCreateCommand": "nix develop --command bash -c 'nix build -vv -L && echo done building nix dev environment' || true",

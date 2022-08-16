@@ -34,31 +34,31 @@ RUN apt -y install --no-install-recommends \
 
 # create at least locae for en_US.UTF-8
 RUN echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && locale-gen
-
+ 
 # create non-root user and group and add it sudoers
 ARG USERNAME=vscode
 RUN echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/devcontainer && \
     chmod 0440 /etc/sudoers.d/devcontainer
 
 # copy nix configuration
-COPY etc/nix.conf /etc/nix/nix.conf
+COPY .devcontainer/etc/nix.conf /etc/nix/nix.conf
 
 # install nix
 ARG NIX_INSTALL_SCRIPT=https://nixos.org/nix/install
 RUN curl -L ${NIX_INSTALL_SCRIPT} | sudo -u ${USERNAME} NIX_INSTALLER_NO_MODIFY_PROFILE=1 sh
 
 # install devcontainer extra profile that loads nix and has vscode user env probe
-COPY etc/devcontainer.sh /etc/profile.d/devcontainer.sh
+COPY .devcontainer/etc/devcontainer.sh /etc/profile.d/devcontainer.sh
 
 # install bash config
-COPY etc/bash.bashrc /etc/bash.bashrc
+COPY .devcontainer/etc/bash.bashrc /etc/bash.bashrc
 
 # set env for non interactve shell to load nix
-COPY etc/envrc /etc/envrc
+COPY .devcontainer/etc/envrc /etc/envrc
 ENV ENV="/etc/envrc" BASH_ENV="/etc/envrc"
 
 # copy direnv config and set conig path
-COPY etc/direnv.toml /etc
+COPY .devcontainer/etc/direnv.toml /etc
 ENV DIRENV_CONFIG=/etc
 
 USER ${USERNAME}
