@@ -80,8 +80,6 @@
         };
         defaultPackage = self.packages.${system}.strand-wasm;
 
-        #environment.memoryAllocator.provider = "libc";
-
         # configure the dev shell
         devShell = (
           pkgs.mkShell.override { stdenv = pkgs.clangStdenv; }
