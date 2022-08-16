@@ -11,7 +11,7 @@ services:
         USER_GID: ${USER_GID:-1000}
     command: sleep infinity
     volumes:
-      - ..:/workspace:cached
+      - ..:/workspaces/strand:cached
       - nix:/nix
     security_opt:
       - label:disable

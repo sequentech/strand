@@ -4,7 +4,7 @@
 	"name": "strand-project",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "dev",
-	"workspaceFolder": "/workspace",
+	"workspaceFolder": "/workspaces/strand",
 	"updateRemoteUserUID": false,
 	
 	"userEnvProbe": "loginShell",
