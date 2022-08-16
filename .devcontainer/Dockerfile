@@ -64,9 +64,9 @@ ENV DIRENV_CONFIG=/etc
 USER ${USERNAME}
 
 # Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-RUN ~/.cargo/bin/rustup toolchain install nightly-2022-07-05
-RUN ~/.cargo/bin/rustup default nightly-2022-07-05
+#RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+#RUN ~/.cargo/bin/rustup toolchain install nightly-2022-07-05
+#RUN ~/.cargo/bin/rustup default nightly-2022-07-05
 
 # cache /nix
 VOLUME /nix

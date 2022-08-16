@@ -80,6 +80,8 @@
         };
         defaultPackage = self.packages.${system}.strand-wasm;
 
+        #environment.memoryAllocator.provider = "libc";
+
         # configure the dev shell
         devShell = (
           pkgs.mkShell.override { stdenv = pkgs.clangStdenv; }
@@ -87,8 +89,9 @@
           nativeBuildInputs = 
             defaultPackage.nativeBuildInputs; 
           buildInputs = 
-            [ pkgs.bash pkgs.reuse pkgs.cargo-deny ]; 
+            [ pkgs.bash pkgs.reuse pkgs.cargo-deny pkgs.clippy ]; 
         };
+
       }
     );
 }
