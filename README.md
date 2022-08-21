@@ -62,7 +62,7 @@ issues that appear.
 the information (in master branch) to [codecov].
 6. **License compliance**: Check using [REUSE] for license compliance within
 the project, verifying that every file is REUSE-compliant and thus has a 
-copyright notice header.
+copyright notice header. Try fixing it with `reuse lint`.
 7. **Dependencies scan**: Audit dependencies for security vulnerabilities in the
 [RustSec Advisory Database], unmaintained dependencies, incompatible licenses
 and banned packages using [cargo-deny]. Use `cargo deny fix` or
@@ -72,12 +72,29 @@ have configured [dependabot] to notify and create PRs on version updates.
 regressions using `cargo bench` and [github-action-benchmark].
 9. **CLA compliance**: Check that all committers have signed the 
 [Contributor License Agreement] using [CLA Assistant bot].
+10. **Browser testing**: Check the library works on different browsers and operating
+systems using [browserstack](https://www.browserstack.com/). Run `npm run local`
+on the `browserstack` folder to try it locally. You'll need to configure the env variables 
+`GIT_COMMIT_SHA`, `BROWSERSTACK_USERNAME`, `BROWSERSTACK_ACCESS_KEY`.
 
 ## Development environment
 
+Strand uses [Github dev containers] to facilitate development. To start developing strand,
+clone the github repo locally, and open the folder in Visual Studio Code in a container. This
+will configure the same environment that strand developers use, including installing required
+packages and VS Code plugins.
+
+We've tested this dev container for Linux x86_64 and Mac Os arch64 architectures. Unfortunately
+at the moment it doesn't work with Github Codespaces as nix doesn't work on Github Codespaces yet.
+Also the current dev container configuration for strand doesn't allow commiting to the git repo
+from the dev container, you should use git on a local terminal.
+
+## Nix reproducible builds
+
 strand uses the [Nix Package Manager] as its package
 builder. To build strand, **first [install Nix]** correctly
-in your system.
+in your system. If you're running the project on a dev container,
+you shouldn't need to install it.
 
 After you have installed Nix, enter the development environment with:
 
@@ -94,7 +111,19 @@ available version. This can be done within the `nix develop` environment:
 cargo upgrade -Z preserve-precision
 ```
 
+This repository doesn´t include a `Cargo.lock` file as it is intended to work as a library. However for Wasm tests we keep a copy of the file on `Cargo.lock.copy`. If you update Cargo.toml, keep the lock copy file in sync by generating the lock file with `cargo generate-lockfile`, then `mv Cargo.lock Cargo.lock.copy` and commit the changes.
+
 ## building
+
+This project uses [nix](https://nixos.org/) to create reproducible builds. In order to build the project as a library for the host system, run:
+
+```nix build```
+
+You can build the project as a WASM library with:
+
+```nix build .#strand-wasm```
+
+If you don't want to use nix, you can build the project with:
 
 ```cargo build```
 
@@ -145,6 +174,7 @@ See [here](https://github.com/sequentech/strand/tree/main/benches).
 [Crypto.getRandomValues]: https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues
 [Nix Package Manager]: https://nixos.org/
 [install Nix]: https://nixos.org/
+[Github dev containers]: https://docs.github.com/en/codespaces/setting-up-your-project-for-codespaces/introduction-to-dev-containers
 
 [slack-badge]: https://img.shields.io/badge/Join_us_on_Slack!-sequent--talk-blue.svg?longCache=true&logo=slack
 [slack-link]: https://join.slack.com/t/sequentech/shared_invite/zt-1bve9z0px-IF4Je04NJM8AEkCAcdBVWg

@@ -1,67 +1,95 @@
-# SPDX-FileCopyrightText: 2022 Eduardo Robles <edulix@sequentech.io>
+# SPDX-FileCopyrightText: 2021 Eduardo Robles <edulix@sequentech.io>
 #
 # SPDX-License-Identifier: AGPL-3.0-only
-
 {
-  description = "Flake for test rust code";
+  description = "Flake to test rust code";
 
-  # input
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05";
+  inputs.nixpkgs.url = "nixpkgs/nixos-21.11"; # master branch 2022-08-13
   inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs.flake-compat = {
+    url = "github:edolstra/flake-compat";
+    flake = false;
+  };
+  
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, flake-compat }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let 
+        overlays = [ (import rust-overlay) ];
+        pkgs = import nixpkgs { 
+          inherit system overlays;
+        };
+        stdenv = pkgs.clangStdenv;
+        configureRustTargets = targets : pkgs
+          .rust-bin
+          .nightly
+          ."2022-07-05"
+          .default
+          .override {
+              extensions = [ "rust-src" ];
+               ${if (builtins.length targets) > 0 then "targets" else null} = targets;
 
-  # output function of this flake
-  outputs = { self, nixpkgs, flake-utils, rust-overlay }:
-    flake-utils.lib.eachDefaultSystem (
-      system:
-        let 
-          overlays = [ (import rust-overlay) ];
-          # pkgs is just the nix packages
-          pkgs = import nixpkgs {
-            inherit system overlays;
           };
-          rust-nightly = pkgs
-            .rust-bin
-            .selectLatestNightlyWith(
-              toolchain: toolchain.default.override {
-                extensions = [ "rust-src" ];
-                targets = [ "wasm32-unknown-unknown" ];
-              }
-            );
+        rust-wasm = configureRustTargets [ "wasm32-unknown-unknown" ];
+        rust-system  = configureRustTargets [];
+        # see https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md#importing-a-cargolock-file-importing-a-cargolock-file
+        cargoPatches = {
+            cargoLock = let
+                fixupLockFile = path: (builtins.readFile path);
+            in {
+                lockFileContents = fixupLockFile ./Cargo.lock.copy;
+            };
+            postPatch = ''
+                cp ${./Cargo.lock.copy} Cargo.lock
+            '';
+        };
+        buildRustPackageWithCargo = cargoArgs: pkgs.rustPlatform.buildRustPackage (cargoPatches // cargoArgs);
+      in rec {
+        packages.strand-wasm = buildRustPackageWithCargo {
+          pname = "strand-wasm";
+          version = "0.0.1";
+          src = ./.;
+          nativeBuildInputs = [
+            rust-wasm
+            pkgs.nodePackages.npm
+            pkgs.binaryen
+            pkgs.wasm-pack
+            pkgs.wasm-bindgen-cli
+          ];
+          buildPhase = ''
+            echo 'Build: wasm-pack build'
+            wasm-pack build --mode no-install --out-name index --release --target web --features=wasmtest
+          '';
+          installPhase = "
+            # set HOME temporarily to fix npm pack
+            mkdir -p $out/temp_home
+            export HOME=$out/temp_home
+            echo 'Install: wasm-pack pack'
+            wasm-pack -v pack .
+            rm -Rf $out/temp_home
+            cp pkg/strand-*.tgz $out
+            ";
+        };
+        packages.strand-lib = buildRustPackageWithCargo {
+          pname = "strand-lib";
+          version = "0.0.1";
+          src = ./.;
+          nativeBuildInputs = [
+            rust-system
+          ];
+        };
+        defaultPackage = self.packages.${system}.strand-wasm;
 
-        # resulting packages of the flake
-        in rec {
-          # WIP Derivation for strand
-          # Continue work here following https://srid.ca/rust-nix reference
-          packages.strand = pkgs.clangStdenv.mkDerivation {
-            name = "strand";
-            version = "0.0.1";
-            src = self;
-            type = "git"; 
-            submodules = "true";
-            nativeBuildInputs = [
-                rust-nightly
-                pkgs.wasm-pack
-                pkgs.wasm-bindgen-cli
-                pkgs.libiconv
-                pkgs.yarn
-                pkgs.cargo-edit
-            ];
-          };
-          # strand is the default package
-          defaultPackage = packages.strand;
+        # configure the dev shell
+        devShell = (
+          pkgs.mkShell.override { stdenv = pkgs.clangStdenv; }
+        ) {
+          nativeBuildInputs = 
+            defaultPackage.nativeBuildInputs; 
+          buildInputs = 
+            [ pkgs.bash pkgs.reuse pkgs.cargo-deny pkgs.clippy ]; 
+        };
 
-          # configure the dev shell
-          devShell = (
-            pkgs.mkShell.override { stdenv = pkgs.clangStdenv; }
-          ) { 
-            buildInputs = 
-              packages.strand.nativeBuildInputs ++
-              [
-                pkgs.bash
-                pkgs.act
-              ];
-          };
-        }
+      }
     );
 }
