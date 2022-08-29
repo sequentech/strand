@@ -27,6 +27,7 @@
 //! assert!(verified);
 //! ```
 #![allow(clippy::too_many_arguments)]
+
 use serde_bytes::ByteBuf;
 
 use crate::byte_tree::ByteTree;
@@ -157,7 +158,6 @@ impl<C: Ctx> Zkp<C> {
         self.cp_verify_private(public1, public2, g1, g2, proof, context)
     }
 
-    // FIXME optional generator (as is done in cp_prove)
     fn schnorr_prove_private(
         &self,
         secret: &C::X,
@@ -186,7 +186,6 @@ impl<C: Ctx> Zkp<C> {
         }
     }
 
-    // FIXME optional generator (as is done in cp_prove)
     fn schnorr_verify_private(
         &self,
         public: &C::E,
