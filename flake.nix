@@ -5,7 +5,7 @@
   description = "Flake to test rust code";
 
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
-  inputs.nixpkgs.url = "nixpkgs/nixos-21.11"; # master branch 2022-08-13
+  inputs.nixpkgs.url = "nixpkgs/nixos-22.05";
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.flake-compat = {
     url = "github:edolstra/flake-compat";
