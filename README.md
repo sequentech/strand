@@ -5,7 +5,8 @@ SPDX-FileCopyrightText: 2022 Eduardo Robles <edu@nsequentech.io>
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 # strand
-[![Slack][slack-badge]][slack-link]
+
+[![Chat][discord-badge]][discord-link]
 [![Build Status][build-badge]][build-link]
 [![codecov][codecov-badge]][codecov-link]
 [![Dependency status][dependencies-badge]][dependencies-link]
@@ -176,8 +177,8 @@ See [here](https://github.com/sequentech/strand/tree/main/benches).
 [install Nix]: https://nixos.org/
 [Github dev containers]: https://docs.github.com/en/codespaces/setting-up-your-project-for-codespaces/introduction-to-dev-containers
 
-[slack-badge]: https://img.shields.io/badge/Join_us_on_Slack!-sequent--talk-blue.svg?longCache=true&logo=slack
-[slack-link]: https://join.slack.com/t/sequentech/shared_invite/zt-1bve9z0px-IF4Je04NJM8AEkCAcdBVWg
+[discord-badge]: https://img.shields.io/discord/1006401206782001273?style=plastic
+[discord-link]: https://discord.gg/WfvSTmcdY8
 
 [build-badge]: https://github.com/sequentech/strand/workflows/CI/badge.svg?branch=main&event=push
 [build-link]: https://github.com/sequentech/strand/actions?query=workflow%3ACI
