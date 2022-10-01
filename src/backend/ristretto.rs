@@ -119,7 +119,9 @@ impl Ctx for RistrettoCtx {
 
         Scalar::from_hash(hasher)
     }
-    // see https://github.com/ruescasd/braid-mg/issues/4
+    
+    // see https://github.com/dalek-cryptography/curve25519-dalek/issues/322
+    // see https://github.com/hdevalence/ristretto255-data-encoding/blob/master/src/main.rs
     fn encode(&self, data: &[u8; 30]) -> Result<Self::E, &'static str> {
         let mut bytes = [0u8; 32];
         bytes[1..1 + data.len()].copy_from_slice(data);
@@ -136,6 +138,7 @@ impl Ctx for RistrettoCtx {
     }
     fn decode(&self, element: &Self::E) -> Self::P {
         let compressed = element.compress();
+        // the 30 bytes of data are placed in the range 1-30
         let slice = &compressed.as_bytes()[1..31];
         util::to_u8_30(slice)
     }

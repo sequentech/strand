@@ -65,7 +65,7 @@ impl ByteTree {
         }
     }
 
-    pub(crate) fn to_hashable_bytes(&self) -> Vec<u8> {
+    pub fn to_hashable_bytes(&self) -> Vec<u8> {
         match self {
             Leaf(bytes) => {
                 let mut next: Vec<u8> = vec![];

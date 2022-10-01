@@ -23,7 +23,6 @@ extern "C" {
     fn postMessage(s: &str);
 }
 
-#[wasm_bindgen]
 pub fn message(s: &str) {
     log(s);
     postMessage(s);

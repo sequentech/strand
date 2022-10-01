@@ -1,8 +1,12 @@
+
+
 // SPDX-FileCopyrightText: 2022 David Ruescas <david@sequentech.io>
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 use crate::context::Ctx;
 use crate::elgamal::Ciphertext;
+use ed25519_dalek::Sha512;
+use ed25519_dalek::Digest;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "rayon")] {
@@ -50,6 +54,13 @@ pub fn to_u8_30(input: &[u8]) -> [u8; 30] {
     bytes
 }
 
+pub fn to_u8_64(input: &[u8]) -> [u8; 64] {
+    assert_eq!(input.len(), 64);
+    let mut bytes = [0u8; 64];
+    bytes.copy_from_slice(input);
+    bytes
+}
+
 pub(crate) fn to_u8_32(input: &[u8]) -> Result<[u8; 32], &'static str> {
     if input.len() == 32 {
         let mut bytes = [0u8; 32];
@@ -60,6 +71,13 @@ pub(crate) fn to_u8_32(input: &[u8]) -> Result<[u8; 32], &'static str> {
     }
 }
 
+pub fn to_u8_array<const N: usize>(input: &[u8]) -> [u8; N] {
+    assert_eq!(input.len(), N);
+    let mut bytes = [0u8; N];
+    bytes.copy_from_slice(input);
+    bytes
+}
+
 pub fn random_ballots<C: Ctx>(n: usize, ctx: &C) -> Vec<Ciphertext<C>> {
     (0..n)
         .par()
@@ -68,4 +86,10 @@ pub fn random_ballots<C: Ctx>(n: usize, ctx: &C) -> Vec<Ciphertext<C>> {
             gr: ctx.rnd(),
         })
         .collect()
+}
+
+pub fn hash(bytes: &[u8]) -> Vec<u8> {
+    let mut hasher = Sha512::new();
+    hasher.update(bytes);
+    hasher.finalize().to_vec()
 }

@@ -1,0 +1,105 @@
+<!--
+SPDX-FileCopyrightText: 2022 David Ruescas <david@sequentech.io>
+SPDX-FileCopyrightText: 2022 Eduardo Robles <edu@sequentech.io>
+
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>strand wasm test</title>
+  </head>
+  <body style="background-color:black;">
+    
+    <script type="module">
+      var encrypted = [];
+      var shuffled = [];
+      var parameters = {};
+      window.location.search.slice(1).split("&").forEach( function(key_value) { var kv = key_value.split("="); parameters[kv[0]] = kv[1]; });
+      var w = 'demo.js';
+      
+      var worker = new Worker(w + window.location.search, { type: 'module' });
+      worker.onmessage = function(e) {
+        var message = e.data;
+        // console.log("Main: received: " + JSON.stringify(message));
+        
+        if(!(typeof message === 'object')) {
+          console.log("Main: wasm: " + JSON.stringify(message));
+          message = { data: message };
+          message.type = "log"
+        }
+        
+        if(message.type == "log") {
+          var log = document.getElementById("log");
+          var lognew = document.getElementById("lognew");
+          if(lognew.textContent != '') {
+            log.textContent += lognew.textContent + '\r\n';
+          }
+          lognew.textContent = message.data;
+          window.scrollTo(0, document.body.scrollHeight);
+        }
+        else if(message.type == "ready") {
+          document.getElementById("buttons").removeAttribute("hidden");
+          document.getElementById("encrypt").onclick = function() {
+            worker.postMessage({
+              type: "encrypt",
+              yes: 1000,
+              no: 1000,
+            });
+          };
+          document.getElementById("shuffle").onclick = function() {
+            if(encrypted.length == 0) {
+              console.log("Main: Nothing to shuffle yet");
+              return;
+            }
+            
+            worker.postMessage({
+              type: "shuffle",
+              data: encrypted,
+            });
+          };
+          document.getElementById("decrypt").onclick = function() {
+            var arg = [];
+            if(shuffled.length == 0) {
+              arg = encrypted;
+            }
+            else {
+              arg = shuffled;
+            }
+
+            if(arg.length == 0) {
+              console.log("Main: Nothing to decrypt yet");
+              return;
+            }
+            else {
+              worker.postMessage({
+                type: "decrypt",
+                data: arg,
+              });
+            }
+          };
+        }
+        else if(message.type == "encrypted") {
+          console.log("Main: received encrypted: " + JSON.stringify(message.data));
+          encrypted = message.data;
+        }
+        else if(message.type == "shuffled") {
+          console.log("Main: received shuffled: " + JSON.stringify(message.data));
+          shuffled = message.data;
+        }
+        else if(message.type == "decrypted") {
+          console.log("Main: received decrypted: " + JSON.stringify(message.data));
+        }
+      };
+    </script>
+    <span id="log" style="color:white;white-space: pre;font-size: 20px;"></span>
+    <span id="lognew" style="color:cyan;white-space: pre;font-size: 20px;"></span>
+
+    <div id="buttons" hidden="hidden">
+      <button id="encrypt">Encrypt</button>
+      <button id="shuffle">Shuffle</button>
+      <button id="decrypt">Decrypt</button>
+    </div>
+  </body>
+</html>

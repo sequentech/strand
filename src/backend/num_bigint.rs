@@ -293,7 +293,7 @@ impl BigintCtxParams for P2048 {
         let g = BigUintE::new(BigUint::from_str_radix(G_VERIFICATUM_STR_2048, 10).unwrap());
         let co_factor = BigUint::from_str_radix(SAFEPRIME_COFACTOR, 16).unwrap();
         /*
-        FIXME revert to this, seems slightly faster due to small generator
+        FIXME revert to this once we stop using verificatum primes, seems slightly faster due to small generator
         let p = BigUint::from_str_radix(P_STR_2048, 16).unwrap();
         let q = BigUint::from_str_radix(Q_STR_2048, 16).unwrap();
         let g = BigUint::from_str_radix(G_STR_2048, 16).unwrap();*/

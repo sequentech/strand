@@ -20,6 +20,9 @@ pkg.default().then(_ => {
         postMessage(' ');
         postMessage('ok');
     }
+    self.onmessage = function(e) {
+        console.log("In worker: " + JSON.stringify(e.data));
+    };
     wasmFeatureDetect.threads().then(threads => {
         if (threads && pkg.initThreadPool) {
             postMessage('Thread pool supported, initThreadPool with conc = ' + navigator.hardwareConcurrency + '..');
