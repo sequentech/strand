@@ -119,7 +119,7 @@ impl Ctx for RistrettoCtx {
 
         Scalar::from_hash(hasher)
     }
-    
+
     // see https://github.com/dalek-cryptography/curve25519-dalek/issues/322
     // see https://github.com/hdevalence/ristretto255-data-encoding/blob/master/src/main.rs
     fn encode(&self, data: &[u8; 30]) -> Result<Self::E, &'static str> {

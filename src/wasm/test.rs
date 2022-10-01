@@ -4,9 +4,9 @@
 #[cfg(feature = "wasmtest")]
 pub mod bench;
 #[cfg(feature = "wasmtest")]
-pub mod test;
-#[cfg(feature = "wasmtest")]
 pub mod demo;
+#[cfg(feature = "wasmtest")]
+pub mod test;
 // #[cfg(feature = "wasm")]
 // pub mod example;
 

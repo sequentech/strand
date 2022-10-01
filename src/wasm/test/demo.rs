@@ -5,18 +5,18 @@ use rand::RngCore;
 use wasm_bindgen::prelude::*;
 
 use crate::backend::num_bigint::{BigintCtx, P2048};
-use crate::backend::ristretto::{RistrettoCtx};
-use curve25519_dalek::ristretto::{RistrettoPoint};
+use crate::backend::ristretto::RistrettoCtx;
 use crate::backend::tests::*;
 use crate::context::{Ctx, Element};
-use crate::elgamal::{PublicKey, PrivateKey};
+use crate::elgamal::{PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::shuffler::Shuffler;
 use crate::threshold::tests::test_threshold_generic;
 use crate::util;
 use crate::util::Par;
-use rayon::iter::ParallelIterator;
 use crate::zkp::Zkp;
+use curve25519_dalek::ristretto::RistrettoPoint;
+use rayon::iter::ParallelIterator;
 
 #[wasm_bindgen]
 extern "C" {
@@ -33,7 +33,7 @@ pub fn message(s: &str) {
     postMessage(s);
 }
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct CiphertextS {
@@ -51,21 +51,19 @@ pub fn to_ciphertext_s(ciphertext: &Ciphertext<RistrettoCtx>) -> CiphertextS {
     let gr = hex::encode(ciphertext.gr.compress().to_bytes());
     let mhr = hex::encode(ciphertext.mhr.compress().to_bytes());
 
-    CiphertextS {
-        gr,
-        mhr,
-    }
+    CiphertextS { gr, mhr }
 }
 
 fn from_ciphertext_s(ciphertext: &CiphertextS) -> Ciphertext<RistrettoCtx> {
     let ctx = RistrettoCtx;
-    let gr = ctx.element_from_bytes(&hex::decode(&ciphertext.gr).unwrap()).unwrap();
-    let mhr = ctx.element_from_bytes(&hex::decode(&ciphertext.mhr).unwrap()).unwrap();
-    
-    Ciphertext {
-        gr,
-        mhr,
-    }
+    let gr = ctx
+        .element_from_bytes(&hex::decode(&ciphertext.gr).unwrap())
+        .unwrap();
+    let mhr = ctx
+        .element_from_bytes(&hex::decode(&ciphertext.mhr).unwrap())
+        .unwrap();
+
+    Ciphertext { gr, mhr }
 }
 
 fn to_plaintext_s(plaintext: &RistrettoPoint) -> PlaintextS {
@@ -74,16 +72,13 @@ fn to_plaintext_s(plaintext: &RistrettoPoint) -> PlaintextS {
     let decoded = ctx.decode(&plaintext);
     let value = if decoded[0] == 1u8 {
         "yes".to_string()
-    }
-    else if decoded[0] == 0u8 {
+    } else if decoded[0] == 0u8 {
         "no".to_string()
     } else {
         "error".to_string()
     };
 
-    PlaintextS {
-        value
-    }
+    PlaintextS { value }
 }
 
 fn from_plaintext_s(plaintext: &PlaintextS) -> RistrettoPoint {
@@ -104,31 +99,29 @@ pub fn encrypt(nyes: u32, nno: u32) -> JsValue {
     let ctx = RistrettoCtx;
     let sk = secret_key();
     let pk = sk.get_pk();
-    
+
     let yes = [1u8; 30];
     let no = [0u8; 30];
-    
+
     let pyes = ctx.encode(&yes).unwrap();
     let pno = ctx.encode(&no).unwrap();
-    
-    let mut ys: Vec<CiphertextS> = 
-    (0..nyes)
-    .par()
-    .map(|_| {
-        let c = pk.encrypt(&pyes);
-        to_ciphertext_s(&c)
-    })
-    .collect();
 
-    let mut ns: Vec<CiphertextS> = 
-    (0..nno)
-    .par()
-    .map(|_| {
-        let c = pk.encrypt(&pno);
-        to_ciphertext_s(&c)
-    })
-    .collect();
-    
+    let mut ys: Vec<CiphertextS> = (0..nyes)
+        .par()
+        .map(|_| {
+            let c = pk.encrypt(&pyes);
+            to_ciphertext_s(&c)
+        })
+        .collect();
+
+    let mut ns: Vec<CiphertextS> = (0..nno)
+        .par()
+        .map(|_| {
+            let c = pk.encrypt(&pno);
+            to_ciphertext_s(&c)
+        })
+        .collect();
+
     let _ = &ys.append(&mut ns);
     serde_wasm_bindgen::to_value(&ys).unwrap()
 }
@@ -150,7 +143,7 @@ pub fn shuffle(value: JsValue) -> JsValue {
         ctx: ctx.clone(),
     };
     let now = performance.now();
-    
+
     message("Gen shuffle..");
     let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
     message("Gen proof..");
@@ -162,7 +155,8 @@ pub fn shuffle(value: JsValue) -> JsValue {
 
     message(&format!(
         "Prove + Verify: {:.3} c / s",
-        es.len() as f64 / ((performance.now() - now) / 1000.0)));  
+        es.len() as f64 / ((performance.now() - now) / 1000.0)
+    ));
 
     let cs: Vec<CiphertextS> = e_primes.iter().map(|e| to_ciphertext_s(e)).collect();
 
@@ -173,12 +167,15 @@ pub fn shuffle(value: JsValue) -> JsValue {
 pub fn decrypt(value: JsValue) -> JsValue {
     let ctx = RistrettoCtx;
     let sk = secret_key();
-    
+
     let values: Vec<CiphertextS> = serde_wasm_bindgen::from_value(value).unwrap();
-    let ps: Vec<PlaintextS> = values.par().map(|v| {
-        let c = from_ciphertext_s(&v);
-        to_plaintext_s(&sk.decrypt(&c))
-    }).collect();
+    let ps: Vec<PlaintextS> = values
+        .par()
+        .map(|v| {
+            let c = from_ciphertext_s(&v);
+            to_plaintext_s(&sk.decrypt(&c))
+        })
+        .collect();
 
     serde_wasm_bindgen::to_value(&ps).unwrap()
 }
