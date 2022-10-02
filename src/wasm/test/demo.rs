@@ -106,6 +106,7 @@ pub fn encrypt(nyes: u32, nno: u32) -> JsValue {
     let pyes = ctx.encode(&yes).unwrap();
     let pno = ctx.encode(&no).unwrap();
 
+    let now = performance.now();
     let mut ys: Vec<CiphertextS> = (0..nyes)
         .par()
         .map(|_| {
@@ -121,6 +122,11 @@ pub fn encrypt(nyes: u32, nno: u32) -> JsValue {
             to_ciphertext_s(&c)
         })
         .collect();
+    
+    message(&format!(
+        "Encrypt: {:.3} c / s",
+        (nyes + nno) as f64 / ((performance.now() - now) / 1000.0)
+    ));
 
     let _ = &ys.append(&mut ns);
     serde_wasm_bindgen::to_value(&ys).unwrap()
@@ -169,6 +175,8 @@ pub fn decrypt(value: JsValue) -> JsValue {
     let sk = secret_key();
 
     let values: Vec<CiphertextS> = serde_wasm_bindgen::from_value(value).unwrap();
+    
+    let now = performance.now();
     let ps: Vec<PlaintextS> = values
         .par()
         .map(|v| {
@@ -176,6 +184,10 @@ pub fn decrypt(value: JsValue) -> JsValue {
             to_plaintext_s(&sk.decrypt(&c))
         })
         .collect();
+    message(&format!(
+        "Decrypt: {:.3} c / s",
+        ps.len() as f64 / ((performance.now() - now) / 1000.0)
+    ));
 
     serde_wasm_bindgen::to_value(&ps).unwrap()
 }

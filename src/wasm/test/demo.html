@@ -110,7 +110,6 @@ SPDX-License-Identifier: AGPL-3.0-only
       var worker = new Worker(w + window.location.search, { type: 'module' });
       worker.onmessage = function(e) {
         var message = e.data;
-        // console.log("Main: received: " + JSON.stringify(message));
         
         if(!(typeof message === 'object')) {
           console.log("Main: wasm: " + JSON.stringify(message));
@@ -131,6 +130,7 @@ SPDX-License-Identifier: AGPL-3.0-only
         }
         else if(message.type == "ready") {
           document.getElementById("buttons").removeAttribute("hidden");
+          document.getElementById("working").setAttribute("hidden", "hidden");
           document.getElementById("encrypt").onclick = function() {
             var yes = document.getElementById("yes").value;
             var no = document.getElementById("no").value;
@@ -138,6 +138,7 @@ SPDX-License-Identifier: AGPL-3.0-only
             yes = isNaN(yes) ? 100 : yes;
             no = isNaN(no) ? 100 : no;
             
+            document.getElementById("working").removeAttribute("hidden");
             worker.postMessage({
               type: "encrypt",
               yes: yes,
@@ -150,6 +151,7 @@ SPDX-License-Identifier: AGPL-3.0-only
               return;
             }
             
+            document.getElementById("working").removeAttribute("hidden");
             worker.postMessage({
               type: "shuffle",
               data: encrypted,
@@ -169,6 +171,7 @@ SPDX-License-Identifier: AGPL-3.0-only
               return;
             }
             else {
+              document.getElementById("working").removeAttribute("hidden");
               worker.postMessage({
                 type: "decrypt",
                 data: arg,
@@ -189,6 +192,7 @@ SPDX-License-Identifier: AGPL-3.0-only
           target.textContent = '';  
           message.data.forEach(x => target.textContent += JSON.stringify(x) + '\r\n');
           target.scrollTo(0, target.scrollHeight);
+          document.getElementById("working").setAttribute("hidden", "hidden");
           encrypted = message.data;
         }
         else if(message.type == "shuffled") {
@@ -197,6 +201,7 @@ SPDX-License-Identifier: AGPL-3.0-only
           target.textContent = '';
           message.data.forEach(x => target.textContent += JSON.stringify(x) + '\r\n');
           target.scrollTo(0, target.scrollHeight);
+          document.getElementById("working").setAttribute("hidden", "hidden");
           shuffled = message.data;
         }
         else if(message.type == "decrypted") {
@@ -205,6 +210,7 @@ SPDX-License-Identifier: AGPL-3.0-only
           target.textContent = '';
           message.data.forEach(x => target.textContent += x.value + '\r\n');
           target.scrollTo(0, target.scrollHeight);
+          document.getElementById("working").setAttribute("hidden", "hidden");
         }
       };
     </script>
@@ -212,14 +218,15 @@ SPDX-License-Identifier: AGPL-3.0-only
   <body style="background-color: black;">
     <div class="angry-grid">
       <div id="item-0">
-        <div id="buttons" hidden="hidden">
+        <span id="buttons" hidden="hidden">
           <label style="color:lightgray;" for="yes">Yes # </label><input type="text" size="4" value="100" id="yes" name="Yes">
           <label style="color:lightgray;" for="no">No # </label><input type="text" size="4" value="100" id="no" name="No">
           <button id="encrypt">Encrypt</button>
           <button id="shuffle">Shuffle</button>
           <button id="decrypt">Decrypt</button>
           <button id="clear">Clear</button>
-        </div>
+        </span>
+        <span id="working" style="color:yellow;text-align: right;">Working..</span>
       </div>
       <div id="item-1">
         <div id="encrypted_div" class='componentWrapper'><div class="header">Input ciphertexts</div>
