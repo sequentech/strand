@@ -169,6 +169,13 @@ SPDX-License-Identifier: AGPL-3.0-only
               });
             }
           };
+          document.getElementById("clear").onclick = function() {
+            encrypted = [];
+            shuffled = [];
+            document.getElementById("encrypted").textContent = '';
+            document.getElementById("shuffled").textContent = '';
+            document.getElementById("decrypted").textContent = '';
+          };
         }
         else if(message.type == "encrypted") {
           console.log("Main: received encrypted: " + JSON.stringify(message.data));
@@ -200,6 +207,7 @@ SPDX-License-Identifier: AGPL-3.0-only
           <button id="encrypt">Encrypt</button>
           <button id="shuffle">Shuffle</button>
           <button id="decrypt">Decrypt</button>
+          <button id="clear">Clear</button>
         </div>
       </div>
       <div id="item-1">
