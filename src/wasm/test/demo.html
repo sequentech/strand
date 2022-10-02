@@ -9,9 +9,97 @@ SPDX-License-Identifier: AGPL-3.0-only
   <head>
     <meta charset="utf-8">
     <title>strand wasm test</title>
-  </head>
-  <body style="background-color:black;">
-    
+    <style>
+      #encrypted {
+        color:gray;
+        white-space: pre;
+        font-size: 20px;
+        display: block; 
+        overflow: auto; 
+        height:200px
+      }
+
+      #shuffled {
+        color:lightgrey;
+        white-space: pre;
+        font-size: 20px;
+        display: block; 
+        overflow: auto; 
+        height:200px
+      }
+
+      #decrypted {
+        color:lightgreen;
+        white-space: pre;
+        font-size: 20px;
+        display: block; 
+        overflow: auto; 
+        height:200px
+      }
+
+      .componentWrapper {
+        padding: 15px 10px 10px;
+        width: 99%;
+        border: solid cyan;
+        border-width: 1px;
+      }
+
+      .componentWrapper .header {
+        position:absolute;
+        margin-top:-25px;
+        margin-left:10px;
+        color:white;
+        background:gray;
+        padding:2px 10px;
+      }
+      
+      .angry-grid {
+         display: grid; 
+      
+         grid-template-rows: 40px 75% 190px;
+         grid-template-columns: 1fr;
+         
+         gap: 0px;
+         height: 100%;
+         width: 100%;
+      }
+        
+      #item-0 {
+      
+         background-color: black; 
+         grid-row-start: 1;
+         grid-column-start: 1;
+      
+         grid-row-end: 2;
+         grid-column-end: 2;
+         width: 100%;
+         
+      }
+      #item-1 {
+      
+         background-color: black; 
+         grid-row-start: 2;
+         grid-column-start: 1;
+      
+         grid-row-end: 3;
+         grid-column-end: 2;
+         width: 100%;
+         
+      }
+      #item-2 {
+      
+         background-color: black; 
+         grid-row-start: 3;
+         grid-column-start: 1;
+      
+         grid-row-end: 4;
+         grid-column-end: 2;
+         overflow:scroll;
+         overflow-x:hidden;
+         width: 100%;  
+         
+      }
+    </style>
     <script type="module">
       var encrypted = [];
       var shuffled = [];
@@ -37,7 +125,9 @@ SPDX-License-Identifier: AGPL-3.0-only
             log.textContent += lognew.textContent + '\r\n';
           }
           lognew.textContent = message.data;
-          window.scrollTo(0, document.body.scrollHeight);
+          
+          var footer = document.getElementById("item-2");
+          footer.scrollTo(0, footer.scrollHeight);
         }
         else if(message.type == "ready") {
           document.getElementById("buttons").removeAttribute("hidden");
@@ -82,24 +172,51 @@ SPDX-License-Identifier: AGPL-3.0-only
         }
         else if(message.type == "encrypted") {
           console.log("Main: received encrypted: " + JSON.stringify(message.data));
+          var target = document.getElementById("encrypted");
+          message.data.forEach(x => target.textContent += JSON.stringify(x) + '\r\n');
+          target.scrollTo(0, target.scrollHeight);
           encrypted = message.data;
         }
         else if(message.type == "shuffled") {
           console.log("Main: received shuffled: " + JSON.stringify(message.data));
+          var target = document.getElementById("shuffled");
+          message.data.forEach(x => target.textContent += JSON.stringify(x) + '\r\n');
+          target.scrollTo(0, target.scrollHeight);
           shuffled = message.data;
         }
         else if(message.type == "decrypted") {
           console.log("Main: received decrypted: " + JSON.stringify(message.data));
+          var target = document.getElementById("decrypted");
+          message.data.forEach(x => target.textContent += JSON.stringify(x) + '\r\n');
+          target.scrollTo(0, target.scrollHeight);
         }
       };
     </script>
-    <span id="log" style="color:white;white-space: pre;font-size: 20px;"></span>
-    <span id="lognew" style="color:cyan;white-space: pre;font-size: 20px;"></span>
-
-    <div id="buttons" hidden="hidden">
-      <button id="encrypt">Encrypt</button>
-      <button id="shuffle">Shuffle</button>
-      <button id="decrypt">Decrypt</button>
-    </div>
+  </head>
+  <body style="background-color: black;">
+    <div class="angry-grid">
+      <div id="item-0">
+        <div id="buttons" hidden="hidden">
+          <button id="encrypt">Encrypt</button>
+          <button id="shuffle">Shuffle</button>
+          <button id="decrypt">Decrypt</button>
+        </div>
+      </div>
+      <div id="item-1">
+        <div id="encrypted_div" class='componentWrapper'><div class="header">encrypted</div>
+        <span id="encrypted"></span>
+        </div>
+        <div id="shuffled_div" class='componentWrapper'><div class="header">shuffled</div>  
+        <span id="shuffled"></span>
+        </div>
+        <div id="decrypted_div" class='componentWrapper'><div class="header">decrypted</div>  
+        <span id="decrypted"></span>
+        </div>
+      </div>
+      <div id="item-2">
+        <span id="log" style="color:white;white-space: pre;font-size: 20px;"></span>
+        <span id="lognew" style="color:cyan;white-space: pre;font-size: 20px;"></span>
+      </div>
+    </div>  
   </body>
 </html>
