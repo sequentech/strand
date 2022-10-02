@@ -188,26 +188,42 @@ SPDX-License-Identifier: AGPL-3.0-only
         }
         else if(message.type == "encrypted") {
           console.log("Main: received encrypted: " + JSON.stringify(message.data));
+          encrypted = message.data;
           var target = document.getElementById("encrypted");
           target.textContent = '';  
+          if(message.data.length > 1000) {
+            var extra = message.data.length - 1000;
+            message.data = message.data.slice(0, 1000);
+            message.data.push("... " + extra + " more ...");
+          }
           message.data.forEach(x => target.textContent += JSON.stringify(x) + '\r\n');
           target.scrollTo(0, target.scrollHeight);
           document.getElementById("working").setAttribute("hidden", "hidden");
-          encrypted = message.data;
         }
         else if(message.type == "shuffled") {
           console.log("Main: received shuffled: " + JSON.stringify(message.data));
+          shuffled = message.data;
           var target = document.getElementById("shuffled");
           target.textContent = '';
+          if(message.data.length > 1000) {
+            var extra = message.data.length - 1000;
+            message.data = message.data.slice(0, 1000);
+            message.data.push("... " + extra + " more ...");
+          }
+          
           message.data.forEach(x => target.textContent += JSON.stringify(x) + '\r\n');
           target.scrollTo(0, target.scrollHeight);
           document.getElementById("working").setAttribute("hidden", "hidden");
-          shuffled = message.data;
         }
         else if(message.type == "decrypted") {
           console.log("Main: received decrypted: " + JSON.stringify(message.data));
           var target = document.getElementById("decrypted");
           target.textContent = '';
+          if(message.data.length > 1000) {
+            var extra = message.data.length - 1000;
+            message.data = message.data.slice(0, 1000);
+            message.data.push({value: "... " + extra + " more ..."});
+          }
           message.data.forEach(x => target.textContent += x.value + '\r\n');
           target.scrollTo(0, target.scrollHeight);
           document.getElementById("working").setAttribute("hidden", "hidden");
