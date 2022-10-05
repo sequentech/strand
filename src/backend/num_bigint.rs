@@ -80,6 +80,27 @@ impl<P: BigintCtxParams> BigintCtx<P> {
         let num = BigUint::from_bytes_le(&hashed);
         num.mod_floor(&self.params.modulus().0)
     }
+
+    pub fn element_from_biguint(&self, biguint: BigUint) -> Result<BigUintE<P>, &'static str> {
+        let one: BigUint = One::one();
+        if (biguint < one) || biguint >= self.modulus().0 {
+            Err("Out of range")
+        } else if biguint.legendre(&self.modulus().0) != 1 {
+            Err("Not a quadratic residue")
+        } else {
+            Ok(BigUintE::new(biguint))
+        }
+    }
+
+    pub fn element_from_string_radix(
+        &self,
+        string: &str,
+        radix: u32,
+    ) -> Result<BigUintE<P>, &'static str> {
+        let biguint = BigUint::from_str_radix(string, radix).map_err(|_| "Failed to parse")?;
+
+        self.element_from_biguint(biguint)
+    }
 }
 
 impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
@@ -168,15 +189,16 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         self.generators_fips(size, contest, seed)
     }
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
-        let ret = BigUint::from_bytes_le(bytes);
-        let one: BigUint = One::one();
+        let biguint = BigUint::from_bytes_le(bytes);
+        self.element_from_biguint(biguint)
+        /* let one: BigUint = One::one();
         if (ret < one) || ret >= self.modulus().0 {
             Err("Out of range")
         } else if ret.legendre(&self.modulus().0) != 1 {
             Err("Not a quadratic residue")
         } else {
             Ok(BigUintE::new(ret))
-        }
+        } */
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
         let ret = BigUint::from_bytes_le(bytes);

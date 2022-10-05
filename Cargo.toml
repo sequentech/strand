@@ -39,7 +39,7 @@ getrandom = { version = "0.2", features = ["js"] }
 cbc = { version="0.1", features=["alloc"] }
 aes = "0.8"
 # wasm
-wasm-bindgen-rayon = {version = "1.0", features = ["no-bundler"], optional = true}
+wasm-bindgen-rayon = {version = "1.0.3", features = ["no-bundler"], optional = true}
 wasm-bindgen = {version = "=0.2.79", optional = true}
 serde-wasm-bindgen = {version = "0.4", optional = true}
 
@@ -48,8 +48,7 @@ web-sys = { version = "0.3", features = ['Performance'], optional = true }
 ed25519-dalek = {version = "1", features = ["serde"]}
 quick-error = "2.0"
 rayon = { version = "1.5", optional = true }
-hex = "0.4.2"
-
+hex = { version = "0.4.2", optional = true }
 
 # [package.metadata.wasm-pack.profile.release]
 # wasm-opt = ['-O4']
@@ -59,7 +58,7 @@ cfg-if = "1.0"
 [features]
 rayon = ["dep:rayon"]
 wasmrayon = ["rayon", "wasm", "dep:wasm-bindgen-rayon"]
-wasmtest = ["wasm", "dep:web-sys"]
+wasmtest = ["wasm", "dep:web-sys", "dep:hex"]
 wasm = ["wasm-bindgen", "serde-wasm-bindgen"]
 rug = ["dep:rug"]
 

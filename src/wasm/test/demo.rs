@@ -122,7 +122,7 @@ pub fn encrypt(nyes: u32, nno: u32) -> JsValue {
             to_ciphertext_s(&c)
         })
         .collect();
-    
+
     message(&format!(
         "Encrypt: {:.3} c / s",
         (nyes + nno) as f64 / ((performance.now() - now) / 1000.0)
@@ -175,7 +175,7 @@ pub fn decrypt(value: JsValue) -> JsValue {
     let sk = secret_key();
 
     let values: Vec<CiphertextS> = serde_wasm_bindgen::from_value(value).unwrap();
-    
+
     let now = performance.now();
     let ps: Vec<PlaintextS> = values
         .par()
