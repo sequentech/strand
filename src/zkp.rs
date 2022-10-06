@@ -327,16 +327,16 @@ impl<C: Ctx> Zkp<C> {
 /// A proof of knowledge of discrete logarithm.
 #[derive(Eq, PartialEq)]
 pub struct Schnorr<C: Ctx> {
-    pub(crate) commitment: C::E,
-    pub(crate) challenge: C::X,
-    pub(crate) response: C::X,
+    pub commitment: C::E,
+    pub challenge: C::X,
+    pub response: C::X,
 }
 
 /// A proof of equality of discrete logarithms.
 #[derive(Eq, PartialEq)]
 pub struct ChaumPedersen<C: Ctx> {
-    pub(crate) commitment1: C::E,
-    pub(crate) commitment2: C::E,
-    pub(crate) challenge: C::X,
-    pub(crate) response: C::X,
+    pub commitment1: C::E,
+    pub commitment2: C::E,
+    pub challenge: C::X,
+    pub response: C::X,
 }
