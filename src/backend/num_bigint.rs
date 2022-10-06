@@ -340,10 +340,18 @@ impl<P: BigintCtxParams> BigUintE<P> {
     fn new(value: BigUint) -> BigUintE<P> {
         BigUintE(value, PhantomData)
     }
+
+    pub fn to_string_radix(&self, radix: u32) -> String {
+        self.0.to_str_radix(radix)
+    }
 }
 impl<P: BigintCtxParams> BigUintX<P> {
     fn new(value: BigUint) -> BigUintX<P> {
         BigUintX(value, PhantomData)
+    }
+
+    pub fn to_string_radix(&self, radix: u32) -> String {
+        self.0.to_str_radix(radix)
     }
 }
 
