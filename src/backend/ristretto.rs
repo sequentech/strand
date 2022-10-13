@@ -86,6 +86,14 @@ impl Ctx for RistrettoCtx {
         &DUMMY_POINT
     }
     #[inline(always)]
+    fn element_to_string_radix(&self, element: &Self::E, radix: u32) -> String {
+        return String::from("");
+    }
+    #[inline(always)]
+    fn exponent_to_string_radix(&self, exponent: &Self::X, radix: u32) -> String {
+        return String::from("");
+    }
+    #[inline(always)]
     fn exp_modulus(&self) -> &Self::X {
         // returning a dummy value as modulus does not apply to this backend
         &DUMMY_SCALAR

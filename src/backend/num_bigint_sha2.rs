@@ -20,7 +20,7 @@
 //! ```
 use std::marker::PhantomData;
 
-use ed25519_dalek::{Digest, Sha512};
+use sha2::{Sha256, Digest as DigestSha256};
 use num_bigint::BigUint;
 use num_bigint::RandBigInt;
 use num_integer::Integer;
@@ -73,7 +73,7 @@ impl<P: BigintCtxParams> BigintCtx<P> {
     }
 
     fn hash_to_element(&self, bytes: &[u8]) -> BigUint {
-        let mut hasher = Sha512::new();
+        let mut hasher = Sha256::new();
         hasher.update(bytes);
         let hashed = hasher.finalize();
 
@@ -112,6 +112,17 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn generator(&self) -> &Self::E {
         self.params.generator()
     }
+
+    #[inline(always)]
+    fn element_to_string_radix(&self, element: &Self::E, radix: u32) -> String {
+        return element.to_string_radix(radix);
+    }
+    
+    #[inline(always)]
+    fn exponent_to_string_radix(&self, exponent: &Self::X, radix: u32) -> String {
+        return exponent.to_string_radix(radix);
+    }
+
     #[inline(always)]
     fn gmod_pow(&self, other: &Self::X) -> Self::E {
         BigUintE::new(self.generator().0.modpow(&other.0, &self.modulus().0))
@@ -123,14 +134,6 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     #[inline(always)]
     fn modulus(&self) -> &Self::E {
         self.params.modulus()
-    }
-    #[inline(always)]
-    fn element_to_string_radix(&self, element: &Self::E, radix: u32) -> String {
-        return element.to_string_radix(radix);
-    }
-    #[inline(always)]
-    fn exponent_to_string_radix(&self, exponent: &Self::X, radix: u32) -> String {
-        return exponent.to_string_radix(radix);
     }
     #[inline(always)]
     fn exp_modulus(&self) -> &Self::X {
@@ -154,12 +157,13 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         self.rnd_exp().0
     }
     fn hash_to_exp(&self, bytes: &[u8]) -> Self::X {
-        let mut hasher = Sha512::new();
+        let mut hasher = Sha256::new();
         hasher.update(bytes);
         let hashed = hasher.finalize();
 
-        let num = BigUint::from_bytes_le(&hashed);
-        BigUintX::new(num.mod_floor(&self.exp_modulus().0))
+        let num = BigUint::from_bytes_be(&hashed);
+        //BigUintX::new(num.mod_floor(&self.exp_modulus().0))
+        BigUintX::new(num)
     }
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
         let one: BigUint = One::one();
@@ -209,7 +213,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         } */
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
-        let ret = BigUint::from_bytes_le(bytes);
+        let ret = BigUint::from_bytes_be(bytes);
         let zero: BigUint = Zero::zero();
         if (ret < zero) || ret >= self.exp_modulus().0 {
             Err("Out of range")

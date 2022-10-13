@@ -97,6 +97,14 @@ impl<C: Ctx> PublicKey<C> {
         let randomness = self.ctx.rnd_exp();
         self.encrypt_with_randomness(plaintext, &randomness)
     }
+    pub fn encrypt_and_pok_old_version(&self, plaintext: &C::E, label: &[u8]) -> (Ciphertext<C>, Schnorr<C>, String) {
+        let zkp = Zkp::new(&self.ctx);
+        let randomness = self.ctx.rnd_exp();
+        let c = self.encrypt_with_randomness(plaintext, &randomness);
+        let (proof, debug) = zkp.encryption_popk_old_version(&randomness, &c.mhr, &c.gr, label);
+
+        (c, proof, debug)
+    }
     pub fn encrypt_and_pok(&self, plaintext: &C::E, label: &[u8]) -> (Ciphertext<C>, Schnorr<C>) {
         let zkp = Zkp::new(&self.ctx);
         let randomness = self.ctx.rnd_exp();

@@ -55,6 +55,8 @@ pub trait Ctx: Sync + Sized + Clone {
 
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str>;
     fn decode(&self, element: &Self::E) -> Self::P;
+    fn element_to_string_radix(&self, element: &Self::E, radix: u32) -> String;
+    fn exponent_to_string_radix(&self, element: &Self::X, radix: u32) -> String;
     fn exp_from_u64(&self, value: u64) -> Self::X;
     fn hash_to_exp(&self, bytes: &[u8]) -> Self::X;
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E>;

@@ -29,6 +29,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use serde_bytes::ByteBuf;
+use sha2::{Sha256, Digest};
 
 use crate::byte_tree::ByteTree;
 use crate::byte_tree::ToByteTree;
@@ -57,6 +58,50 @@ impl<C: Ctx> Zkp<C> {
         let context = ByteTree::Tree(tree);
 
         self.schnorr_prove_private(secret, gr, None, context)
+    }
+
+    pub fn get_hash(&self, data: &String) -> Vec<u8> {
+        let mut hasher = Sha256::new();
+        hasher.update(data.as_bytes());
+        let hashed = hasher.finalize();
+        return hashed.to_vec();
+    }
+
+    pub fn encryption_popk_old_version(
+        &self,
+        secret: &C::X,
+        mhr: &C::E,
+        gr: &C::E,
+        label: &[u8],
+    ) -> (Schnorr<C>, String) {
+        let alpha_str = self.ctx.element_to_string_radix(gr, 10);
+        let r = self.ctx.rnd_exp();
+        let commitment = self.ctx.gmod_pow(&r);
+        let commitment_str = self.ctx.element_to_string_radix(&commitment, 10);
+        let data_to_hash = format!("{}/{}", alpha_str, commitment_str);
+        let challenge_hash = self.get_hash(&data_to_hash); 
+        let challenge = self.ctx.exp_from_bytes(&challenge_hash).unwrap();
+        let challenge_str = self.ctx.exponent_to_string_radix(&challenge, 10);
+        let response = r.add(&challenge.mul(secret)).modulo(self.ctx.exp_modulus());
+        let response_str = self.ctx.exponent_to_string_radix(&response, 10);
+        let debug = format!(
+            "[old_version] alpha_str = {}, commitment_str = {}, data_to_hash = {}, challenge_hash = {:?}, challenge_str = {}, response_str = {}",
+            &alpha_str,
+            &commitment_str,
+            &data_to_hash,
+            &challenge_hash,
+            &challenge_str,
+            &response_str
+        );
+
+        (
+            Schnorr {
+                commitment,
+                challenge,
+                response
+            },
+            debug
+        )
     }
 
     pub fn encryption_popk_verify(

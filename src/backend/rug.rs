@@ -111,6 +111,14 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         self.params.modulus()
     }
     #[inline(always)]
+    fn element_to_string_radix(&self, element: &Self::E, radix: u32) -> String {
+        return String::from("");
+    }
+    #[inline(always)]
+    fn exponent_to_string_radix(&self, exponent: &Self::X, radix: u32) -> String {
+        return String::from("");
+    }
+    #[inline(always)]
     fn exp_modulus(&self) -> &Self::X {
         self.params.exp_modulus()
     }
