@@ -39,6 +39,7 @@
 //! assert_eq!(plaintext, plaintext_);
 //! ```
 
+use borsh::{BorshDeserialize, BorshSerialize};
 use std::marker::PhantomData;
 
 use crate::byte_tree::{BTreeDeser, BTreeSer};
@@ -70,7 +71,7 @@ impl<C: Ctx> Ciphertext<C> {
 }
 
 /// An ElGamal public key.
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, BorshSerialize, BorshDeserialize)]
 pub struct PublicKey<C: Ctx> {
     pub(crate) element: C::E,
     pub(crate) ctx: C,

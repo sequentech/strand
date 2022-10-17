@@ -28,6 +28,7 @@ pub mod wasm;
 /// Schnorr and Chaum-Pedersen zero knowledge proofs.
 pub mod zkp;
 
+pub mod borsh;
 pub mod byte_tree;
 mod rnd;
 mod symmetric;

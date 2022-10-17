@@ -20,6 +20,8 @@
 //! ```
 use std::marker::PhantomData;
 
+use borsh::BorshDeserialize;
+use borsh::BorshSerialize;
 use ed25519_dalek::{Digest, Sha512};
 use num_bigint::BigUint;
 use num_bigint::RandBigInt;
@@ -28,12 +30,18 @@ use num_modular::{ModularSymbols, ModularUnaryOps};
 use num_traits::Num;
 use num_traits::{One, Zero};
 use serde_bytes::ByteBuf;
+use std::io::{Error, ErrorKind};
 
 use crate::backend::constants::*;
 use crate::byte_tree::ByteTree::Leaf;
 use crate::byte_tree::*;
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
+
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct BigUintE<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct BigUintX<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct BigintCtx<P: BigintCtxParams> {
@@ -331,11 +339,6 @@ impl BigintCtxParams for P2048 {
     }
 }
 
-#[derive(PartialEq, Eq, Debug, Clone)]
-pub struct BigUintE<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
-#[derive(PartialEq, Eq, Debug, Clone)]
-pub struct BigUintX<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
-
 impl<P: BigintCtxParams> BigUintE<P> {
     fn new(value: BigUint) -> BigUintE<P> {
         BigUintE(value, PhantomData)
@@ -380,6 +383,48 @@ impl<P: BigintCtxParams> FromByteTree<BigintCtx<P>> for BigUintX<P> {
     fn from_byte_tree(tree: &ByteTree, ctx: &BigintCtx<P>) -> Result<BigUintX<P>, ByteError> {
         let bytes = tree.leaf()?;
         ctx.exp_from_bytes(bytes).map_err(ByteError::Msg)
+    }
+}
+
+impl<P: BigintCtxParams> BorshSerialize for BigUintE<P> {
+    #[inline]
+    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        writer.write_all(&self.0.to_bytes_le())
+    }
+}
+
+impl<P: BigintCtxParams> BorshDeserialize for BigUintE<P> {
+    #[inline]
+    fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
+        let ctx = BigintCtx::<P>::new();
+
+        let value = ctx
+            .element_from_bytes(&bytes)
+            .map_err(|e| Error::new(ErrorKind::Other, e));
+        // Must place buffer at end of bytes otherwise borsh complains
+        *bytes = &bytes[bytes.len()..];
+        value
+    }
+}
+
+impl<P: BigintCtxParams> BorshSerialize for BigUintX<P> {
+    #[inline]
+    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        writer.write_all(&self.0.to_bytes_le())
+    }
+}
+
+impl<P: BigintCtxParams> BorshDeserialize for BigUintX<P> {
+    #[inline]
+    fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
+        let ctx = BigintCtx::<P>::new();
+
+        let value = ctx
+            .exp_from_bytes(&bytes)
+            .map_err(|e| Error::new(ErrorKind::Other, e));
+        // Must place buffer at end of bytes otherwise borsh complains
+        *bytes = &bytes[bytes.len()..];
+        value
     }
 }
 

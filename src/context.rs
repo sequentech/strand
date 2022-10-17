@@ -33,7 +33,7 @@
 //! assert_eq!(plaintext, plaintext_);
 //! ```
 
-use crate::byte_tree::ToFromBTree;
+use crate::byte_tree::{ToFromBTree, BTreeSer, BTreeDeser};
 // use crate::zkp::Zkp;
 use std::marker::{Send, Sync};
 
@@ -104,4 +104,32 @@ pub trait Exponent<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree<C> {
     fn add_identity() -> C::X;
     /// Multiplicative identity.
     fn mul_identity() -> C::X;
+}
+
+
+pub trait StrandSerialize {
+    fn strand_serialize(&self) -> Vec<u8>;
+}
+
+pub trait StrandDeserialize<C: Ctx> {
+    fn strand_deserialize(bytes: &[u8], ctx: &C) -> Result<Self, &'static str>
+    where
+        Self: Sized;
+}
+pub trait StrandSerialization<C: Ctx>: StrandSerialize + StrandDeserialize<C> {}
+impl<C: Ctx, T: StrandSerialize + StrandDeserialize<C>> StrandSerialization<C> for T {}
+
+
+impl<T: BTreeSer> StrandSerialize for T {
+    fn strand_serialize(&self) -> Vec<u8> {
+        self.ser()
+    }
+}
+
+impl<C: Ctx, T: BTreeDeser<C>> StrandDeserialize<C> for T {
+    fn strand_deserialize(bytes: &[u8], ctx: &C) -> Result<Self, &'static str>
+    where
+        Self: Sized {
+        T::deser(bytes, ctx).map_err(|_| "byte error")
+    }
 }

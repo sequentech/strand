@@ -42,6 +42,8 @@ aes = "0.8"
 wasm-bindgen-rayon = {version = "1.0.3", features = ["no-bundler"], optional = true}
 wasm-bindgen = {version = "=0.2.79", optional = true}
 serde-wasm-bindgen = {version = "0.4", optional = true}
+# borsh
+borsh = "0.9.3"
 
 # static_init = "1.0"
 web-sys = { version = "0.3", features = ['Performance'], optional = true }
