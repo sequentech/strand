@@ -7,7 +7,7 @@
 //! // This example shows how to obtain a context to use the rug backend.
 //! use strand::context::{Ctx, Element};
 //! use strand::backend::rug::{RugCtx, P2048};
-//! let ctx = RugCtx::<P2048>::new();
+//! let ctx = RugCtx::<P2048>::default();
 //! // do some stuff..
 //! let g = ctx.generator();
 //! let m = ctx.modulus();
@@ -26,6 +26,8 @@ use rug::{
 };
 use serde_bytes::ByteBuf;
 use std::marker::PhantomData;
+use std::io::{Error, ErrorKind};
+use borsh::{BorshDeserialize, BorshSerialize};
 
 use crate::backend::constants::*;
 use crate::byte_tree::ByteTree::Leaf;
@@ -88,11 +90,6 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     type E = IntegerE<P>;
     type X = IntegerX<P>;
     type P = Integer;
-
-    fn new() -> RugCtx<P> {
-        let params = P::new();
-        RugCtx { params }
-    }
 
     #[inline(always)]
     fn generator(&self) -> &Self::E {
@@ -194,6 +191,12 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     }
     fn exp_from_u64(&self, value: u64) -> Self::X {
         IntegerX::new(Integer::from(value))
+    }
+}
+impl<P: RugCtxParams> Default for RugCtx<P> {
+    fn default() -> RugCtx<P> {
+        let params = P::new();
+        RugCtx { params }
     }
 }
 
@@ -385,11 +388,54 @@ impl<P: RugCtxParams> FromByteTree<RugCtx<P>> for IntegerX<P> {
     }
 }
 
+impl<P: RugCtxParams> BorshSerialize for IntegerE<P> {
+    #[inline]
+    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        let bytes = self.0.to_digits::<u8>(Order::MsfLe);
+        bytes.serialize(writer)
+    }
+}
+
+impl<P: RugCtxParams> BorshDeserialize for IntegerE<P> {
+    #[inline]
+    fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
+        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+        let ctx = RugCtx::<P>::default();
+
+        let value = ctx
+            .element_from_bytes(&bytes)
+            .map_err(|e| Error::new(ErrorKind::Other, e));
+        value
+    }
+}
+
+impl<P: RugCtxParams> BorshSerialize for IntegerX<P> {
+    #[inline]
+    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        let bytes = self.0.to_digits::<u8>(Order::MsfLe);
+        bytes.serialize(writer)
+    }
+}
+
+impl<P: RugCtxParams> BorshDeserialize for IntegerX<P> {
+    #[inline]
+    fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
+        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+        let ctx = RugCtx::<P>::default();
+
+        let value = ctx
+            .exp_from_bytes(&bytes)
+            .map_err(|e| Error::new(ErrorKind::Other, e));
+        value
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::backend::rug::*;
     use crate::backend::tests::*;
     use crate::byte_tree::tests::*;
+    use crate::borsh::tests::*;
     use crate::context::Ctx;
     use crate::elgamal::Ciphertext;
     use crate::elgamal::PrivateKey;
@@ -401,47 +447,47 @@ mod tests {
 
     #[test]
     fn test_elgamal() {
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
         test_elgamal_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_elgamal_enc_pok() {
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
         test_elgamal_enc_pok_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_schnorr() {
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
         test_schnorr_generic(&ctx);
     }
 
     #[test]
     fn test_chaumpedersen() {
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
         test_chaumpedersen_generic(&ctx);
     }
 
     #[test]
     fn test_vdecryption() {
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
         test_vdecryption_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_distributed() {
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
         test_distributed_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_distributed_btserde() {
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
         let mut ps = vec![];
         for _ in 0..10 {
             let p = ctx.rnd_plaintext();
@@ -452,19 +498,19 @@ mod tests {
 
     #[test]
     fn test_shuffle() {
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
         test_shuffle_generic(&ctx);
     }
 
     #[test]
     fn test_shuffle_btserde() {
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
         test_shuffle_btserde_generic(&ctx);
     }
 
     #[test]
     fn test_encrypted_sk() {
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
         test_encrypted_sk_generic(&ctx, plaintext);
     }
@@ -473,46 +519,69 @@ mod tests {
     fn test_threshold() {
         let trustees = 5usize;
         let threshold = 3usize;
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
 
         test_threshold_generic(&ctx, trustees, threshold, plaintext);
     }
 
     #[test]
+    fn test_element_borsh() {
+        let ctx = RugCtx::<P2048>::default();
+        test_borsh_element(&ctx);
+    }
+
+    #[test]
     fn test_ciphertext_bytes() {
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
         test_ciphertext_bytes_generic(&ctx);
     }
 
     #[test]
+    fn test_ciphertext_borsh() {
+        let ctx = RugCtx::<P2048>::default();
+        test_ciphertext_borsh_generic(&ctx);
+    }
+
+    #[test]
     fn test_key_bytes() {
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
         test_key_bytes_generic(&ctx);
     }
 
     #[test]
+    fn test_key_borsh() {
+        let ctx = RugCtx::<P2048>::default();
+        test_key_borsh_generic(&ctx);
+    }
+
+    #[test]
     fn test_schnorr_bytes() {
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
         test_schnorr_bytes_generic(&ctx);
     }
 
     #[test]
+    fn test_schnorr_borsh() {
+        let ctx = RugCtx::<P2048>::default();
+        test_schnorr_borsh_generic(&ctx);
+    }
+
+    #[test]
     fn test_cp_bytes() {
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
         test_cp_bytes_generic(&ctx);
     }
 
     #[test]
-    fn test_epk_bytes() {
-        let ctx = RugCtx::<P2048>::new();
-        let plaintext = ctx.rnd_plaintext();
-        test_epk_bytes_generic(&ctx, plaintext);
+    fn test_cp_borsh() {
+        let ctx = RugCtx::<P2048>::default();
+        test_cp_borsh_generic(&ctx);
     }
 
     #[test]
     fn test_encode_err() {
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
         let result = ctx.encode(&(ctx.exp_modulus().0.clone() - 1i32));
         assert!(result.is_err())
     }
@@ -535,7 +604,7 @@ mod tests {
     #[ignore]
     #[test]
     fn test_gen_coq_data() {
-        let ctx = RugCtx::<P2048>::new();
+        let ctx = RugCtx::<P2048>::default();
 
         let sk = PrivateKey::gen(&ctx);
         let pk = sk.get_pk();

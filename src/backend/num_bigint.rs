@@ -8,7 +8,7 @@
 //! use strand::context::{Ctx, Element};
 //! use strand::backend::num_bigint::{BigintCtx, P2048};
 //! use strand::backend::num_bigint::BigUintE;
-//! let ctx = BigintCtx::<P2048>::new();
+//! let ctx = BigintCtx::<P2048>::default();
 //! // do some stuff..
 //! let g = ctx.generator();
 //! let m = ctx.modulus();
@@ -20,8 +20,7 @@
 //! ```
 use std::marker::PhantomData;
 
-use borsh::BorshDeserialize;
-use borsh::BorshSerialize;
+use borsh::{BorshDeserialize, BorshSerialize};
 use ed25519_dalek::{Digest, Sha512};
 use num_bigint::BigUint;
 use num_bigint::RandBigInt;
@@ -199,14 +198,6 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
         let biguint = BigUint::from_bytes_le(bytes);
         self.element_from_biguint(biguint)
-        /* let one: BigUint = One::one();
-        if (ret < one) || ret >= self.modulus().0 {
-            Err("Out of range")
-        } else if ret.legendre(&self.modulus().0) != 1 {
-            Err("Not a quadratic residue")
-        } else {
-            Ok(BigUintE::new(ret))
-        } */
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
         let ret = BigUint::from_bytes_le(bytes);
@@ -217,7 +208,10 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
             Ok(BigUintX::new(ret))
         }
     }
-    fn new() -> BigintCtx<P> {
+}
+
+impl<P: BigintCtxParams> Default for BigintCtx<P> {
+    fn default() -> BigintCtx<P> {
         let params = P::new();
         BigintCtx { params }
     }
@@ -389,20 +383,20 @@ impl<P: BigintCtxParams> FromByteTree<BigintCtx<P>> for BigUintX<P> {
 impl<P: BigintCtxParams> BorshSerialize for BigUintE<P> {
     #[inline]
     fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
-        writer.write_all(&self.0.to_bytes_le())
+        let bytes = self.0.to_bytes_le();
+        bytes.serialize(writer)
     }
 }
 
 impl<P: BigintCtxParams> BorshDeserialize for BigUintE<P> {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let ctx = BigintCtx::<P>::new();
+        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+        let ctx = BigintCtx::<P>::default();
 
         let value = ctx
             .element_from_bytes(&bytes)
             .map_err(|e| Error::new(ErrorKind::Other, e));
-        // Must place buffer at end of bytes otherwise borsh complains
-        *bytes = &bytes[bytes.len()..];
         value
     }
 }
@@ -410,20 +404,20 @@ impl<P: BigintCtxParams> BorshDeserialize for BigUintE<P> {
 impl<P: BigintCtxParams> BorshSerialize for BigUintX<P> {
     #[inline]
     fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
-        writer.write_all(&self.0.to_bytes_le())
+        let bytes = self.0.to_bytes_le();
+        bytes.serialize(writer)
     }
 }
 
 impl<P: BigintCtxParams> BorshDeserialize for BigUintX<P> {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let ctx = BigintCtx::<P>::new();
+        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+        let ctx = BigintCtx::<P>::default();
 
         let value = ctx
             .exp_from_bytes(&bytes)
             .map_err(|e| Error::new(ErrorKind::Other, e));
-        // Must place buffer at end of bytes otherwise borsh complains
-        *bytes = &bytes[bytes.len()..];
         value
     }
 }
@@ -433,52 +427,53 @@ mod tests {
     use crate::backend::num_bigint::*;
     use crate::backend::tests::*;
     use crate::byte_tree::tests::*;
+    use crate::borsh::tests::*;
     use crate::context::Ctx;
     use crate::threshold::tests::test_threshold_generic;
 
     #[test]
     fn test_elgamal() {
-        let ctx = BigintCtx::<P2048>::new();
+        let ctx = BigintCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
         test_elgamal_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_elgamal_enc_pok() {
-        let ctx = BigintCtx::<P2048>::new();
+        let ctx = BigintCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
         test_elgamal_enc_pok_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_schnorr() {
-        let ctx = BigintCtx::<P2048>::new();
+        let ctx = BigintCtx::<P2048>::default();
         test_schnorr_generic(&ctx);
     }
 
     #[test]
     fn test_chaumpedersen() {
-        let ctx = BigintCtx::<P2048>::new();
+        let ctx = BigintCtx::<P2048>::default();
         test_chaumpedersen_generic(&ctx);
     }
 
     #[test]
     fn test_vdecryption() {
-        let ctx = BigintCtx::<P2048>::new();
+        let ctx = BigintCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
         test_vdecryption_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_distributed() {
-        let ctx = BigintCtx::<P2048>::new();
+        let ctx = BigintCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
         test_distributed_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_distributed_btserde() {
-        let ctx = BigintCtx::<P2048>::new();
+        let ctx = BigintCtx::<P2048>::default();
         let mut ps = vec![];
         for _ in 0..10 {
             let p = ctx.rnd_plaintext();
@@ -489,19 +484,19 @@ mod tests {
 
     #[test]
     fn test_shuffle() {
-        let ctx = BigintCtx::<P2048>::new();
+        let ctx = BigintCtx::<P2048>::default();
         test_shuffle_generic(&ctx);
     }
 
     #[test]
     fn test_shuffle_btserde() {
-        let ctx = BigintCtx::<P2048>::new();
+        let ctx = BigintCtx::<P2048>::default();
         test_shuffle_btserde_generic(&ctx);
     }
 
     #[test]
     fn test_encrypted_sk() {
-        let ctx = BigintCtx::<P2048>::new();
+        let ctx = BigintCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
         test_encrypted_sk_generic(&ctx, plaintext);
     }
@@ -510,46 +505,75 @@ mod tests {
     fn test_threshold() {
         let trustees = 5usize;
         let threshold = 3usize;
-        let ctx = BigintCtx::<P2048>::new();
+        let ctx = BigintCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
 
         test_threshold_generic(&ctx, trustees, threshold, plaintext);
     }
 
     #[test]
+    fn test_element_borsh() {
+        let ctx = BigintCtx::<P2048>::default();
+        test_borsh_element(&ctx);
+    }
+
+    #[test]
+    fn test_exponent_borsh() {
+        let ctx = BigintCtx::<P2048>::default();
+        test_borsh_exponent(&ctx);
+    }
+
+    #[test]
     fn test_ciphertext_bytes() {
-        let ctx = BigintCtx::<P2048>::new();
+        let ctx = BigintCtx::<P2048>::default();
         test_ciphertext_bytes_generic(&ctx);
     }
 
     #[test]
+    fn test_ciphertext_borsh() {
+        let ctx = BigintCtx::<P2048>::default();
+        test_ciphertext_borsh_generic(&ctx);
+    }
+
+    #[test]
     fn test_key_bytes() {
-        let ctx = BigintCtx::<P2048>::new();
+        let ctx = BigintCtx::<P2048>::default();
         test_key_bytes_generic(&ctx);
     }
 
     #[test]
+    fn test_key_borsh() {
+        let ctx = BigintCtx::<P2048>::default();
+        test_key_borsh_generic(&ctx);
+    }
+
+    #[test]
     fn test_schnorr_bytes() {
-        let ctx = BigintCtx::<P2048>::new();
+        let ctx = BigintCtx::<P2048>::default();
         test_schnorr_bytes_generic(&ctx);
     }
 
     #[test]
+    fn test_schnorr_borsh() {
+        let ctx = BigintCtx::<P2048>::default();
+        test_schnorr_borsh_generic(&ctx);
+    }
+
+    #[test]
     fn test_cp_bytes() {
-        let ctx = BigintCtx::<P2048>::new();
+        let ctx = BigintCtx::<P2048>::default();
         test_cp_bytes_generic(&ctx);
     }
 
     #[test]
-    fn test_epk_bytes() {
-        let ctx = BigintCtx::<P2048>::new();
-        let plaintext = ctx.rnd_plaintext();
-        test_epk_bytes_generic(&ctx, plaintext);
+    fn test_cp_borsh() {
+        let ctx = BigintCtx::<P2048>::default();
+        test_cp_borsh_generic(&ctx);
     }
 
     #[test]
     fn test_encode_err() {
-        let ctx = BigintCtx::<P2048>::new();
+        let ctx = BigintCtx::<P2048>::default();
         let one: BigUint = One::one();
         let result = ctx.encode(&(&ctx.exp_modulus().0 - one));
         assert!(result.is_err())

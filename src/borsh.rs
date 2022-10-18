@@ -2,99 +2,120 @@ use crate::{
     backend::num_bigint::{BigUintE, BigUintX, BigintCtx, BigintCtxParams},
     context::Ctx,
 };
+use borsh::{BorshSerialize, BorshDeserialize};
 
-pub trait CtxDeserializable<C: Ctx>
-where
-    Self: Sized,
-{
-    fn deserialize_ctx(bytes: &[u8], ctx: &C) -> Result<Self, &'static str>;
+pub trait StrandSerialize {
+    fn strand_serialize(&self) -> Vec<u8>;
 }
 
-impl<P: BigintCtxParams> CtxDeserializable<BigintCtx<P>> for BigUintE<P> {
-    fn deserialize_ctx(bytes: &[u8], ctx: &BigintCtx<P>) -> Result<BigUintE<P>, &'static str> {
-        ctx.element_from_bytes(bytes)
+pub trait StrandDeserialize {
+    fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
+    where
+        Self: Sized;
+}
+pub trait StrandSerialization: StrandSerialize + StrandDeserialize {}
+impl<T: StrandSerialize + StrandDeserialize> StrandSerialization for T {}
+
+
+impl<T: BorshSerialize> StrandSerialize for T {
+    fn strand_serialize(&self) -> Vec<u8> {
+        // FIXME log on failure
+        self.try_to_vec().unwrap()
     }
 }
 
-impl<P: BigintCtxParams> CtxDeserializable<BigintCtx<P>> for BigUintX<P> {
-    fn deserialize_ctx(bytes: &[u8], ctx: &BigintCtx<P>) -> Result<BigUintX<P>, &'static str> {
-        ctx.exp_from_bytes(bytes)
-    }
-}
-
-/*impl<C: Ctx, T: CtxDeserializable<C> + Send> CtxDeserializable<C> for Vec<T> {
-    fn deserialize_ctx(bytes: &[u8], ctx: &BigintCtx<P>) -> Result<BigUintX<P>, &'static str> {
-        ctx.exp_from_bytes(bytes)
-    }
-    fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<Vec<T>, ByteError> {
-        if let Tree(trees) = tree {
-            trees
-                .par()
-                .map(|b| T::from_byte_tree(b, ctx))
-                .collect::<Result<Vec<T>, ByteError>>()
-        } else {
-            Err(ByteError::Msg(
-                "ByteTree: unexpected Leaf constructing Vec<T: FromByteTree>",
-            ))
+impl<T: BorshDeserialize> StrandDeserialize for T {
+    fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
+    where Self: Sized {
+        let value = T::try_from_slice(&bytes);
+        if value.is_err() {
+            // FIXME log on failure
         }
+        value.map_err(|_| "borsh deserialize failed")
     }
 }
-*/
-
-/*
-impl<P: BigintCtxParams> ToByteTree for BigUintX<P> {
-    fn to_byte_tree(&self) -> ByteTree {
-        // Leaf(DataType::Exponent, ByteBuf::from(self.to_bytes_le()))
-        Leaf(ByteBuf::from(self.0.to_bytes_le()))
-    }
-}
-
-impl<P: BigintCtxParams> CtxDeserializable<BigintCtx<P>> for BigUintX<P> {
-    fn from_byte_tree(tree: &ByteTree, ctx: &BigintCtx<P>) -> Result<BigUintX<P>, ByteError> {
-        let bytes = tree.leaf()?;
-        ctx.exp_from_bytes(bytes).map_err(ByteError::Msg)
-    }
-}*/
-/*
-pub trait Serializable<T: BorshSerialize> {
-    fn borsh_serialize(s: T) -> Vec<u8> {
-        s.try_to_vec().unwrap()
-    }
-}
-
-pub trait Deserializable<T: BorshDeserialize> {
-    fn borsh_deserialize(s: &[u8]) -> Result<T, ()> {
-        let deserialized_val = match T::try_from_slice(&s) {
-            Ok(val) => {val},
-            Err(_) => {return Err(());},
-        };
-        Ok(deserialized_val)
-    }
-}*/
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use crate::backend::num_bigint::{BigUintE, BigUintX, BigintCtx, P2048};
-    use crate::context::Ctx;
-    use borsh::{BorshDeserialize, BorshSerialize};
+    use crate::context::{Ctx, Element};
+    use crate::elgamal::{PrivateKey, Ciphertext, PublicKey};
+    use crate::util;
+    use crate::zkp::{Zkp, Schnorr, ChaumPedersen};
+    use super::StrandSerialize;
+    use super::StrandDeserialize;
 
-    #[test]
-    pub(crate) fn test_borsh_biguinte() {
-        let ctx = BigintCtx::<P2048>::new();
+    pub(crate) fn test_borsh_element<C: Ctx>(ctx: &C) {
         let e = ctx.rnd();
 
-        let encoded_e = e.try_to_vec().unwrap();
-        let decoded_e = BigUintE::<P2048>::try_from_slice(&encoded_e).unwrap();
-        assert_eq!(e, decoded_e);
+        let encoded_e = e.strand_serialize();
+        let decoded_e = C::E::strand_deserialize(&encoded_e).unwrap();
+        assert!(e == decoded_e);
     }
 
-    #[test]
-    pub(crate) fn test_borsh_biguintx() {
-        let ctx = BigintCtx::<P2048>::new();
+    pub(crate) fn test_borsh_exponent<C: Ctx>(ctx: &C) {
         let x = ctx.rnd_exp();
 
-        let encoded_x = x.try_to_vec().unwrap();
-        let decoded_x = BigUintX::<P2048>::try_from_slice(&encoded_x).unwrap();
-        assert_eq!(x, decoded_x);
+        let encoded_x = x.strand_serialize();
+        let decoded_x = C::X::strand_deserialize(&encoded_x).unwrap();
+        assert!(x == decoded_x);
+    }
+
+    pub(crate) fn test_ciphertext_borsh_generic<C: Ctx>(ctx: &C) {
+        let c = util::random_ballots(1, ctx).remove(0);
+        let bytes = c.strand_serialize();
+        let back = Ciphertext::<C>::strand_deserialize(&bytes).unwrap();
+
+        assert!(c.mhr == back.mhr && c.gr == back.gr);
+    }
+
+    pub(crate) fn test_key_borsh_generic<C: Ctx + Eq>(ctx: &C) {
+        let sk = PrivateKey::gen(ctx);
+        let pk = PublicKey::from_element(&sk.pk_element, ctx);
+
+        let bytes = sk.strand_serialize();
+        let back = PrivateKey::<C>::strand_deserialize(&bytes).unwrap();
+
+        assert!(sk == back);
+
+        let bytes = pk.strand_serialize();
+        let back = PublicKey::<C>::strand_deserialize(&bytes).unwrap();
+
+        assert!(pk == back);
+    }
+
+    pub(crate) fn test_schnorr_borsh_generic<C: Ctx + Eq>(ctx: &C) {
+        let zkp = Zkp::new(ctx);
+        let g = ctx.generator();
+        let secret = ctx.rnd_exp();
+        let public = g.mod_pow(&secret, &ctx.modulus());
+        let schnorr = zkp.schnorr_prove(&secret, &public, Some(&g), &vec![]);
+        let verified = zkp.schnorr_verify(&public, Some(&g), &schnorr, &vec![]);
+        assert!(verified);
+
+        let bytes = schnorr.strand_serialize();
+        let back = Schnorr::<C>::strand_deserialize(&bytes).unwrap();
+        assert!(schnorr == back);
+
+        let verified = zkp.schnorr_verify(&public, Some(&g), &back, &vec![]);
+        assert!(verified);
+    }
+
+    pub(crate) fn test_cp_borsh_generic<C: Ctx + Eq>(ctx: &C) {
+        let zkp = Zkp::new(ctx);
+        let g1 = ctx.generator();
+        let g2 = ctx.rnd();
+        let secret = ctx.rnd_exp();
+        let public1 = g1.mod_pow(&secret, &ctx.modulus());
+        let public2 = g2.mod_pow(&secret, &ctx.modulus());
+        let proof = zkp.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
+        let verified = zkp.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
+        assert!(verified);
+
+        let bytes = proof.strand_serialize();
+        let back = ChaumPedersen::<C>::strand_deserialize(&bytes).unwrap();
+        assert!(proof == back);
+
+        let verified = zkp.cp_verify(&public1, &public2, None, &g2, &back, &vec![]);
+        assert!(verified);
     }
 }

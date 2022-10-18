@@ -10,7 +10,7 @@
 //! use strand::elgamal::{PrivateKey, PublicKey};
 //! use strand::zkp::Zkp;
 //!
-//! let ctx = BigintCtx::<P2048>::new();
+//! let ctx = BigintCtx::<P2048>::default();
 //! // generate an ElGamal keypair
 //! let sk1 = PrivateKey::gen(&ctx);
 //! let pk1 = sk1.get_pk();
@@ -54,7 +54,7 @@ use crate::zkp::{ChaumPedersen, Schnorr, Zkp};
 /// (m * h^r, g^r)
 ///
 /// where m = message, h = public key, g = generator, r = randomness.
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, BorshSerialize, BorshDeserialize)]
 pub struct Ciphertext<C: Ctx> {
     pub(crate) mhr: C::E,
     pub(crate) gr: C::E,
@@ -74,14 +74,16 @@ impl<C: Ctx> Ciphertext<C> {
 #[derive(Eq, PartialEq, Debug, BorshSerialize, BorshDeserialize)]
 pub struct PublicKey<C: Ctx> {
     pub(crate) element: C::E,
+    #[borsh_skip]
     pub(crate) ctx: C,
 }
 
 /// An ElGamal private key.
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, BorshSerialize, BorshDeserialize)]
 pub struct PrivateKey<C: Ctx> {
     pub(crate) value: C::X,
     pub(crate) pk_element: C::E,
+    #[borsh_skip]
     pub(crate) ctx: C,
 }
 

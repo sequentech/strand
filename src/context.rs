@@ -20,7 +20,7 @@
 //! use strand::elgamal::{PrivateKey, PublicKey};
 //!
 //! // obtain a context for a 2048-bit prime, with num_bigint backend
-//! let ctx = BigintCtx::<P2048>::new();
+//! let ctx = BigintCtx::<P2048>::default();
 //! // generate an ElGamal keypair
 //! let sk = PrivateKey::gen(&ctx);
 //! let pk = sk.get_pk();
@@ -33,12 +33,14 @@
 //! assert_eq!(plaintext, plaintext_);
 //! ```
 
-use crate::byte_tree::{ToFromBTree, BTreeSer, BTreeDeser};
+use borsh::{BorshSerialize, BorshDeserialize};
+use std::fmt::Debug;
+use crate::byte_tree::ToFromBTree;
 // use crate::zkp::Zkp;
 use std::marker::{Send, Sync};
 
 /// A cryptographic context loosely corresponds to the underlying modular arithmetic group.
-pub trait Ctx: Sync + Sized + Clone {
+pub trait Ctx: Sync + Sized + Clone + Default {
     type E: Element<Self>;
     type X: Exponent<Self>;
     type P: Send + Sync + Eq + std::fmt::Debug;
@@ -46,7 +48,10 @@ pub trait Ctx: Sync + Sized + Clone {
     fn generator(&self) -> &Self::E;
     fn gmod_pow(&self, other: &Self::X) -> Self::E;
     fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E;
+    // We reuse the E and X types to prevent mixing moduli
+    // Although the modulus is not an element of the group, we reuse the type here
     fn modulus(&self) -> &Self::E;
+    // Although the modulus is not an element of the ring, we reuse the type here
     fn exp_modulus(&self) -> &Self::X;
 
     fn rnd(&self) -> Self::E;
@@ -61,14 +66,12 @@ pub trait Ctx: Sync + Sized + Clone {
 
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str>;
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str>;
-
-    fn new() -> Self;
 }
 
 /// An element of the underlying group.
 ///
 /// Operations depend on the backend and are given below for multiplicative groups / elliptic curves.
-pub trait Element<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree<C> {
+pub trait Element<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree<C> + BorshSerialize + BorshDeserialize {
     /// Modular multiplication / point addition.
     fn mul(&self, other: &C::E) -> C::E;
     /// Modular division (a div b = a * b^1) / point subtraction.
@@ -86,7 +89,7 @@ pub trait Element<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree<C> {
 }
 
 /// A member of the "exponent ring" associated to the element group, or scalar ring for elliptic curves.
-pub trait Exponent<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree<C> {
+pub trait Exponent<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree<C> + BorshSerialize + BorshDeserialize {
     // Modular addition.
     fn add(&self, other: &C::X) -> C::X;
     // Modular subtraction.
@@ -104,32 +107,4 @@ pub trait Exponent<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree<C> {
     fn add_identity() -> C::X;
     /// Multiplicative identity.
     fn mul_identity() -> C::X;
-}
-
-
-pub trait StrandSerialize {
-    fn strand_serialize(&self) -> Vec<u8>;
-}
-
-pub trait StrandDeserialize<C: Ctx> {
-    fn strand_deserialize(bytes: &[u8], ctx: &C) -> Result<Self, &'static str>
-    where
-        Self: Sized;
-}
-pub trait StrandSerialization<C: Ctx>: StrandSerialize + StrandDeserialize<C> {}
-impl<C: Ctx, T: StrandSerialize + StrandDeserialize<C>> StrandSerialization<C> for T {}
-
-
-impl<T: BTreeSer> StrandSerialize for T {
-    fn strand_serialize(&self) -> Vec<u8> {
-        self.ser()
-    }
-}
-
-impl<C: Ctx, T: BTreeDeser<C>> StrandDeserialize<C> for T {
-    fn strand_deserialize(bytes: &[u8], ctx: &C) -> Result<Self, &'static str>
-    where
-        Self: Sized {
-        T::deser(bytes, ctx).map_err(|_| "byte error")
-    }
 }

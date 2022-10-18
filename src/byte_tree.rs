@@ -192,7 +192,7 @@ impl<C: Ctx> FromByteTree<C> for PrivateKey<C> {
         let trees = tree.tree(2)?;
         let value = C::X::from_byte_tree(&trees[0], ctx)?;
         let pk_element = C::E::from_byte_tree(&trees[1], ctx)?;
-        let ctx = C::new();
+        let ctx = C::default();
         let ret = PrivateKey {
             value,
             pk_element,
@@ -236,7 +236,7 @@ impl<C: Ctx> FromByteTree<C> for PublicKey<C> {
     fn from_byte_tree(tree: &ByteTree, ctx: &C) -> Result<PublicKey<C>, ByteError> {
         let trees = tree.tree(1)?;
         let element = C::E::from_byte_tree(&trees[0], ctx)?;
-        let ctx = C::new();
+        let ctx = C::default();
         let ret = PublicKey { element, ctx };
 
         Ok(ret)
@@ -469,23 +469,5 @@ pub(crate) mod tests {
 
         let verified = zkp.cp_verify(&public1, &public2, None, &g2, &back, &vec![]);
         assert!(verified);
-    }
-
-    pub(crate) fn test_epk_bytes_generic<C: Ctx + Eq>(ctx: &C, plaintext: C::P) {
-        let sk = PrivateKey::gen(ctx);
-        let pk: PublicKey<C> = PublicKey::from_element(&sk.pk_element, ctx);
-
-        let encoded = ctx.encode(&plaintext).unwrap();
-        let c = pk.encrypt(&encoded);
-
-        let sym_key = symmetric::gen_key();
-        let enc_sk = sk.to_encrypted(sym_key);
-        let enc_sk_b = enc_sk.ser();
-        let back = EncryptedPrivateKey::deser(&enc_sk_b, ctx).unwrap();
-        assert!(enc_sk == back);
-
-        let sk_d = PrivateKey::from_encrypted(sym_key, back, ctx);
-        let d = ctx.decode(&sk_d.decrypt(&c));
-        assert_eq!(d, plaintext);
     }
 }

@@ -4,7 +4,7 @@
 /// Multiplicative group backend implemented through [num_bigint](https://docs.rs/num-bigint/latest/num_bigint/).
 pub mod num_bigint;
 /// Elliptic curve backend on top of [ristretto](https://ristretto.group/ristretto.html) implemented through [curve25519_dalek](https://doc.dalek.rs/curve25519_dalek/ristretto/index.html).
-pub mod ristretto;
+// pub mod ristretto;
 #[cfg(feature = "rug")]
 /// Multiplicative group backend implemented through [rug](https://docs.rs/rug/1.16.0/rug/).
 pub mod rug;

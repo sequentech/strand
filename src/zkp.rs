@@ -10,7 +10,7 @@
 //! use strand::elgamal::{PrivateKey, PublicKey};
 //! use strand::zkp::Zkp;
 //!
-//! let ctx = BigintCtx::<P2048>::new();
+//! let ctx = BigintCtx::<P2048>::default();
 //! let zkp = Zkp::new(&ctx);
 //! let exponent = ctx.rnd_exp();
 //! let g = ctx.generator();
@@ -28,6 +28,8 @@
 //! ```
 #![allow(clippy::too_many_arguments)]
 
+use borsh::BorshDeserialize;
+use borsh::BorshSerialize;
 use serde_bytes::ByteBuf;
 
 use crate::byte_tree::ByteTree;
@@ -325,7 +327,7 @@ impl<C: Ctx> Zkp<C> {
 }
 
 /// A proof of knowledge of discrete logarithm.
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, BorshSerialize, BorshDeserialize)]
 pub struct Schnorr<C: Ctx> {
     pub commitment: C::E,
     pub challenge: C::X,
@@ -333,7 +335,7 @@ pub struct Schnorr<C: Ctx> {
 }
 
 /// A proof of equality of discrete logarithms.
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, BorshSerialize, BorshDeserialize)]
 pub struct ChaumPedersen<C: Ctx> {
     pub commitment1: C::E,
     pub commitment2: C::E,
