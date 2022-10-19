@@ -9,7 +9,6 @@
 // #![warn(missing_docs)]
 
 extern crate cfg_if;
-extern crate quick_error;
 
 /// Provides cryptographic backends, currently multiplicative groups and ristretto elliptic curve.
 pub mod backend;
