@@ -42,10 +42,12 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use std::marker::PhantomData;
 
+use crate::borsh::StrandSerialize;
 use crate::byte_tree::{BTreeDeser, BTreeSer};
 use crate::context::{Ctx, Element};
 use crate::symmetric;
 use crate::zkp::{ChaumPedersen, Schnorr, Zkp};
+use crate::borsh::StrandDeserialize;
 
 /// An ElGamal ciphertext.
 ///
@@ -88,7 +90,7 @@ pub struct PrivateKey<C: Ctx> {
 }
 
 #[doc(hidden)]
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, BorshSerialize, BorshDeserialize)]
 pub struct EncryptedPrivateKey<C: Ctx> {
     pub(crate) bytes: Vec<u8>,
     pub(crate) iv: [u8; 16],
@@ -174,7 +176,7 @@ impl<C: Ctx> PrivateKey<C> {
         }
     }
     pub fn to_encrypted(&self, key: [u8; 32]) -> EncryptedPrivateKey<C> {
-        let key_bytes = self.value.ser();
+        let key_bytes = self.value.strand_serialize();
         let (b, iv) = symmetric::encrypt(key, &key_bytes);
         let phantom = PhantomData;
         EncryptedPrivateKey {
@@ -190,7 +192,7 @@ impl<C: Ctx> PrivateKey<C> {
     ) -> PrivateKey<C> {
         let key_bytes = symmetric::decrypt(key, encrypted.iv, &encrypted.bytes);
         // FIXME handle this error
-        let value = C::X::deser(&key_bytes, ctx).unwrap();
+        let value = C::X::strand_deserialize(&key_bytes).unwrap();
         let pk_element = ctx.gmod_pow(&value);
 
         PrivateKey {

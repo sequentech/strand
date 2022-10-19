@@ -1,4 +1,5 @@
 #![allow(clippy::type_complexity)]
+use borsh::{BorshSerialize, BorshDeserialize};
 // SPDX-FileCopyrightText: 2021 David Ruescas <david@sequentech.io>
 //
 // SPDX-License-Identifier: AGPL-3.0-only
@@ -14,6 +15,7 @@ use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::{Ciphertext, PublicKey};
 use crate::rnd::StrandRng;
 use crate::util::Par;
+use crate::zkp::ChallengeInput;
 
 pub(crate) struct YChallengeInput<'a, C: Ctx> {
     pub es: &'a [Ciphertext<C>],
@@ -23,7 +25,7 @@ pub(crate) struct YChallengeInput<'a, C: Ctx> {
     pub pk: &'a PublicKey<C>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, BorshSerialize, BorshDeserialize)]
 pub struct Commitments<C: Ctx> {
     pub t1: C::E,
     pub t2: C::E,
@@ -33,7 +35,7 @@ pub struct Commitments<C: Ctx> {
     pub t_hats: Vec<C::E>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, BorshSerialize, BorshDeserialize)]
 pub struct Responses<C: Ctx> {
     pub(crate) s1: C::X,
     pub(crate) s2: C::X,
@@ -43,6 +45,7 @@ pub struct Responses<C: Ctx> {
     pub(crate) s_primes: Vec<C::X>,
 }
 
+#[derive(BorshSerialize, BorshDeserialize)]
 pub struct ShuffleProof<C: Ctx> {
     // proof commitment
     pub(crate) t: Commitments<C>,
@@ -541,14 +544,21 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         n: usize,
         label: &[u8],
     ) -> Vec<C::X> {
-        let trees: Vec<ByteTree> = vec![
+        /*let trees: Vec<ByteTree> = vec![
             ByteTree::Leaf(ByteBuf::from(label.to_vec())),
             es.to_byte_tree(),
             e_primes.to_byte_tree(),
             cs.to_byte_tree(),
-        ];
+        ];*/
+        let mut prefix_challenge_input =  ChallengeInput::from(&[
+            ("es", &es),
+            ("e_primes", &e_primes),
+        ]);
+        prefix_challenge_input.add("cs", &cs);
+        prefix_challenge_input.add("label", &label.to_vec());
 
-        let prefix_bytes = ByteTree::Tree(trees).to_hashable_bytes();
+        // let prefix_bytes = ByteTree::Tree(trees).to_hashable_bytes();
+        let prefix_bytes = prefix_challenge_input.try_to_vec().unwrap();
 
         // optimization: instead of calculating u = H(prefix || i),
         // we do u = H(H(prefix) || i)
@@ -587,7 +597,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         t: &Commitments<C>,
         label: &[u8],
     ) -> C::X {
-        let trees: Vec<ByteTree> = vec![
+        
+        /* let trees: Vec<ByteTree> = vec![
             ByteTree::Leaf(ByteBuf::from(label.to_vec())),
             y.es.to_byte_tree(),
             y.e_primes.to_byte_tree(),
@@ -601,7 +612,24 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             t.t4_2.to_byte_tree(),
             t.t_hats.to_byte_tree(),
         ];
-        let bytes = ByteTree::Tree(trees).to_hashable_bytes();
+        let bytes = ByteTree::Tree(trees).to_hashable_bytes();*/
+
+        let mut challenge_input =  ChallengeInput::from(&[
+            ("t1", &t.t1),
+            ("t2", &t.t2),
+            ("t3", &t.t3),
+            ("t4_1", &t.t4_1),
+            ("t4_2", &t.t4_2),
+        ]);
+        challenge_input.add("es", &y.es);
+        challenge_input.add("e_primes", &y.e_primes);
+        challenge_input.add("cs", &y.cs);
+        challenge_input.add("c_hats", &y.c_hats);
+        challenge_input.add("pk.element", &y.pk.element);
+        challenge_input.add("t_hats", &t.t_hats);
+        challenge_input.add("label", &label.to_vec());
+
+        let bytes = challenge_input.try_to_vec().unwrap();
 
         self.ctx.hash_to_exp(&bytes)
     }

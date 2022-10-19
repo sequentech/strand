@@ -493,7 +493,7 @@ mod tests {
         let ctx = BigintCtx::<P2048>::default();
         test_shuffle_btserde_generic(&ctx);
     }
-
+    
     #[test]
     fn test_encrypted_sk() {
         let ctx = BigintCtx::<P2048>::default();
@@ -522,48 +522,48 @@ mod tests {
         let ctx = BigintCtx::<P2048>::default();
         test_borsh_exponent(&ctx);
     }
-
+    /*
     #[test]
     fn test_ciphertext_bytes() {
         let ctx = BigintCtx::<P2048>::default();
         test_ciphertext_bytes_generic(&ctx);
-    }
+    }*/
 
     #[test]
     fn test_ciphertext_borsh() {
         let ctx = BigintCtx::<P2048>::default();
         test_ciphertext_borsh_generic(&ctx);
     }
-
+    /*
     #[test]
     fn test_key_bytes() {
         let ctx = BigintCtx::<P2048>::default();
         test_key_bytes_generic(&ctx);
-    }
+    }*/
 
     #[test]
     fn test_key_borsh() {
         let ctx = BigintCtx::<P2048>::default();
         test_key_borsh_generic(&ctx);
     }
-
+    /*
     #[test]
     fn test_schnorr_bytes() {
         let ctx = BigintCtx::<P2048>::default();
         test_schnorr_bytes_generic(&ctx);
-    }
+    }*/
 
     #[test]
     fn test_schnorr_borsh() {
         let ctx = BigintCtx::<P2048>::default();
         test_schnorr_borsh_generic(&ctx);
     }
-
+    /*
     #[test]
     fn test_cp_bytes() {
         let ctx = BigintCtx::<P2048>::default();
         test_cp_bytes_generic(&ctx);
-    }
+    }*/
 
     #[test]
     fn test_cp_borsh() {

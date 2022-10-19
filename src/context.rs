@@ -71,7 +71,7 @@ pub trait Ctx: Sync + Sized + Clone + Default {
 /// An element of the underlying group.
 ///
 /// Operations depend on the backend and are given below for multiplicative groups / elliptic curves.
-pub trait Element<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree<C> + BorshSerialize + BorshDeserialize {
+pub trait Element<C: Ctx>: Clone + Eq + Send + Sync + BorshSerialize + BorshDeserialize {
     /// Modular multiplication / point addition.
     fn mul(&self, other: &C::E) -> C::E;
     /// Modular division (a div b = a * b^1) / point subtraction.
@@ -89,7 +89,7 @@ pub trait Element<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree<C> + BorshSeri
 }
 
 /// A member of the "exponent ring" associated to the element group, or scalar ring for elliptic curves.
-pub trait Exponent<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree<C> + BorshSerialize + BorshDeserialize {
+pub trait Exponent<C: Ctx>: Clone + Eq + Send + Sync + BorshSerialize + BorshDeserialize {
     // Modular addition.
     fn add(&self, other: &C::X) -> C::X;
     // Modular subtraction.

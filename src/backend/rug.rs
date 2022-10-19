@@ -495,7 +495,7 @@ mod tests {
         }
         test_distributed_btserde_generic(&ctx, ps);
     }
-
+    
     #[test]
     fn test_shuffle() {
         let ctx = RugCtx::<P2048>::default();
@@ -532,21 +532,9 @@ mod tests {
     }
 
     #[test]
-    fn test_ciphertext_bytes() {
-        let ctx = RugCtx::<P2048>::default();
-        test_ciphertext_bytes_generic(&ctx);
-    }
-
-    #[test]
     fn test_ciphertext_borsh() {
         let ctx = RugCtx::<P2048>::default();
         test_ciphertext_borsh_generic(&ctx);
-    }
-
-    #[test]
-    fn test_key_bytes() {
-        let ctx = RugCtx::<P2048>::default();
-        test_key_bytes_generic(&ctx);
     }
 
     #[test]
@@ -556,21 +544,9 @@ mod tests {
     }
 
     #[test]
-    fn test_schnorr_bytes() {
-        let ctx = RugCtx::<P2048>::default();
-        test_schnorr_bytes_generic(&ctx);
-    }
-
-    #[test]
     fn test_schnorr_borsh() {
         let ctx = RugCtx::<P2048>::default();
         test_schnorr_borsh_generic(&ctx);
-    }
-
-    #[test]
-    fn test_cp_bytes() {
-        let ctx = RugCtx::<P2048>::default();
-        test_cp_bytes_generic(&ctx);
     }
 
     #[test]

@@ -1,8 +1,13 @@
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
+use borsh::{BorshSerialize, BorshDeserialize};
+
 use crate::{
     backend::num_bigint::{BigUintE, BigUintX, BigintCtx, BigintCtxParams},
-    context::Ctx,
+    context::Ctx, elgamal::Ciphertext,
 };
-use borsh::{BorshSerialize, BorshDeserialize};
+use crate::util::Par;
+
 
 pub trait StrandSerialize {
     fn strand_serialize(&self) -> Vec<u8>;
@@ -34,6 +39,33 @@ impl<T: BorshDeserialize> StrandDeserialize for T {
         value.map_err(|_| "borsh deserialize failed")
     }
 }
+
+/*
+impl<C: Ctx> StrandSerialize for Vec<Ciphertext<C>> {
+    fn strand_serialize(&self) -> Vec<u8> {
+        let vectors: Vec<Vec<u8>> = self.par()
+            .map(|c| c.try_to_vec().unwrap())
+            .collect();
+        
+        vectors.try_to_vec().unwrap()
+    }
+}*/
+/*
+impl<C: Ctx> StrandDeserialize for Vec<Ciphertext<C>> {
+    fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
+    where Self: Sized {
+        let vectors = <Vec<u8>>::try_from_slice(bytes);
+        
+        let results: Vec<Ciphertext<C>> = vectors.par()
+        .map(|v| {
+            Ciphertext::<C>::try_from_slice(&v).unwrap()
+        })
+        .collect();
+
+        Ok(results)
+    }
+}*/
+
 
 #[cfg(test)]
 pub(crate) mod tests {

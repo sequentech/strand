@@ -56,11 +56,11 @@ pub struct ScalarS(pub Scalar);
 
 impl RistrettoCtx {
     // https://docs.rs/bulletproofs/4.0.0/src/bulletproofs/generators.rs.html
-    fn generators_shake(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<RistrettoPoint> {
+    fn generators_shake(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<RistrettoPointS> {
         let mut seed_ = seed.to_vec();
         seed_.extend(&contest.to_le_bytes());
 
-        let mut ret: Vec<RistrettoPoint> = Vec::with_capacity(size);
+        let mut ret: Vec<RistrettoPointS> = Vec::with_capacity(size);
         let mut shake = Shake256::default();
         shake.update(&seed_);
 
@@ -69,7 +69,7 @@ impl RistrettoCtx {
             let mut uniform_bytes = [0u8; 64];
             reader.read(&mut uniform_bytes);
             let g = RistrettoPoint::from_uniform_bytes(&uniform_bytes);
-            ret.push(g);
+            ret.push(RistrettoPointS(g));
         }
 
         ret
@@ -77,31 +77,31 @@ impl RistrettoCtx {
 }
 
 impl Ctx for RistrettoCtx {
-    type E = RistrettoPoint;
-    type X = Scalar;
+    type E = RistrettoPointS;
+    type X = ScalarS;
     type P = [u8; 30];
 
     #[inline(always)]
     fn generator(&self) -> &Self::E {
-        &RISTRETTO_BASEPOINT_POINT
+        &RistrettoPointS(RISTRETTO_BASEPOINT_POINT)
     }
     #[inline(always)]
-    fn gmod_pow(&self, other: &Scalar) -> Self::E {
-        other * &RISTRETTO_BASEPOINT_TABLE
+    fn gmod_pow(&self, other: &ScalarS) -> Self::E {
+        RistrettoPointS(&other.0 * &RISTRETTO_BASEPOINT_TABLE)
     }
     #[inline(always)]
     fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
-        base * exponent
+        RistrettoPointS(base.0 * exponent.0)
     }
     #[inline(always)]
     fn modulus(&self) -> &Self::E {
         // returning a dummy value as modulus does not apply to this backend
-        &DUMMY_POINT
+        &RistrettoPointS(DUMMY_POINT)
     }
     #[inline(always)]
     fn exp_modulus(&self) -> &Self::X {
         // returning a dummy value as modulus does not apply to this backend
-        &DUMMY_SCALAR
+        &ScalarS(DUMMY_SCALAR)
     }
     #[inline(always)]
     fn rnd(&self) -> Self::E {
@@ -109,7 +109,7 @@ impl Ctx for RistrettoCtx {
         let mut uniform_bytes = [0u8; 64];
         rng.fill_bytes(&mut uniform_bytes);
 
-        RistrettoPoint::from_uniform_bytes(&uniform_bytes)
+        RistrettoPointS(RistrettoPoint::from_uniform_bytes(&uniform_bytes))
     }
     #[inline(always)]
     fn rnd_exp(&self) -> Self::X {
@@ -117,7 +117,7 @@ impl Ctx for RistrettoCtx {
         let mut uniform_bytes = [0u8; 64];
         rng.fill_bytes(&mut uniform_bytes);
 
-        Scalar::from_bytes_mod_order_wide(&uniform_bytes)
+        ScalarS(Scalar::from_bytes_mod_order_wide(&uniform_bytes))
     }
     fn rnd_plaintext(&self) -> Self::P {
         let mut csprng = StrandRng;
@@ -130,7 +130,7 @@ impl Ctx for RistrettoCtx {
         let mut hasher = Sha512::new();
         Digest::update(&mut hasher, bytes);
 
-        Scalar::from_hash(hasher)
+        ScalarS(Scalar::from_hash(hasher))
     }
 
     // see https://github.com/dalek-cryptography/curve25519-dalek/issues/322
@@ -143,14 +143,14 @@ impl Ctx for RistrettoCtx {
             for i in 0..128 {
                 bytes[0] = 2 * i as u8;
                 if let Some(point) = CompressedRistretto(bytes).decompress() {
-                    return Ok(point);
+                    return Ok(RistrettoPointS(point));
                 }
             }
         }
         Err("Failed to encode into ristretto point")
     }
     fn decode(&self, element: &Self::E) -> Self::P {
-        let compressed = element.compress();
+        let compressed = element.0.compress();
         // the 30 bytes of data are placed in the range 1-30
         let slice = &compressed.as_bytes()[1..31];
         util::to_u8_30(slice)
@@ -172,7 +172,7 @@ impl Ctx for RistrettoCtx {
         assert_eq!(value, check);
         /////
 
-        scalar
+        ScalarS(scalar)
     }
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E> {
         self.generators_shake(size, contest, seed)
@@ -181,11 +181,14 @@ impl Ctx for RistrettoCtx {
         let b32 = util::to_u8_32(bytes)?;
         CompressedRistretto(b32)
             .decompress()
+            .map(|p| RistrettoPointS(p))
             .ok_or("Failed constructing ristretto point")
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
         let b32 = util::to_u8_32(bytes)?;
-        Scalar::from_canonical_bytes(b32).ok_or("Failed constructing scalar")
+        Scalar::from_canonical_bytes(b32)
+        .map(|s| ScalarS(s))
+        .ok_or("Failed constructing scalar")
     }
 }
 
@@ -198,59 +201,59 @@ impl Default for RistrettoCtx {
 impl Element<RistrettoCtx> for RistrettoPointS {
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
-        self + other
+        RistrettoPointS(self.0 + other.0)
     }
     #[inline(always)]
     fn div(&self, other: &Self, _modulus: &Self) -> Self {
-        self + other.inv(_modulus)
+        RistrettoPointS(self.0 + other.inv(_modulus).0)
     }
     #[inline(always)]
     fn inv(&self, _modulus: &Self) -> Self {
-        -self
+        RistrettoPointS(-self.0)
     }
     #[inline(always)]
-    fn mod_pow(&self, other: &Scalar, _modulus: &Self) -> Self {
-        self * other
+    fn mod_pow(&self, other: &ScalarS, _modulus: &Self) -> Self {
+        RistrettoPointS(self.0 * other.0)
     }
     #[inline(always)]
     fn modulo(&self, _modulus: &Self) -> Self {
-        *self
+        self.clone()
     }
     fn mul_identity() -> Self {
-        RistrettoPoint::identity()
+        RistrettoPointS(RistrettoPoint::identity())
     }
 }
 
 impl Exponent<RistrettoCtx> for ScalarS {
     #[inline(always)]
     fn add(&self, other: &Self) -> Self {
-        self + other
+        ScalarS(self.0 + other.0)
     }
     #[inline(always)]
     fn sub(&self, other: &Self) -> Self {
-        self - other
+        ScalarS(self.0 - other.0)
     }
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
-        self * other
+        ScalarS(self.0 * other.0)
     }
     #[inline(always)]
-    fn div(&self, other: &Scalar, _modulus: &Scalar) -> Scalar {
-        self * other.inv(_modulus)
+    fn div(&self, other: &ScalarS, _modulus: &ScalarS) -> ScalarS {
+        ScalarS(self.0 * other.inv(_modulus).0)
     }
     #[inline(always)]
     fn inv(&self, _modulus: &Self) -> Self {
-        self.invert()
+        ScalarS(self.0.invert())
     }
     #[inline(always)]
     fn modulo(&self, _modulus: &Self) -> Self {
-        *self
+        self.clone()
     }
     fn add_identity() -> Self {
-        Scalar::zero()
+        ScalarS(Scalar::zero())
     }
     fn mul_identity() -> Self {
-        Scalar::one()
+        ScalarS(Scalar::one())
     }
 }
 
@@ -261,13 +264,6 @@ impl ToByteTree for Scalar {
     }
 }
 
-impl FromByteTree<RistrettoCtx> for Scalar {
-    fn from_byte_tree(tree: &ByteTree, ctx: &RistrettoCtx) -> Result<Scalar, ByteError> {
-        let bytes = tree.leaf()?;
-        ctx.exp_from_bytes(bytes).map_err(ByteError::Msg)
-    }
-}
-
 impl ToByteTree for RistrettoPoint {
     fn to_byte_tree(&self) -> ByteTree {
         // Leaf(DataType::Element, ByteBuf::from(self.compress().to_bytes()))
@@ -275,17 +271,10 @@ impl ToByteTree for RistrettoPoint {
     }
 }
 
-impl FromByteTree<RistrettoCtx> for RistrettoPoint {
-    fn from_byte_tree(tree: &ByteTree, ctx: &RistrettoCtx) -> Result<RistrettoPoint, ByteError> {
-        let bytes = tree.leaf()?;
-        ctx.element_from_bytes(bytes).map_err(ByteError::Msg)
-    }
-}
-
 impl BorshSerialize for RistrettoPointS {
     #[inline]
     fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
-        let bytes = self.compress().to_bytes();
+        let bytes = self.0.compress().to_bytes();
         bytes.serialize(writer)
     }
 }
@@ -293,7 +282,7 @@ impl BorshSerialize for RistrettoPointS {
 impl BorshDeserialize for RistrettoPointS {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+        let bytes = <[u8;32]>::deserialize(bytes).unwrap();
         let ctx = RistrettoCtx::default();
         
         let value = ctx
@@ -306,7 +295,7 @@ impl BorshDeserialize for RistrettoPointS {
 impl BorshSerialize for ScalarS {
     #[inline]
     fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
-        let bytes = self.to_bytes();
+        let bytes = self.0.to_bytes();
         bytes.serialize(writer)
     }
 }
@@ -314,7 +303,7 @@ impl BorshSerialize for ScalarS {
 impl BorshDeserialize for ScalarS {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+        let bytes = <[u8;32]>::deserialize(bytes).unwrap();
         let ctx = RistrettoCtx::default();
 
         let value = ctx
@@ -328,7 +317,7 @@ impl BorshDeserialize for ScalarS {
 mod tests {
     use crate::backend::ristretto::*;
     use crate::backend::tests::*;
-    use crate::byte_tree::tests::*;
+    use crate::borsh::tests::*;
     use crate::threshold::tests::test_threshold_generic;
 
     #[test]
@@ -440,6 +429,44 @@ mod tests {
     }
 
     #[test]
+    fn test_element_borsh() {
+        let ctx = RistrettoCtx;
+        test_borsh_element(&ctx);
+    }
+
+    #[test]
+    fn test_exponent_borsh() {
+        let ctx = RistrettoCtx;
+        test_borsh_exponent(&ctx);
+    }
+    
+
+    #[test]
+    fn test_ciphertext_borsh() {
+        let ctx = RistrettoCtx;
+        test_ciphertext_borsh_generic(&ctx);
+    }
+  
+    #[test]
+    fn test_key_borsh() {
+        let ctx = RistrettoCtx;
+        test_key_borsh_generic(&ctx);
+    }
+   
+
+    #[test]
+    fn test_schnorr_borsh() {
+        let ctx = RistrettoCtx;
+        test_schnorr_borsh_generic(&ctx);
+    }
+
+    #[test]
+    fn test_cp_borsh() {
+        let ctx = RistrettoCtx;
+        test_cp_borsh_generic(&ctx);
+    }
+    /*
+    #[test]
     fn test_ciphertext_bytes() {
         let ctx = RistrettoCtx::default();
         test_ciphertext_bytes_generic(&ctx);
@@ -461,5 +488,5 @@ mod tests {
     fn test_cp_bytes() {
         let ctx = RistrettoCtx::default();
         test_cp_bytes_generic(&ctx);
-    }
+    }*/
 }
