@@ -595,7 +595,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
                     ("prefix", prefix_hash.clone()),
                     ("counter", i.to_le_bytes().to_vec()),
                 ]);
-            let bytes = next.try_to_vec().unwrap();
+            let bytes = next.get_bytes();
             self.ctx.hash_to_exp(&bytes)
             })
             .collect()
@@ -630,13 +630,13 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             ("t4_1", &t.t4_1),
             ("t4_2", &t.t4_2),
         ]);
-        challenge_input.add("es", &y.es);
-        challenge_input.add("e_primes", &y.e_primes);
-        challenge_input.add("cs", &y.cs);
-        challenge_input.add("c_hats", &y.c_hats);
-        challenge_input.add("pk.element", &y.pk.element);
-        challenge_input.add("t_hats", &t.t_hats);
-        challenge_input.add("label", &label.to_vec());
+        challenge_input.add_bytes("es", y.es.try_to_vec().unwrap());
+        challenge_input.add_bytes("e_primes", y.e_primes.try_to_vec().unwrap());
+        challenge_input.add_bytes("cs", y.cs.try_to_vec().unwrap());
+        challenge_input.add_bytes("c_hats", y.c_hats.try_to_vec().unwrap());
+        challenge_input.add_bytes("pk.element", y.pk.element.try_to_vec().unwrap());
+        challenge_input.add_bytes("t_hats", t.t_hats.try_to_vec().unwrap());
+        challenge_input.add_bytes("label", label.to_vec());
 
         /*println!("y.es <");
         y.es.strand_serialize();
@@ -654,7 +654,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         &t.t_hats.strand_serialize();
         println!(">");*/
 
-        let bytes = challenge_input.try_to_vec().unwrap();
+        let bytes = challenge_input.get_bytes();
 
         self.ctx.hash_to_exp(&bytes)
     }

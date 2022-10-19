@@ -295,7 +295,7 @@ impl<C: Ctx> Zkp<C> {
             ChallengeInput::from(&[("g", g), ("public", public), ("commitment", commitment)]);
         values.add("context", &context);
 
-        let bytes = values.try_to_vec().unwrap();
+        let bytes = values.get_bytes();
         self.ctx.hash_to_exp(&bytes)
     }
 
@@ -319,7 +319,7 @@ impl<C: Ctx> Zkp<C> {
         ]);
         values.add("context", &context);
 
-        let bytes = values.try_to_vec().unwrap();
+        let bytes = values.get_bytes();
         self.ctx.hash_to_exp(&bytes)
     }
 }
@@ -366,6 +366,10 @@ impl ChallengeInput {
 
     pub(crate) fn add<T: BorshSerialize>(&mut self, name: &'static str, value: &T) {
         let bytes = value.try_to_vec().unwrap();
+        self.0.insert(name.to_string(), bytes);
+    }
+
+    pub(crate) fn add_bytes(&mut self, name: &'static str, bytes: Vec<u8>) {
         self.0.insert(name.to_string(), bytes);
     }
 

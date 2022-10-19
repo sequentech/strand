@@ -438,7 +438,7 @@ cfg_if::cfg_if! {
                 println!("Specialization: N V<E> >>>");
                 let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
 
-                vectors.try_to_vec().unwrap()
+                vectors.try_to_vec().unwrap()   
             }
         }
 
