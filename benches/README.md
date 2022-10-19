@@ -6,6 +6,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 ## Benchmarks
 
+First make sure to enable the benchmark in Cargo.toml as follows:
+
+`bench = true`
+
+in the corresponding `[[bench]]` section.
+
 ### Encryption
 
 * `cargo bench encrypt`

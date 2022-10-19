@@ -4,7 +4,7 @@
 
 #![doc = include_str!("../README.md")]
 
-// #![feature(specialization)]
+#![feature(specialization)]
 
 // #![warn(missing_docs)]
 #[macro_use]

@@ -545,19 +545,14 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         n: usize,
         label: &[u8],
     ) -> Vec<C::X> {
-        /*let trees: Vec<ByteTree> = vec![
-            ByteTree::Leaf(ByteBuf::from(label.to_vec())),
-            es.to_byte_tree(),
-            e_primes.to_byte_tree(),
-            cs.to_byte_tree(),
-        ];*/
+
         let mut prefix_challenge_input =
             ChallengeInput::from(&[("es", &es), ("e_primes", &e_primes)]);
         prefix_challenge_input.add("cs", &cs);
         prefix_challenge_input.add("label", &label.to_vec());
 
         // let prefix_bytes = ByteTree::Tree(trees).to_hashable_bytes();
-        let prefix_bytes = prefix_challenge_input.try_to_vec().unwrap();
+        let prefix_bytes = prefix_challenge_input.strand_serialize();
 
         // optimization: instead of calculating u = H(prefix || i),
         // we do u = H(H(prefix) || i)
@@ -565,29 +560,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         let mut hasher = Sha512::new();
         hasher.update(prefix_bytes);
         let prefix_hash = hasher.finalize().to_vec();
-        /* let mut ret = Vec::with_capacity(n);
-        for i in 0..n {
-            let next: Vec<ByteTree> = vec![
-                Leaf(ByteBuf::from(prefix_hash.clone())),
-                Leaf(ByteBuf::from(i.to_le_bytes())),
-            ];
-            let bytes = ByteTree::Tree(next).to_hashable_bytes();
-
-            let u: C::X = self.hash_to(&bytes);
-            ret.push(u);
-        }*/
-        /*(0..n)
-            .par()
-            .map(|i| {
-                let next: Vec<ByteTree> = vec![
-                    ByteTree::Leaf(ByteBuf::from(prefix_hash.clone())),
-                    ByteTree::Leaf(ByteBuf::from(i.to_le_bytes())),
-                ];
-                let bytes = ByteTree::Tree(next).to_hashable_bytes();
-
-                self.ctx.hash_to_exp(&bytes)
-            })
-            .collect()*/
+        
         (0..n)
             .par()
             .map(|i| {
@@ -607,22 +580,6 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         t: &Commitments<C>,
         label: &[u8],
     ) -> C::X {
-        /* let trees: Vec<ByteTree> = vec![
-            ByteTree::Leaf(ByteBuf::from(label.to_vec())),
-            y.es.to_byte_tree(),
-            y.e_primes.to_byte_tree(),
-            y.cs.to_byte_tree(),
-            y.c_hats.to_byte_tree(),
-            y.pk.element.to_byte_tree(),
-            t.t1.to_byte_tree(),
-            t.t2.to_byte_tree(),
-            t.t3.to_byte_tree(),
-            t.t4_1.to_byte_tree(),
-            t.t4_2.to_byte_tree(),
-            t.t_hats.to_byte_tree(),
-        ];
-        let bytes = ByteTree::Tree(trees).to_hashable_bytes();*/
-
         let mut challenge_input = ChallengeInput::from(&[
             ("t1", &t.t1),
             ("t2", &t.t2),
@@ -630,29 +587,13 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             ("t4_1", &t.t4_1),
             ("t4_2", &t.t4_2),
         ]);
-        challenge_input.add_bytes("es", y.es.try_to_vec().unwrap());
-        challenge_input.add_bytes("e_primes", y.e_primes.try_to_vec().unwrap());
-        challenge_input.add_bytes("cs", y.cs.try_to_vec().unwrap());
-        challenge_input.add_bytes("c_hats", y.c_hats.try_to_vec().unwrap());
-        challenge_input.add_bytes("pk.element", y.pk.element.try_to_vec().unwrap());
-        challenge_input.add_bytes("t_hats", t.t_hats.try_to_vec().unwrap());
+        challenge_input.add_bytes("es", y.es.strand_serialize());
+        challenge_input.add_bytes("e_primes", y.e_primes.strand_serialize());
+        challenge_input.add_bytes("cs", y.cs.strand_serialize());
+        challenge_input.add_bytes("c_hats", y.c_hats.strand_serialize());
+        challenge_input.add_bytes("pk.element", y.pk.element.strand_serialize());
+        challenge_input.add_bytes("t_hats", t.t_hats.strand_serialize());
         challenge_input.add_bytes("label", label.to_vec());
-
-        /*println!("y.es <");
-        y.es.strand_serialize();
-        println!(">");
-        println!("y.e_primes <");
-        y.es.strand_serialize();
-        println!(">");
-        println!("y.cs <");
-        y.cs.strand_serialize();
-        println!(">");
-        println!("y.c_hats <");
-        y.c_hats.strand_serialize();
-        println!(">");
-        println!("t.t_hats <");
-        &t.t_hats.strand_serialize();
-        println!(">");*/
 
         let bytes = challenge_input.get_bytes();
 

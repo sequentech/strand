@@ -52,13 +52,13 @@ fn bench_shuffle(c: &mut Criterion) {
     group.sampling_mode(SamplingMode::Flat);
     group.sample_size(10);
 
-    for i in [1000usize].iter() {
+    for i in [100usize].iter() {
         group.bench_with_input(BenchmarkId::new("ristretto", i), i, |b, i| {
             b.iter(|| shuffle_ristretto(*i * 10))
         });
-        /*group.bench_with_input(BenchmarkId::new("bigint", i), i, |b, i| {
+        group.bench_with_input(BenchmarkId::new("bigint", i), i, |b, i| {
             b.iter(|| shuffle_bigint(*i))
-        });*/
+        });
         #[cfg(feature = "rug")]
         group.bench_with_input(BenchmarkId::new("rug", i), i, |b, i| {
             b.iter(|| shuffle_rug(*i))
