@@ -154,7 +154,7 @@ pub(crate) mod tests {
         assert_eq!(data, recovered);
     }
 
-    pub(crate) fn test_distributed_btserde_generic<C: Ctx>(ctx: &C, data: Vec<C::P>) {
+    pub(crate) fn test_distributed_serialization_generic<C: Ctx>(ctx: &C, data: Vec<C::P>) {
         let km1 = Keymaker::gen(ctx);
         let km2 = Keymaker::gen(ctx);
         let (pk1, proof1) = km1.share(&vec![]);
@@ -251,7 +251,7 @@ pub(crate) mod tests {
         assert!(ok);
     }
 
-    pub(crate) fn test_shuffle_btserde_generic<C: Ctx>(ctx: &C) {
+    pub(crate) fn test_shuffle_serialization_generic<C: Ctx>(ctx: &C) {
         let sk = PrivateKey::gen(ctx);
         let pk = sk.get_pk();
 

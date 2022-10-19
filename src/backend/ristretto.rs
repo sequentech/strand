@@ -34,6 +34,8 @@ use serde_bytes::ByteBuf;
 use sha3::digest::{ExtendableOutput, Update, XofReader};
 use sha3::Shake256;
 
+use crate::borsh::StrandDeserialize;
+use crate::borsh::StrandSerialize;
 use crate::byte_tree::ByteTree::Leaf;
 use crate::byte_tree::*;
 use crate::context::{Ctx, Element, Exponent};
@@ -45,7 +47,6 @@ pub struct RistrettoCtx;
 
 const DUMMY_SCALAR: Scalar = BASEPOINT_ORDER;
 const DUMMY_POINT: RistrettoPoint = RISTRETTO_BASEPOINT_POINT;
-
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 // RistrettoPoint for Strand
@@ -187,12 +188,12 @@ impl Ctx for RistrettoCtx {
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
         let b32 = util::to_u8_32(bytes)?;
         Scalar::from_canonical_bytes(b32)
-        .map(|s| ScalarS(s))
-        .ok_or("Failed constructing scalar")
+            .map(|s| ScalarS(s))
+            .ok_or("Failed constructing scalar")
     }
 }
 
-impl Default for RistrettoCtx { 
+impl Default for RistrettoCtx {
     fn default() -> RistrettoCtx {
         RistrettoCtx
     }
@@ -282,9 +283,9 @@ impl BorshSerialize for RistrettoPointS {
 impl BorshDeserialize for RistrettoPointS {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let bytes = <[u8;32]>::deserialize(bytes).unwrap();
+        let bytes = <[u8; 32]>::deserialize(bytes).unwrap();
         let ctx = RistrettoCtx::default();
-        
+
         let value = ctx
             .element_from_bytes(&bytes)
             .map_err(|e| Error::new(ErrorKind::Other, e));
@@ -303,13 +304,112 @@ impl BorshSerialize for ScalarS {
 impl BorshDeserialize for ScalarS {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let bytes = <[u8;32]>::deserialize(bytes).unwrap();
+        let bytes = <[u8; 32]>::deserialize(bytes).unwrap();
         let ctx = RistrettoCtx::default();
 
         let value = ctx
             .exp_from_bytes(&bytes)
             .map_err(|e| Error::new(ErrorKind::Other, e));
         value
+    }
+}
+
+/*********************************************************************/
+/*************************** SPECIALIZATIONS *************************/
+/*********************************************************************/
+use crate::util::Par;
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "RUSTC_IS_NIGHTLY")] {
+        impl StrandSerialize for Vec<RistrettoPointS> {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: Ri V<E> >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl StrandSerialize for [RistrettoPointS] {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: Ri E[] >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl StrandSerialize for &[RistrettoPointS] {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: Ri &E[] >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl StrandDeserialize for Vec<RistrettoPointS> {
+            fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
+            where
+                Self: Sized,
+            {
+                println!("Specialization: Ri V<E> <<<");
+                let vectors = <Vec<Vec<u8>>>::try_from_slice(bytes).unwrap();
+
+                let results: Vec<RistrettoPointS> = vectors
+                    .par()
+                    .map(|v| RistrettoPointS::try_from_slice(&v).unwrap())
+                    .collect();
+
+                Ok(results)
+            }
+        }
+
+        impl StrandSerialize for Vec<ScalarS> {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: Ri V<X> >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl StrandSerialize for [ScalarS] {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: Ri X[] >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl StrandSerialize for &[ScalarS] {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: Ri &X[] >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl StrandDeserialize for Vec<ScalarS> {
+            fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
+            where
+                Self: Sized,
+            {
+                println!("Specialization: Ri V<X> <<<");
+                let vectors = <Vec<Vec<u8>>>::try_from_slice(bytes).unwrap();
+
+                let results: Vec<ScalarS> = vectors
+                    .par()
+                    .map(|v| ScalarS::try_from_slice(&v).unwrap())
+                    .collect();
+
+                Ok(results)
+            }
+        }
     }
 }
 
@@ -377,7 +477,7 @@ mod tests {
     }
 
     #[test]
-    fn test_distributed_btserde() {
+    fn test_distributed_serialization() {
         let mut csprng = StrandRng;
 
         let ctx = RistrettoCtx;
@@ -388,19 +488,19 @@ mod tests {
             let p = util::to_u8_30(&fill.to_vec());
             ps.push(p);
         }
-        test_distributed_btserde_generic(&ctx, ps);
+        test_distributed_serialization_generic(&ctx, ps);
     }
 
     #[test]
-    fn test_shufflez() {
+    fn test_shuffle() {
         let ctx = RistrettoCtx;
         test_shuffle_generic(&ctx);
     }
 
     #[test]
-    fn test_shuffle_btserde() {
+    fn test_shuffle_serialization() {
         let ctx = RistrettoCtx;
-        test_shuffle_btserde_generic(&ctx);
+        test_shuffle_serialization_generic(&ctx);
     }
 
     #[test]
@@ -439,20 +539,18 @@ mod tests {
         let ctx = RistrettoCtx;
         test_borsh_exponent(&ctx);
     }
-    
 
     #[test]
     fn test_ciphertext_borsh() {
         let ctx = RistrettoCtx;
         test_ciphertext_borsh_generic(&ctx);
     }
-  
+
     #[test]
     fn test_key_borsh() {
         let ctx = RistrettoCtx;
         test_key_borsh_generic(&ctx);
     }
-   
 
     #[test]
     fn test_schnorr_borsh() {

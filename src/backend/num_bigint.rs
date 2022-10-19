@@ -32,9 +32,11 @@ use serde_bytes::ByteBuf;
 use std::io::{Error, ErrorKind};
 
 use crate::backend::constants::*;
+use crate::borsh::{StrandDeserialize, StrandSerialize};
 use crate::byte_tree::ByteTree::Leaf;
 use crate::byte_tree::*;
 use crate::context::{Ctx, Element, Exponent};
+use crate::elgamal::Ciphertext;
 use crate::rnd::StrandRng;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -422,12 +424,111 @@ impl<P: BigintCtxParams> BorshDeserialize for BigUintX<P> {
     }
 }
 
+/*********************************************************************/
+/*************************** SPECIALIZATIONS *************************/
+/*********************************************************************/
+use crate::util::Par;
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
+
+cfg_if::cfg_if! {
+    if #[cfg(RUSTC_IS_NIGHTLY)] {
+        impl<P: BigintCtxParams> StrandSerialize for Vec<BigUintE<P>> {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: N V<E> >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl<P: BigintCtxParams> StrandSerialize for [BigUintE<P>] {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: N E[] >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl<P: BigintCtxParams> StrandSerialize for &[BigUintE<P>] {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: N &E[] >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl<P: BigintCtxParams> StrandDeserialize for Vec<BigUintE<P>> {
+            fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
+            where
+                Self: Sized,
+            {
+                println!("Specialization: N V<E> <<<");
+                let vectors = <Vec<Vec<u8>>>::try_from_slice(bytes).unwrap();
+
+                let results: Vec<BigUintE<P>> = vectors
+                    .par()
+                    .map(|v| BigUintE::<P>::try_from_slice(&v).unwrap())
+                    .collect();
+
+                Ok(results)
+            }
+        }
+
+        impl<P: BigintCtxParams> StrandSerialize for Vec<BigUintX<P>> {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: N V<X> >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl<P: BigintCtxParams> StrandSerialize for [BigUintX<P>] {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: N X[] >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl<P: BigintCtxParams> StrandSerialize for &[BigUintX<P>] {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: N &X[] >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl<P: BigintCtxParams> StrandDeserialize for Vec<BigUintX<P>> {
+            fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
+            where
+                Self: Sized,
+            {
+                println!("Specialization: N V<X> <<<");
+                let vectors = <Vec<Vec<u8>>>::try_from_slice(bytes).unwrap();
+
+                let results: Vec<BigUintX<P>> = vectors
+                    .par()
+                    .map(|v| BigUintX::<P>::try_from_slice(&v).unwrap())
+                    .collect();
+
+                Ok(results)
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::backend::num_bigint::*;
     use crate::backend::tests::*;
-    use crate::byte_tree::tests::*;
     use crate::borsh::tests::*;
+    use crate::byte_tree::tests::*;
     use crate::context::Ctx;
     use crate::threshold::tests::test_threshold_generic;
 
@@ -472,14 +573,14 @@ mod tests {
     }
 
     #[test]
-    fn test_distributed_btserde() {
+    fn test_distributed_serialization() {
         let ctx = BigintCtx::<P2048>::default();
         let mut ps = vec![];
         for _ in 0..10 {
             let p = ctx.rnd_plaintext();
             ps.push(p);
         }
-        test_distributed_btserde_generic(&ctx, ps);
+        test_distributed_serialization_generic(&ctx, ps);
     }
 
     #[test]
@@ -489,11 +590,11 @@ mod tests {
     }
 
     #[test]
-    fn test_shuffle_btserde() {
+    fn test_rename_serialization() {
         let ctx = BigintCtx::<P2048>::default();
-        test_shuffle_btserde_generic(&ctx);
+        test_shuffle_serialization_generic(&ctx);
     }
-    
+
     #[test]
     fn test_encrypted_sk() {
         let ctx = BigintCtx::<P2048>::default();
@@ -515,6 +616,12 @@ mod tests {
     fn test_element_borsh() {
         let ctx = BigintCtx::<P2048>::default();
         test_borsh_element(&ctx);
+    }
+
+    #[test]
+    fn test_elements_borsh() {
+        let ctx = BigintCtx::<P2048>::default();
+        test_borsh_elements(&ctx);
     }
 
     #[test]

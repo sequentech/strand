@@ -17,6 +17,7 @@
 //! let g_ba = g.mod_pow(&b, &m).mod_pow(&a, &m);
 //! assert_eq!(g_ab, g_ba);
 //! ```
+use borsh::{BorshDeserialize, BorshSerialize};
 use ed25519_dalek::{Digest, Sha512};
 use rand::RngCore;
 use rug::{
@@ -25,15 +26,15 @@ use rug::{
     Integer,
 };
 use serde_bytes::ByteBuf;
-use std::marker::PhantomData;
 use std::io::{Error, ErrorKind};
-use borsh::{BorshDeserialize, BorshSerialize};
+use std::marker::PhantomData;
 
 use crate::backend::constants::*;
 use crate::byte_tree::ByteTree::Leaf;
 use crate::byte_tree::*;
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
+use crate::borsh::{StrandDeserialize, StrandSerialize};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct RugCtx<P: RugCtxParams> {
@@ -430,12 +431,111 @@ impl<P: RugCtxParams> BorshDeserialize for IntegerX<P> {
     }
 }
 
+/*********************************************************************/
+/*************************** SPECIALIZATIONS *************************/
+/*********************************************************************/
+use crate::util::Par;
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
+
+cfg_if::cfg_if! {
+    if #[cfg(RUSTC_IS_NIGHTLY)] {
+        impl<P: RugCtxParams> StrandSerialize for Vec<IntegerE<P>> {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: Ru V<E> >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl<P: RugCtxParams> StrandSerialize for [IntegerE<P>] {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: Ru E[] >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl<P: RugCtxParams> StrandSerialize for &[IntegerE<P>] {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: Ru &E[] >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl<P: RugCtxParams> StrandDeserialize for Vec<IntegerE<P>> {
+            fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
+            where
+                Self: Sized,
+            {
+                println!("Specialization: Ru V<E> <<<");
+                let vectors = <Vec<Vec<u8>>>::try_from_slice(bytes).unwrap();
+
+                let results: Vec<IntegerE<P>> = vectors
+                    .par()
+                    .map(|v| IntegerE::<P>::try_from_slice(&v).unwrap())
+                    .collect();
+
+                Ok(results)
+            }
+        }
+
+        impl<P: RugCtxParams> StrandSerialize for Vec<IntegerX<P>> {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: Ru V<X> >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl<P: RugCtxParams> StrandSerialize for [IntegerX<P>] {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: Ru X[] >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl<P: RugCtxParams> StrandSerialize for &[IntegerX<P>] {
+            fn strand_serialize(&self) -> Vec<u8> {
+                println!("Specialization: Ru &X[] >>>");
+                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+
+                vectors.try_to_vec().unwrap()
+            }
+        }
+
+        impl<P: RugCtxParams> StrandDeserialize for Vec<IntegerX<P>> {
+            fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
+            where
+                Self: Sized,
+            {
+                println!("Specialization: Ru V<X> <<<");
+                let vectors = <Vec<Vec<u8>>>::try_from_slice(bytes).unwrap();
+
+                let results: Vec<IntegerX<P>> = vectors
+                    .par()
+                    .map(|v| IntegerX::<P>::try_from_slice(&v).unwrap())
+                    .collect();
+
+                Ok(results)
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::backend::rug::*;
     use crate::backend::tests::*;
-    use crate::byte_tree::tests::*;
     use crate::borsh::tests::*;
+    use crate::byte_tree::tests::*;
     use crate::context::Ctx;
     use crate::elgamal::Ciphertext;
     use crate::elgamal::PrivateKey;
@@ -486,16 +586,16 @@ mod tests {
     }
 
     #[test]
-    fn test_distributed_btserde() {
+    fn test_distributed_serialization() {
         let ctx = RugCtx::<P2048>::default();
         let mut ps = vec![];
         for _ in 0..10 {
             let p = ctx.rnd_plaintext();
             ps.push(p);
         }
-        test_distributed_btserde_generic(&ctx, ps);
+        test_distributed_serialization_generic(&ctx, ps);
     }
-    
+
     #[test]
     fn test_shuffle() {
         let ctx = RugCtx::<P2048>::default();
@@ -503,9 +603,9 @@ mod tests {
     }
 
     #[test]
-    fn test_shuffle_btserde() {
+    fn test_shuffle_serialization() {
         let ctx = RugCtx::<P2048>::default();
-        test_shuffle_btserde_generic(&ctx);
+        test_shuffle_serialization_generic(&ctx);
     }
 
     #[test]

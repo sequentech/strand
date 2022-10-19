@@ -180,8 +180,6 @@ impl<C: Ctx> FromByteTree<C> for EncryptedPrivateKey<C> {
     }
 }
 
-
-
 impl<C: Ctx> ToByteTree for Ciphertext<C>
 where
     C::E: ToByteTree,
@@ -191,7 +189,6 @@ where
         ByteTree::Tree(trees)
     }
 }
-
 
 #[cfg(test)]
 pub(crate) mod tests {

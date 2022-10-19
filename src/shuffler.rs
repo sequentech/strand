@@ -1,5 +1,5 @@
 #![allow(clippy::type_complexity)]
-use borsh::{BorshSerialize, BorshDeserialize};
+use borsh::{BorshDeserialize, BorshSerialize};
 // SPDX-FileCopyrightText: 2021 David Ruescas <david@sequentech.io>
 //
 // SPDX-License-Identifier: AGPL-3.0-only
@@ -10,6 +10,7 @@ use rayon::prelude::*;
 use serde_bytes::ByteBuf;
 use std::sync::Mutex;
 
+use crate::borsh::StrandSerialize;
 use crate::byte_tree::{ByteTree, ToByteTree};
 use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::{Ciphertext, PublicKey};
@@ -550,10 +551,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             e_primes.to_byte_tree(),
             cs.to_byte_tree(),
         ];*/
-        let mut prefix_challenge_input =  ChallengeInput::from(&[
-            ("es", &es),
-            ("e_primes", &e_primes),
-        ]);
+        let mut prefix_challenge_input =
+            ChallengeInput::from(&[("es", &es), ("e_primes", &e_primes)]);
         prefix_challenge_input.add("cs", &cs);
         prefix_challenge_input.add("label", &label.to_vec());
 
@@ -597,7 +596,6 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         t: &Commitments<C>,
         label: &[u8],
     ) -> C::X {
-        
         /* let trees: Vec<ByteTree> = vec![
             ByteTree::Leaf(ByteBuf::from(label.to_vec())),
             y.es.to_byte_tree(),
@@ -614,7 +612,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         ];
         let bytes = ByteTree::Tree(trees).to_hashable_bytes();*/
 
-        let mut challenge_input =  ChallengeInput::from(&[
+        let mut challenge_input = ChallengeInput::from(&[
             ("t1", &t.t1),
             ("t2", &t.t2),
             ("t3", &t.t3),
@@ -628,6 +626,22 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         challenge_input.add("pk.element", &y.pk.element);
         challenge_input.add("t_hats", &t.t_hats);
         challenge_input.add("label", &label.to_vec());
+
+        /* println!("y.es <");
+        y.es.strand_serialize();
+        println!(">");
+        println!("y.e_primes <");
+        y.es.strand_serialize();
+        println!(">");
+        println!("y.cs <");
+        y.cs.strand_serialize();
+        println!(">");
+        println!("y.c_hats <");
+        y.c_hats.strand_serialize();
+        println!(">");
+        println!("t.t_hats <");
+        &t.t_hats.strand_serialize();
+        println!(">");*/
 
         let bytes = challenge_input.try_to_vec().unwrap();
 
