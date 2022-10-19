@@ -30,11 +30,9 @@ use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
 
 use crate::backend::constants::*;
-use crate::byte_tree::ByteTree::Leaf;
-use crate::byte_tree::*;
+use crate::borsh::{StrandDeserialize, StrandSerialize};
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
-use crate::borsh::{StrandDeserialize, StrandSerialize};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct RugCtx<P: RugCtxParams> {
@@ -363,32 +361,6 @@ impl<P: RugCtxParams> IntegerX<P> {
     }
 }
 
-impl<P: RugCtxParams> ToByteTree for IntegerE<P> {
-    fn to_byte_tree(&self) -> ByteTree {
-        Leaf(ByteBuf::from(self.0.to_digits::<u8>(Order::MsfLe)))
-    }
-}
-
-impl<P: RugCtxParams> FromByteTree<RugCtx<P>> for IntegerE<P> {
-    fn from_byte_tree(tree: &ByteTree, ctx: &RugCtx<P>) -> Result<IntegerE<P>, ByteError> {
-        let bytes = tree.leaf()?;
-        ctx.element_from_bytes(bytes).map_err(ByteError::Msg)
-    }
-}
-
-impl<P: RugCtxParams> ToByteTree for IntegerX<P> {
-    fn to_byte_tree(&self) -> ByteTree {
-        Leaf(ByteBuf::from(self.0.to_digits::<u8>(Order::MsfLe)))
-    }
-}
-
-impl<P: RugCtxParams> FromByteTree<RugCtx<P>> for IntegerX<P> {
-    fn from_byte_tree(tree: &ByteTree, ctx: &RugCtx<P>) -> Result<IntegerX<P>, ByteError> {
-        let bytes = tree.leaf()?;
-        ctx.exp_from_bytes(bytes).map_err(ByteError::Msg)
-    }
-}
-
 impl<P: RugCtxParams> BorshSerialize for IntegerE<P> {
     #[inline]
     fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
@@ -535,7 +507,6 @@ mod tests {
     use crate::backend::rug::*;
     use crate::backend::tests::*;
     use crate::borsh::tests::*;
-    use crate::byte_tree::tests::*;
     use crate::context::Ctx;
     use crate::elgamal::Ciphertext;
     use crate::elgamal::PrivateKey;

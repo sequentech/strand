@@ -6,6 +6,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::backend::num_bigint::{BigintCtx, P2048};
 use crate::backend::ristretto::RistrettoCtx;
+use crate::backend::ristretto::RistrettoPointS;
 use crate::backend::tests::*;
 use crate::context::{Ctx, Element};
 use crate::elgamal::{PrivateKey, PublicKey};
@@ -15,7 +16,6 @@ use crate::threshold::tests::test_threshold_generic;
 use crate::util;
 use crate::util::Par;
 use crate::zkp::Zkp;
-use curve25519_dalek::ristretto::RistrettoPoint;
 use rayon::iter::ParallelIterator;
 
 #[wasm_bindgen]
@@ -48,8 +48,8 @@ pub struct PlaintextS {
 
 use crate::elgamal::Ciphertext;
 pub fn to_ciphertext_s(ciphertext: &Ciphertext<RistrettoCtx>) -> CiphertextS {
-    let gr = hex::encode(ciphertext.gr.compress().to_bytes());
-    let mhr = hex::encode(ciphertext.mhr.compress().to_bytes());
+    let gr = hex::encode(ciphertext.gr.0.compress().to_bytes());
+    let mhr = hex::encode(ciphertext.mhr.0.compress().to_bytes());
 
     CiphertextS { gr, mhr }
 }
@@ -66,7 +66,7 @@ fn from_ciphertext_s(ciphertext: &CiphertextS) -> Ciphertext<RistrettoCtx> {
     Ciphertext { gr, mhr }
 }
 
-fn to_plaintext_s(plaintext: &RistrettoPoint) -> PlaintextS {
+fn to_plaintext_s(plaintext: &RistrettoPointS) -> PlaintextS {
     let ctx = RistrettoCtx;
     // let value = hex::encode(ctx.decode(&plaintext));
     let decoded = ctx.decode(&plaintext);
@@ -81,7 +81,7 @@ fn to_plaintext_s(plaintext: &RistrettoPoint) -> PlaintextS {
     PlaintextS { value }
 }
 
-fn from_plaintext_s(plaintext: &PlaintextS) -> RistrettoPoint {
+fn from_plaintext_s(plaintext: &PlaintextS) -> RistrettoPointS {
     let ctx = RistrettoCtx;
 
     let bytes = hex::decode(&plaintext.value).unwrap();

@@ -36,8 +36,6 @@ use sha3::Shake256;
 
 use crate::borsh::StrandDeserialize;
 use crate::borsh::StrandSerialize;
-use crate::byte_tree::ByteTree::Leaf;
-use crate::byte_tree::*;
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
 use crate::util;
@@ -255,20 +253,6 @@ impl Exponent<RistrettoCtx> for ScalarS {
     }
     fn mul_identity() -> Self {
         ScalarS(Scalar::one())
-    }
-}
-
-impl ToByteTree for Scalar {
-    fn to_byte_tree(&self) -> ByteTree {
-        // Leaf(DataType::Exponent, ByteBuf::from(self.to_bytes()))
-        Leaf(ByteBuf::from(self.to_bytes()))
-    }
-}
-
-impl ToByteTree for RistrettoPoint {
-    fn to_byte_tree(&self) -> ByteTree {
-        // Leaf(DataType::Element, ByteBuf::from(self.compress().to_bytes()))
-        Leaf(ByteBuf::from(self.compress().to_bytes()))
     }
 }
 

@@ -53,7 +53,7 @@ fn bench_encrypt(c: &mut Criterion) {
     let rsk = PrivateKey::gen(&rctx);
     let rpk = rsk.get_pk();
 
-    let bctx: BigintCtx::<P2048> = Default::default();
+    let bctx: BigintCtx<P2048> = Default::default();
     let bsk = PrivateKey::gen(&bctx);
     let bpk = bsk.get_pk();
 

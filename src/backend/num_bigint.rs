@@ -33,8 +33,6 @@ use std::io::{Error, ErrorKind};
 
 use crate::backend::constants::*;
 use crate::borsh::{StrandDeserialize, StrandSerialize};
-use crate::byte_tree::ByteTree::Leaf;
-use crate::byte_tree::*;
 use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::Ciphertext;
 use crate::rnd::StrandRng;
@@ -354,34 +352,6 @@ impl<P: BigintCtxParams> BigUintX<P> {
     }
 }
 
-impl<P: BigintCtxParams> ToByteTree for BigUintE<P> {
-    fn to_byte_tree(&self) -> ByteTree {
-        // Leaf(DataType::Element, ByteBuf::from(self.to_bytes_le()))
-        Leaf(ByteBuf::from(self.0.to_bytes_le()))
-    }
-}
-
-impl<P: BigintCtxParams> FromByteTree<BigintCtx<P>> for BigUintE<P> {
-    fn from_byte_tree(tree: &ByteTree, ctx: &BigintCtx<P>) -> Result<BigUintE<P>, ByteError> {
-        let bytes = tree.leaf()?;
-        ctx.element_from_bytes(bytes).map_err(ByteError::Msg)
-    }
-}
-
-impl<P: BigintCtxParams> ToByteTree for BigUintX<P> {
-    fn to_byte_tree(&self) -> ByteTree {
-        // Leaf(DataType::Exponent, ByteBuf::from(self.to_bytes_le()))
-        Leaf(ByteBuf::from(self.0.to_bytes_le()))
-    }
-}
-
-impl<P: BigintCtxParams> FromByteTree<BigintCtx<P>> for BigUintX<P> {
-    fn from_byte_tree(tree: &ByteTree, ctx: &BigintCtx<P>) -> Result<BigUintX<P>, ByteError> {
-        let bytes = tree.leaf()?;
-        ctx.exp_from_bytes(bytes).map_err(ByteError::Msg)
-    }
-}
-
 impl<P: BigintCtxParams> BorshSerialize for BigUintE<P> {
     #[inline]
     fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
@@ -438,7 +408,7 @@ cfg_if::cfg_if! {
                 println!("Specialization: N V<E> >>>");
                 let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
 
-                vectors.try_to_vec().unwrap()   
+                vectors.try_to_vec().unwrap()
             }
         }
 
@@ -528,7 +498,6 @@ mod tests {
     use crate::backend::num_bigint::*;
     use crate::backend::tests::*;
     use crate::borsh::tests::*;
-    use crate::byte_tree::tests::*;
     use crate::context::Ctx;
     use crate::threshold::tests::test_threshold_generic;
 

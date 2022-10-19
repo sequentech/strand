@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 #![doc = include_str!("../README.md")]
-
-#![feature(specialization)]
+// https://github.com/rust-lang/rfcs/blob/master/text/1210-impl-specialization.md
+#![cfg_attr(feature = "specialization", feature(specialization))]
 
 // #![warn(missing_docs)]
 #[macro_use]
@@ -32,6 +32,6 @@ pub mod wasm;
 pub mod zkp;
 
 pub mod borsh;
-pub mod byte_tree;
+// pub mod byte_tree;
 mod rnd;
 mod symmetric;

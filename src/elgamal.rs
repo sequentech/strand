@@ -44,7 +44,6 @@ use std::marker::PhantomData;
 
 use crate::borsh::StrandDeserialize;
 use crate::borsh::StrandSerialize;
-use crate::byte_tree::{BTreeDeser, BTreeSer};
 use crate::context::{Ctx, Element};
 use crate::symmetric;
 use crate::zkp::{ChaumPedersen, Schnorr, Zkp};

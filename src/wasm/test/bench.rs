@@ -6,7 +6,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::backend::num_bigint::{BigintCtx, P2048};
 use crate::backend::ristretto::RistrettoCtx;
-use crate::byte_tree::BTreeSer;
+use crate::borsh::StrandSerialize;
 use crate::context::{Ctx, Element};
 use crate::elgamal::{PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
@@ -42,11 +42,11 @@ pub fn bench(n: u32) {
 pub fn bench_shuffle(n: usize) {
     postMessage("> Ristretto shuffle");
     let ctx = RistrettoCtx;
-    bench_shuffle_btserde_generic(ctx, n * 10);
+    bench_shuffle_serialization_generic(ctx, n * 10);
 
     postMessage("> Bigint shuffle");
-    let ctx = BigintCtx::<P2048>::new();
-    bench_shuffle_btserde_generic(ctx, n);
+    let ctx: BigintCtx<P2048> = Default::default();
+    bench_shuffle_serialization_generic(ctx, n);
 }
 
 #[wasm_bindgen]
@@ -59,7 +59,7 @@ pub fn bench_modpow(n: u32) {
         "modpow {:.3} ms",
         (performance.now() - now) / n as f64
     ));
-    let ctx = BigintCtx::<P2048>::new();
+    let ctx: BigintCtx<P2048> = Default::default();
     postMessage(&format!("> Bigint modpow n = {}", n));
     let now = performance.now();
     bench_modpow_generic(ctx, n);
@@ -71,7 +71,7 @@ pub fn bench_modpow(n: u32) {
 
 #[wasm_bindgen]
 pub fn bench_enc_pok(n: u32) {
-    let ctx = BigintCtx::<P2048>::new();
+    let ctx: BigintCtx<P2048> = Default::default();
     let plaintext = ctx.rnd_plaintext();
     postMessage("> Bigint enc_pok");
     bench_enc_pok_generic(ctx, plaintext, n);
@@ -85,7 +85,7 @@ pub fn bench_enc_pok(n: u32) {
     bench_enc_pok_generic(ctx, plaintext, n);
 }
 
-fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
+fn bench_shuffle_serialization_generic<C: Ctx>(ctx: C, n: usize) {
     let sk = PrivateKey::gen(&ctx);
     let pk: PublicKey<C> = sk.get_pk();
 
@@ -123,10 +123,10 @@ fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
 
     log(&format!("serialization.."));
     let now = performance.now();
-    let pk_b = pk.ser();
-    let es_b = es.ser();
-    let eprimes_b = e_primes.ser();
-    let proof_b = proof.ser();
+    let pk_b = pk.strand_serialize();
+    let es_b = es.strand_serialize();
+    let eprimes_b = e_primes.strand_serialize();
+    let proof_b = proof.strand_serialize();
     postMessage(&format!(
         "serialization {:.3} c / s",
         n as f64 / ((performance.now() - now) / 1000.0)
@@ -139,7 +139,7 @@ fn bench_shuffle_btserde_generic<C: Ctx>(ctx: C, n: usize) {
     }
     let now = performance.now();
     for next in v {
-        next.ser();
+        next.strand_serialize();
     }
     postMessage(&format!(
         "serialization raw {:.3} c / s",

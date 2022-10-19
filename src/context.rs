@@ -33,9 +33,7 @@
 //! assert_eq!(plaintext, plaintext_);
 //! ```
 
-use crate::byte_tree::ToFromBTree;
 use borsh::{BorshDeserialize, BorshSerialize};
-use std::fmt::Debug;
 // use crate::zkp::Zkp;
 use std::marker::{Send, Sync};
 

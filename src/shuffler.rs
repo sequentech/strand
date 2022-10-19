@@ -11,7 +11,6 @@ use serde_bytes::ByteBuf;
 use std::sync::Mutex;
 
 use crate::borsh::StrandSerialize;
-use crate::byte_tree::{ByteTree, ToByteTree};
 use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::{Ciphertext, PublicKey};
 use crate::rnd::StrandRng;
@@ -545,7 +544,6 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         n: usize,
         label: &[u8],
     ) -> Vec<C::X> {
-
         let mut prefix_challenge_input =
             ChallengeInput::from(&[("es", &es), ("e_primes", &e_primes)]);
         prefix_challenge_input.add("cs", &cs);
@@ -560,7 +558,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         let mut hasher = Sha512::new();
         hasher.update(prefix_bytes);
         let prefix_hash = hasher.finalize().to_vec();
-        
+
         (0..n)
             .par()
             .map(|i| {
@@ -568,8 +566,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
                     ("prefix", prefix_hash.clone()),
                     ("counter", i.to_le_bytes().to_vec()),
                 ]);
-            let bytes = next.get_bytes();
-            self.ctx.hash_to_exp(&bytes)
+                let bytes = next.get_bytes();
+                self.ctx.hash_to_exp(&bytes)
             })
             .collect()
     }

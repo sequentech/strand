@@ -32,7 +32,7 @@ fn shuffle_ristretto(n: usize) {
 }
 
 fn shuffle_bigint(n: usize) {
-    let ctx: BigintCtx::<P2048> = Default::default();
+    let ctx: BigintCtx<P2048> = Default::default();
     test_shuffle_generic(ctx, n);
 }
 

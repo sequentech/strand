@@ -35,7 +35,6 @@ pub(crate) mod tests {
     use crate::shuffler::{ShuffleProof, Shuffler};
     use crate::symmetric;
 
-    use crate::byte_tree::*;
     use crate::util;
     use crate::zkp::{ChaumPedersen, Schnorr};
 

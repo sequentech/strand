@@ -36,22 +36,22 @@ pub fn test() {
     test_chaumpedersen();
     test_vdecryption();
     test_distributed();
-    test_distributed_btserde();
+    test_distributed_serialization();
     test_threshold();
     test_encrypted_sk();
     // test_shuffle();
-    test_shuffle_btserde();
+    test_shuffle_serialization();
 }
 
 #[wasm_bindgen]
-pub fn test_shuffle_btserde() {
-    message("* Ristretto shuffle btserde..");
+pub fn test_shuffle_serialization() {
+    message("* Ristretto shuffle + serialization..");
     let ctx = RistrettoCtx;
-    test_shuffle_btserde_generic(&ctx);
+    test_shuffle_serialization_generic(&ctx);
 
-    message("* BigInt shuffle btserde..");
-    let ctx = BigintCtx::<P2048>::new();
-    test_shuffle_btserde_generic(&ctx);
+    message("* BigInt shuffle + serialization..");
+    let ctx: BigintCtx<P2048> = Default::default();
+    test_shuffle_serialization_generic(&ctx);
 }
 
 #[wasm_bindgen]
@@ -65,7 +65,7 @@ pub fn test_encrypted_sk() {
     test_encrypted_sk_generic(&ctx, plaintext);
 
     message("* BigInt encrypted_sk..");
-    let ctx = BigintCtx::<P2048>::new();
+    let ctx: BigintCtx<P2048> = Default::default();
     let plaintext = ctx.rnd_plaintext();
     test_encrypted_sk_generic(&ctx, plaintext);
 }
@@ -76,7 +76,7 @@ pub fn test_shuffle() {
     let ctx = RistrettoCtx;
     test_shuffle_generic(&ctx);
     message("* BigInt shuffle..");
-    let ctx = BigintCtx::<P2048>::new();
+    let ctx: BigintCtx<P2048> = Default::default();
     test_shuffle_generic(&ctx);
 }
 
@@ -87,14 +87,14 @@ pub fn test_chaumpedersen() {
     test_chaumpedersen_generic(&ctx);
 
     message("* BigInt chaumpedersen..");
-    let ctx = BigintCtx::<P2048>::new();
+    let ctx: BigintCtx<P2048> = Default::default();
     test_chaumpedersen_generic(&ctx);
 }
 
 #[wasm_bindgen]
 pub fn test_elgamal() {
     message("* BigInt encrypt..");
-    let ctx = BigintCtx::<P2048>::new();
+    let ctx: BigintCtx<P2048> = Default::default();
     let plaintext = ctx.rnd_plaintext();
     test_elgamal_generic(&ctx, plaintext);
 
@@ -114,7 +114,7 @@ pub fn test_schnorr() {
     test_schnorr_generic(&ctx);
 
     message("* BigInt schnorr..");
-    let ctx = BigintCtx::<P2048>::new();
+    let ctx: BigintCtx<P2048> = Default::default();
     test_schnorr_generic(&ctx);
 }
 
@@ -129,7 +129,7 @@ pub fn test_vdecryption() {
     test_vdecryption_generic(&ctx, plaintext);
 
     message("* BigInt vdecryption..");
-    let ctx = BigintCtx::<P2048>::new();
+    let ctx: BigintCtx<P2048> = Default::default();
     let plaintext = ctx.rnd_plaintext();
     test_vdecryption_generic(&ctx, plaintext);
 }
@@ -144,14 +144,14 @@ pub fn test_distributed() {
     test_distributed_generic(&ctx, plaintext);
 
     message("* BigInt distributed..");
-    let ctx = BigintCtx::<P2048>::new();
+    let ctx: BigintCtx<P2048> = Default::default();
     let plaintext = ctx.rnd_plaintext();
     test_distributed_generic(&ctx, plaintext);
 }
 
 #[wasm_bindgen]
-pub fn test_distributed_btserde() {
-    message("* Ristretto distributed btserde..");
+pub fn test_distributed_serialization() {
+    message("* Ristretto distributed + serialization..");
     let mut csprng = StrandRng;
     let ctx = RistrettoCtx;
     let mut ps = vec![];
@@ -161,16 +161,16 @@ pub fn test_distributed_btserde() {
         let p = util::to_u8_30(&fill.to_vec());
         ps.push(p);
     }
-    test_distributed_btserde_generic(&ctx, ps);
+    test_distributed_serialization_generic(&ctx, ps);
 
-    message("* BigInt distributed btserde..");
-    let ctx = BigintCtx::<P2048>::new();
+    message("* BigInt distributed + serialization..");
+    let ctx: BigintCtx<P2048> = Default::default();
     let mut ps = vec![];
     for _ in 0..1 {
         let p = ctx.rnd_plaintext();
         ps.push(p);
     }
-    test_distributed_btserde_generic(&ctx, ps);
+    test_distributed_serialization_generic(&ctx, ps);
 }
 
 pub fn test_threshold() {
@@ -187,7 +187,7 @@ pub fn test_threshold() {
     message("* BigInt threshold..");
     let trustees = 5usize;
     let threshold = 3usize;
-    let ctx = BigintCtx::<P2048>::new();
+    let ctx: BigintCtx<P2048> = Default::default();
     let plaintext = ctx.rnd_plaintext();
     test_threshold_generic(&ctx, trustees, threshold, plaintext);
 }

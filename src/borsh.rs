@@ -1,4 +1,3 @@
-
 use crate::{
     backend::num_bigint::{BigUintE, BigUintX, BigintCtx, BigintCtxParams},
     backend::ristretto::{RistrettoPointS, ScalarS},
@@ -31,7 +30,7 @@ cfg_if::cfg_if! {
                 self.try_to_vec().unwrap()
             }
         }
-        
+
         impl<T: BorshDeserialize> StrandDeserialize for T {
             default fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
             where
@@ -43,13 +42,13 @@ cfg_if::cfg_if! {
                 }
                 value.map_err(|_| "borsh deserialize failed")
             }
-        }   
+        }
 
         impl<C: Ctx> StrandSerialize for Vec<Ciphertext<C>> {
             fn strand_serialize(&self) -> Vec<u8> {
                 println!("Specialization: V<C> >>>");
                 let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
-                
+
                 vectors.try_to_vec().unwrap()
             }
         }
@@ -58,7 +57,7 @@ cfg_if::cfg_if! {
             fn strand_serialize(&self) -> Vec<u8> {
                 println!("Specialization: C[] >>>");
                 let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
-                
+
                 vectors.try_to_vec().unwrap()
             }
         }
@@ -67,7 +66,7 @@ cfg_if::cfg_if! {
             fn strand_serialize(&self) -> Vec<u8> {
                 println!("Specialization: &C[] >>>");
                 let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
-                
+
                 vectors.try_to_vec().unwrap()
             }
         }
@@ -95,7 +94,7 @@ cfg_if::cfg_if! {
                 self.try_to_vec().unwrap()
             }
         }
-        
+
         impl<T: BorshDeserialize> StrandDeserialize for T {
             fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
             where

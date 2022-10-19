@@ -34,8 +34,6 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use serde_bytes::ByteBuf;
 
-use crate::byte_tree::ByteTree;
-use crate::byte_tree::ToByteTree;
 use crate::context::{Ctx, Element, Exponent};
 
 /// Interface to zero knowledge proof functionality.
