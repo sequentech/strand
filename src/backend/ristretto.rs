@@ -322,12 +322,11 @@ use crate::util::Par;
 use rayon::prelude::*;
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "RUSTC_IS_NIGHTLY")] {
+    if #[cfg(feature="specialization")] {
         impl StrandSerialize for Vec<RistrettoPointS> {
             fn strand_serialize(&self) -> Vec<u8> {
                 println!("Specialization: Ri V<E> >>>");
                 let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
-
                 vectors.try_to_vec().unwrap()
             }
         }

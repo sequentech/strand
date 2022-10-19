@@ -432,7 +432,7 @@ use crate::util::Par;
 use rayon::prelude::*;
 
 cfg_if::cfg_if! {
-    if #[cfg(RUSTC_IS_NIGHTLY)] {
+    if #[cfg(feature="specialization")] {
         impl<P: BigintCtxParams> StrandSerialize for Vec<BigUintE<P>> {
             fn strand_serialize(&self) -> Vec<u8> {
                 println!("Specialization: N V<E> >>>");

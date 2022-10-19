@@ -354,6 +354,16 @@ impl ChallengeInput {
         ChallengeInput(map)
     }
 
+    pub(crate) fn from_bytes(values: &[(&'static str, Vec<u8>)]) -> ChallengeInput {
+        let serialized = values
+            .iter()
+            .map(|value| (value.0.to_string(), value.1.clone()));
+
+        let map = HashMap::from_iter(serialized);
+
+        ChallengeInput(map)
+    }
+
     pub(crate) fn add<T: BorshSerialize>(&mut self, name: &'static str, value: &T) {
         let bytes = value.try_to_vec().unwrap();
         self.0.insert(name.to_string(), bytes);

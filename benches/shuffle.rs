@@ -32,7 +32,7 @@ fn shuffle_ristretto(n: usize) {
 }
 
 fn shuffle_bigint(n: usize) {
-    let ctx = BigintCtx::<P2048>::new();
+    let ctx: BigintCtx::<P2048> = Default::default();
     test_shuffle_generic(ctx, n);
 }
 
@@ -41,7 +41,7 @@ cfg_if::cfg_if! {
         use strand::backend::rug::RugCtx;
         use strand::backend::rug::P2048 as RP2048;
         fn shuffle_rug(n: usize) {
-            let ctx = RugCtx::<RP2048>::new();
+            let ctx: RugCtx::<RP2048> = Default::default();
             test_shuffle_generic(ctx, n);
         }
     }
@@ -52,13 +52,13 @@ fn bench_shuffle(c: &mut Criterion) {
     group.sampling_mode(SamplingMode::Flat);
     group.sample_size(10);
 
-    for i in [100usize].iter() {
+    for i in [1000usize].iter() {
         group.bench_with_input(BenchmarkId::new("ristretto", i), i, |b, i| {
             b.iter(|| shuffle_ristretto(*i * 10))
         });
-        group.bench_with_input(BenchmarkId::new("bigint", i), i, |b, i| {
+        /*group.bench_with_input(BenchmarkId::new("bigint", i), i, |b, i| {
             b.iter(|| shuffle_bigint(*i))
-        });
+        });*/
         #[cfg(feature = "rug")]
         group.bench_with_input(BenchmarkId::new("rug", i), i, |b, i| {
             b.iter(|| shuffle_rug(*i))

@@ -24,7 +24,7 @@ use crate::util::Par;
 use rayon::prelude::*;
 
 cfg_if::cfg_if! {
-    if #[cfg(RUSTC_IS_NIGHTLY)] {
+    if #[cfg(feature="specialization")] {
         impl<T: BorshSerialize> StrandSerialize for T {
             default fn strand_serialize(&self) -> Vec<u8> {
                 // FIXME log on failure
@@ -49,7 +49,7 @@ cfg_if::cfg_if! {
             fn strand_serialize(&self) -> Vec<u8> {
                 println!("Specialization: V<C> >>>");
                 let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
-
+                
                 vectors.try_to_vec().unwrap()
             }
         }
@@ -58,7 +58,7 @@ cfg_if::cfg_if! {
             fn strand_serialize(&self) -> Vec<u8> {
                 println!("Specialization: C[] >>>");
                 let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
-
+                
                 vectors.try_to_vec().unwrap()
             }
         }
@@ -67,7 +67,7 @@ cfg_if::cfg_if! {
             fn strand_serialize(&self) -> Vec<u8> {
                 println!("Specialization: &C[] >>>");
                 let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
-
+                
                 vectors.try_to_vec().unwrap()
             }
         }
@@ -88,7 +88,6 @@ cfg_if::cfg_if! {
                 Ok(results)
             }
         }
-
     } else {
         impl<T: BorshSerialize> StrandSerialize for T {
             fn strand_serialize(&self) -> Vec<u8> {

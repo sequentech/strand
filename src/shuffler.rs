@@ -576,7 +576,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             let u: C::X = self.hash_to(&bytes);
             ret.push(u);
         }*/
-        (0..n)
+        /*(0..n)
             .par()
             .map(|i| {
                 let next: Vec<ByteTree> = vec![
@@ -586,6 +586,17 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
                 let bytes = ByteTree::Tree(next).to_hashable_bytes();
 
                 self.ctx.hash_to_exp(&bytes)
+            })
+            .collect()*/
+        (0..n)
+            .par()
+            .map(|i| {
+                let next = ChallengeInput::from_bytes(&[
+                    ("prefix", prefix_hash.clone()),
+                    ("counter", i.to_le_bytes().to_vec()),
+                ]);
+            let bytes = next.try_to_vec().unwrap();
+            self.ctx.hash_to_exp(&bytes)
             })
             .collect()
     }
@@ -627,7 +638,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         challenge_input.add("t_hats", &t.t_hats);
         challenge_input.add("label", &label.to_vec());
 
-        /* println!("y.es <");
+        /*println!("y.es <");
         y.es.strand_serialize();
         println!(">");
         println!("y.e_primes <");

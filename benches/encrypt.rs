@@ -53,14 +53,14 @@ fn bench_encrypt(c: &mut Criterion) {
     let rsk = PrivateKey::gen(&rctx);
     let rpk = rsk.get_pk();
 
-    let bctx = BigintCtx::<P2048>::new();
+    let bctx: BigintCtx::<P2048> = Default::default();
     let bsk = PrivateKey::gen(&bctx);
     let bpk = bsk.get_pk();
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "rug")] {
             use strand::backend::rug::P2048 as RP2048;
-            let gctx = RugCtx::<RP2048>::new();
+            let gctx: RugCtx::<RP2048> = Default::default();
             let gsk = PrivateKey::gen(&gctx);
             let gpk = gsk.get_pk();
         }

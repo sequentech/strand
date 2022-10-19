@@ -439,7 +439,7 @@ use crate::util::Par;
 use rayon::prelude::*;
 
 cfg_if::cfg_if! {
-    if #[cfg(RUSTC_IS_NIGHTLY)] {
+    if #[cfg(feature="specialization")] {
         impl<P: RugCtxParams> StrandSerialize for Vec<IntegerE<P>> {
             fn strand_serialize(&self) -> Vec<u8> {
                 println!("Specialization: Ru V<E> >>>");
