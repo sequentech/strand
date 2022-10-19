@@ -30,7 +30,6 @@ use curve25519_dalek::scalar::Scalar;
 use curve25519_dalek::traits::Identity;
 use ed25519_dalek::{Digest, Sha512};
 use rand::RngCore;
-use serde_bytes::ByteBuf;
 use sha3::digest::{ExtendableOutput, Update, XofReader};
 use sha3::Shake256;
 
@@ -57,7 +56,7 @@ impl RistrettoCtx {
     // https://docs.rs/bulletproofs/4.0.0/src/bulletproofs/generators.rs.html
     fn generators_shake(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<RistrettoPointS> {
         let mut seed_ = seed.to_vec();
-        seed_.extend(&contest.to_le_bytes());
+        seed_.extend(contest.to_le_bytes());
 
         let mut ret: Vec<RistrettoPointS> = Vec::with_capacity(size);
         let mut shake = Shake256::default();
@@ -180,13 +179,13 @@ impl Ctx for RistrettoCtx {
         let b32 = util::to_u8_32(bytes)?;
         CompressedRistretto(b32)
             .decompress()
-            .map(|p| RistrettoPointS(p))
+            .map(RistrettoPointS)
             .ok_or("Failed constructing ristretto point")
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
         let b32 = util::to_u8_32(bytes)?;
         Scalar::from_canonical_bytes(b32)
-            .map(|s| ScalarS(s))
+            .map(ScalarS)
             .ok_or("Failed constructing scalar")
     }
 }

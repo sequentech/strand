@@ -7,9 +7,9 @@
 #![cfg_attr(feature = "specialization", feature(specialization))]
 
 // #![warn(missing_docs)]
-#[macro_use]
-extern crate quick_error;
+
 extern crate cfg_if;
+extern crate quick_error;
 
 /// Provides cryptographic backends, currently multiplicative groups and ristretto elliptic curve.
 pub mod backend;

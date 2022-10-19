@@ -25,7 +25,6 @@ use rug::{
     rand::{RandGen, RandState},
     Integer,
 };
-use serde_bytes::ByteBuf;
 use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
 
@@ -47,7 +46,7 @@ impl<P: RugCtxParams> RugCtx<P> {
 
         let mut prefix = seed.to_vec();
         prefix.extend("ggen".to_string().into_bytes());
-        prefix.extend(&contest.to_le_bytes());
+        prefix.extend(contest.to_le_bytes());
 
         let mut index: u64 = 0;
         for _ in 0..size {
@@ -57,8 +56,8 @@ impl<P: RugCtxParams> RugCtx<P> {
             loop {
                 count += 1;
                 assert!(count != 0);
-                next.extend(&index.to_le_bytes());
-                next.extend(&count.to_le_bytes());
+                next.extend(index.to_le_bytes());
+                next.extend(count.to_le_bytes());
                 let elem: Integer = self.hash_to_element(&next);
                 let g = elem
                     .pow_mod(self.params.co_factor(), &self.modulus().0)
@@ -202,12 +201,12 @@ impl<P: RugCtxParams> Default for RugCtx<P> {
 impl<P: RugCtxParams> Element<RugCtx<P>> for IntegerE<P> {
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
-        IntegerE::new(Integer::from(self.0.clone() * other.0.clone()))
+        IntegerE::new(self.0.clone() * other.0.clone())
     }
     #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {
         let inverse = Element::<RugCtx<P>>::inv(other, modulus);
-        IntegerE::new(self.0.clone() * inverse.0.clone())
+        IntegerE::new(self.0.clone() * inverse.0)
     }
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
@@ -245,15 +244,15 @@ impl<P: RugCtxParams> Element<RugCtx<P>> for IntegerE<P> {
 impl<P: RugCtxParams> Exponent<RugCtx<P>> for IntegerX<P> {
     #[inline(always)]
     fn add(&self, other: &Self) -> Self {
-        IntegerX::new(Integer::from(self.0.clone() + other.0.clone()))
+        IntegerX::new(self.0.clone() + other.0.clone())
     }
     #[inline(always)]
     fn sub(&self, other: &Self) -> Self {
-        IntegerX::new(Integer::from(self.0.clone() - other.0.clone()))
+        IntegerX::new(self.0.clone() - other.0.clone())
     }
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
-        IntegerX::new(Integer::from(self.0.clone() * other.0.clone()))
+        IntegerX::new(self.0.clone() * other.0.clone())
     }
     #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {

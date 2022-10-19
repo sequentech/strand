@@ -7,7 +7,6 @@ use ed25519_dalek::{Digest, Sha512};
 use rand::Rng;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
-use serde_bytes::ByteBuf;
 use std::sync::Mutex;
 
 use crate::borsh::StrandSerialize;

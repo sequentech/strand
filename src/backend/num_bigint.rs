@@ -28,13 +28,11 @@ use num_integer::Integer;
 use num_modular::{ModularSymbols, ModularUnaryOps};
 use num_traits::Num;
 use num_traits::{One, Zero};
-use serde_bytes::ByteBuf;
 use std::io::{Error, ErrorKind};
 
 use crate::backend::constants::*;
 use crate::borsh::{StrandDeserialize, StrandSerialize};
 use crate::context::{Ctx, Element, Exponent};
-use crate::elgamal::Ciphertext;
 use crate::rnd::StrandRng;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -55,7 +53,7 @@ impl<P: BigintCtxParams> BigintCtx<P> {
 
         let mut prefix = seed.to_vec();
         prefix.extend("ggen".to_string().into_bytes());
-        prefix.extend(&contest.to_le_bytes());
+        prefix.extend(contest.to_le_bytes());
 
         let mut index: u64 = 0;
         for _ in 0..size {
@@ -65,8 +63,8 @@ impl<P: BigintCtxParams> BigintCtx<P> {
             loop {
                 count += 1;
                 assert!(count != 0);
-                next.extend(&index.to_le_bytes());
-                next.extend(&count.to_le_bytes());
+                next.extend(index.to_le_bytes());
+                next.extend(count.to_le_bytes());
                 let elem: BigUint = self.hash_to_element(&next);
                 let g = elem.modpow(self.params.co_factor(), &self.modulus().0);
                 if g >= two {

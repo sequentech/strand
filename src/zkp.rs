@@ -32,7 +32,6 @@ use std::collections::HashMap;
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use serde_bytes::ByteBuf;
 
 use crate::context::{Ctx, Element, Exponent};
 

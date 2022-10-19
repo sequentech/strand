@@ -1,9 +1,4 @@
-use crate::{
-    backend::num_bigint::{BigUintE, BigUintX, BigintCtx, BigintCtxParams},
-    backend::ristretto::{RistrettoPointS, ScalarS},
-    context::Ctx,
-    elgamal::Ciphertext,
-};
+use crate::{context::Ctx, elgamal::Ciphertext};
 use borsh::{BorshDeserialize, BorshSerialize};
 
 pub trait StrandSerialize {
@@ -36,7 +31,7 @@ cfg_if::cfg_if! {
             where
                 Self: Sized,
             {
-                let value = T::try_from_slice(&bytes);
+                let value = T::try_from_slice(bytes);
                 if value.is_err() {
                     // FIXME log on failure
                 }
