@@ -7,16 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 ## Test wasm build
 
 * install [webpack](https://rustwasm.github.io/wasm-pack/installer/)
-* `wasm-pack build --out-name index --release --target web --features=wasmtest`
+* `wasm-pack build --out-name index --release --target web --features=wasmtest,specialization`
 * `python3 src/wasm/test/serve.py`
 * http://localhost:8080/src/wasm/test/test.html
-
-## Test wasm build with no workers
-
-* install [webpack](https://rustwasm.github.io/wasm-pack/installer/)
-* `wasm-pack build --out-name index --release --target web --features=wasmtest`
-* `python3 src/wasm/test/serve.py`
-* http://localhost:8080/src/wasm/test/test_noworker.html
 
 ### Test wasm build with multithreading
 
@@ -24,8 +17,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 * Build with [multithreading](https://github.com/GoogleChromeLabs/wasm-bindgen-rayon)
 ```
 RUSTFLAGS='-C target-feature=+atomics,+bulk-memory,+mutable-globals' \ 
-rustup run nightly-2022-04-07 wasm-pack build --out-name index --release  --release --target web \ 
---features=wasmtest,wasmrayon -- -Z build-std=panic_abort,std
+rustup run nightly wasm-pack build --out-name index --release  --release --target web \ 
+--features=wasmtest,wasmrayon,specialization -- -Z build-std=panic_abort,std
 ```
 * `python3 src/wasm/test/serve.py`
 * http://localhost:8080/src/wasm/test/test.html?threaded=true
