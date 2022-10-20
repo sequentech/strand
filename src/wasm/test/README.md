@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 ## Test wasm build
 
 * install [webpack](https://rustwasm.github.io/wasm-pack/installer/)
-* `wasm-pack build --out-name index --release --target web --features=wasmtest`
+* `wasm-pack build --out-name index --release --target web --features=wasmtest,specialization`
 * `python3 src/wasm/test/serve.py`
 * http://localhost:8080/src/wasm/test/test.html
 
