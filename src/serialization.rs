@@ -10,8 +10,6 @@ pub trait StrandDeserialize {
     where
         Self: Sized;
 }
-pub trait StrandSerialization: StrandSerialize + StrandDeserialize {}
-impl<T: StrandSerialize + StrandDeserialize> StrandSerialization for T {}
 
 use crate::util::Par;
 #[cfg(feature = "rayon")]

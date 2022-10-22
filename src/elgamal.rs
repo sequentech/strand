@@ -42,8 +42,8 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use std::marker::PhantomData;
 
-use crate::borsh::StrandDeserialize;
-use crate::borsh::StrandSerialize;
+use crate::serialization::StrandDeserialize;
+use crate::serialization::StrandSerialize;
 use crate::context::{Ctx, Element};
 use crate::symmetric;
 use crate::zkp::{ChaumPedersen, Schnorr, Zkp};

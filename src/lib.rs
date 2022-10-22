@@ -30,7 +30,9 @@ pub mod wasm;
 /// Schnorr and Chaum-Pedersen zero knowledge proofs.
 pub mod zkp;
 
-pub mod borsh;
+pub mod serialization;
 // pub mod byte_tree;
 mod rnd;
 mod symmetric;
+
+pub use ed25519_dalek;

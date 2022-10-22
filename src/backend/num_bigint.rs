@@ -29,9 +29,10 @@ use num_modular::{ModularSymbols, ModularUnaryOps};
 use num_traits::Num;
 use num_traits::{One, Zero};
 use std::io::{Error, ErrorKind};
+use std::fmt::Debug;
 
 use crate::backend::constants::*;
-use crate::borsh::{StrandDeserialize, StrandSerialize};
+use crate::serialization::{StrandDeserialize, StrandSerialize};
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
 
@@ -278,7 +279,7 @@ impl<P: BigintCtxParams + Eq> Exponent<BigintCtx<P>> for BigUintX<P> {
     }
 }
 
-pub trait BigintCtxParams: Clone + Eq + Send + Sync {
+pub trait BigintCtxParams: Clone + Eq + Send + Sync + Debug {
     fn generator(&self) -> &BigUintE<Self>;
     fn modulus(&self) -> &BigUintE<Self>;
     fn exp_modulus(&self) -> &BigUintX<Self>;
@@ -495,7 +496,7 @@ cfg_if::cfg_if! {
 mod tests {
     use crate::backend::num_bigint::*;
     use crate::backend::tests::*;
-    use crate::borsh::tests::*;
+    use crate::serialization::tests::*;
     use crate::context::Ctx;
     use crate::threshold::tests::test_threshold_generic;
 

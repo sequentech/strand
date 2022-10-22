@@ -33,8 +33,8 @@ use rand::RngCore;
 use sha3::digest::{ExtendableOutput, Update, XofReader};
 use sha3::Shake256;
 
-use crate::borsh::StrandDeserialize;
-use crate::borsh::StrandSerialize;
+use crate::serialization::StrandDeserialize;
+use crate::serialization::StrandSerialize;
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
 use crate::util;
@@ -399,7 +399,7 @@ cfg_if::cfg_if! {
 mod tests {
     use crate::backend::ristretto::*;
     use crate::backend::tests::*;
-    use crate::borsh::tests::*;
+    use crate::serialization::tests::*;
     use crate::threshold::tests::test_threshold_generic;
 
     #[test]

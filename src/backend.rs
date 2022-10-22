@@ -26,8 +26,8 @@ pub(crate) mod constants {
 
 #[cfg(any(test, feature = "wasmtest"))]
 pub(crate) mod tests {
-    use crate::borsh::StrandDeserialize;
-    use crate::borsh::StrandSerialize;
+    use crate::serialization::StrandDeserialize;
+    use crate::serialization::StrandSerialize;
     use crate::context::Ctx;
     use crate::context::Element;
     use crate::elgamal::*;

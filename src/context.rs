@@ -35,10 +35,10 @@
 
 use borsh::{BorshDeserialize, BorshSerialize};
 // use crate::zkp::Zkp;
-use std::marker::{Send, Sync};
+use std::{marker::{Send, Sync}, fmt::Debug};
 
 /// A cryptographic context loosely corresponds to the underlying modular arithmetic group.
-pub trait Ctx: Sync + Sized + Clone + Default {
+pub trait Ctx: Sync + Sized + Clone + Default + Debug {
     type E: Element<Self>;
     type X: Exponent<Self>;
     type P: Send + Sync + Eq + std::fmt::Debug;
@@ -69,7 +69,7 @@ pub trait Ctx: Sync + Sized + Clone + Default {
 /// An element of the underlying group.
 ///
 /// Operations depend on the backend and are given below for multiplicative groups / elliptic curves.
-pub trait Element<C: Ctx>: Clone + Eq + Send + Sync + BorshSerialize + BorshDeserialize {
+pub trait Element<C: Ctx>: Clone + Eq + Send + Sync + BorshSerialize + BorshDeserialize + Debug {
     /// Modular multiplication / point addition.
     fn mul(&self, other: &C::E) -> C::E;
     /// Modular division (a div b = a * b^1) / point subtraction.
@@ -87,7 +87,7 @@ pub trait Element<C: Ctx>: Clone + Eq + Send + Sync + BorshSerialize + BorshDese
 }
 
 /// A member of the "exponent ring" associated to the element group, or scalar ring for elliptic curves.
-pub trait Exponent<C: Ctx>: Clone + Eq + Send + Sync + BorshSerialize + BorshDeserialize {
+pub trait Exponent<C: Ctx>: Clone + Eq + Send + Sync + BorshSerialize + BorshDeserialize + Debug {
     // Modular addition.
     fn add(&self, other: &C::X) -> C::X;
     // Modular subtraction.
