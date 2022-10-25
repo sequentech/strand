@@ -32,7 +32,6 @@ use std::io::{Error, ErrorKind};
 use std::fmt::Debug;
 
 use crate::backend::constants::*;
-use crate::serialization::{StrandDeserialize, StrandSerialize};
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
 

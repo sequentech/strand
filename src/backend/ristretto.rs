@@ -32,9 +32,6 @@ use ed25519_dalek::{Digest, Sha512};
 use rand::RngCore;
 use sha3::digest::{ExtendableOutput, Update, XofReader};
 use sha3::Shake256;
-
-use crate::serialization::StrandDeserialize;
-use crate::serialization::StrandSerialize;
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
 use crate::util;
