@@ -19,6 +19,8 @@
 //! assert_eq!(g_ab, g_ba);
 //! ```
 use std::marker::PhantomData;
+use std::fmt::Debug;
+use std::io::{Error, ErrorKind};
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use ed25519_dalek::{Digest, Sha512};
@@ -28,8 +30,6 @@ use num_integer::Integer;
 use num_modular::{ModularSymbols, ModularUnaryOps};
 use num_traits::Num;
 use num_traits::{One, Zero};
-use std::io::{Error, ErrorKind};
-use std::fmt::Debug;
 
 use crate::backend::constants::*;
 use crate::context::{Ctx, Element, Exponent};
@@ -362,7 +362,7 @@ impl<P: BigintCtxParams> BorshDeserialize for BigUintE<P> {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
         let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
-        let ctx = BigintCtx::<P>::default();
+        let ctx: BigintCtx<P> = Default::default();
 
         let value = ctx
             .element_from_bytes(&bytes)
@@ -557,7 +557,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rename_serialization() {
+    fn test_shuffle_serialization() {
         let ctx = BigintCtx::<P2048>::default();
         test_shuffle_serialization_generic(&ctx);
     }

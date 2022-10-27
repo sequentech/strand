@@ -10,7 +10,7 @@
 //! use strand::elgamal::{PrivateKey, PublicKey};
 //! use strand::zkp::Zkp;
 //!
-//! let ctx = BigintCtx::<P2048>::default();
+//! let ctx: BigintCtx::<P2048> = Default::default();
 //! let zkp = Zkp::new(&ctx);
 //! let exponent = ctx.rnd_exp();
 //! let g = ctx.generator();

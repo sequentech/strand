@@ -20,7 +20,7 @@
 //! use strand::elgamal::{PrivateKey, PublicKey};
 //!
 //! // obtain a context for a 2048-bit prime, with num_bigint backend
-//! let ctx = BigintCtx::<P2048>::default();
+//! let ctx: BigintCtx::<P2048> = Default::default();
 //! // generate an ElGamal keypair
 //! let sk = PrivateKey::gen(&ctx);
 //! let pk = sk.get_pk();

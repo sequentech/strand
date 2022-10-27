@@ -27,9 +27,10 @@ use rug::{
 };
 use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
+use std::fmt::Debug;
 
 use crate::backend::constants::*;
-use crate::borsh::{StrandDeserialize, StrandSerialize};
+use crate::serialization::{StrandDeserialize, StrandSerialize};
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
 
@@ -296,7 +297,7 @@ impl RandGen for StrandRandgen {
     }
 }
 
-pub trait RugCtxParams: Clone + Send + Sync + Eq {
+pub trait RugCtxParams: Clone + Send + Sync + Eq + Debug {
     fn generator(&self) -> &IntegerE<Self>;
     fn modulus(&self) -> &IntegerE<Self>;
     fn exp_modulus(&self) -> &IntegerX<Self>;
@@ -505,7 +506,7 @@ cfg_if::cfg_if! {
 mod tests {
     use crate::backend::rug::*;
     use crate::backend::tests::*;
-    use crate::borsh::tests::*;
+    use crate::serialization::tests::*;
     use crate::context::Ctx;
     use crate::elgamal::Ciphertext;
     use crate::elgamal::PrivateKey;

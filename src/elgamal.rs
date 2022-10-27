@@ -10,7 +10,7 @@
 //! use strand::elgamal::{PrivateKey, PublicKey};
 //! use strand::zkp::Zkp;
 //!
-//! let ctx = BigintCtx::<P2048>::default();
+//! let ctx: BigintCtx::<P2048> = Default::default();
 //! // generate an ElGamal keypair
 //! let sk1 = PrivateKey::gen(&ctx);
 //! let pk1 = sk1.get_pk();

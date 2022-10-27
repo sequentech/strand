@@ -22,6 +22,17 @@ pub struct KeymakerT<C: Ctx> {
     ctx: C,
 }
 
+pub fn get_coefficients<C: Ctx>(trustees: usize, threshold: u32, ctx: &C) -> Vec<C::X> { 
+    let mut coefficients = vec![];
+
+    for _ in 0..threshold {
+        let coeff = ctx.rnd_exp();
+        coefficients.push(coeff);
+    }
+
+    coefficients
+}
+
 impl<C: Ctx> KeymakerT<C> {
     pub fn gen(num_trustees: usize, threshold: usize, ctx: &C) -> KeymakerT<C> {
         let mut coefficients = vec![];
