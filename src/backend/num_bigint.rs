@@ -34,6 +34,7 @@ use num_traits::{One, Zero};
 use crate::backend::constants::*;
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
+use crate::serialization::{StrandSerialize,StrandDeserialize};
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct BigUintE<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
@@ -497,7 +498,7 @@ mod tests {
     use crate::backend::tests::*;
     use crate::serialization::tests::*;
     use crate::context::Ctx;
-    use crate::threshold::tests::test_threshold_generic;
+    use crate::threshold_test::tests::test_threshold_generic;
 
     #[test]
     fn test_elgamal() {

@@ -35,6 +35,7 @@ use sha3::Shake256;
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
 use crate::util;
+use crate::serialization::{StrandSerialize,StrandDeserialize};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct RistrettoCtx;
@@ -397,7 +398,7 @@ mod tests {
     use crate::backend::ristretto::*;
     use crate::backend::tests::*;
     use crate::serialization::tests::*;
-    use crate::threshold::tests::test_threshold_generic;
+    use crate::threshold_test::tests::test_threshold_generic;
 
     #[test]
     fn test_elgamal() {

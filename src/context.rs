@@ -41,7 +41,7 @@ use std::{marker::{Send, Sync}, fmt::Debug};
 pub trait Ctx: Sync + Sized + Clone + Default + Debug {
     type E: Element<Self>;
     type X: Exponent<Self>;
-    type P: Send + Sync + Eq + std::fmt::Debug;
+    type P: Send + Sync + Eq + Debug;
 
     fn generator(&self) -> &Self::E;
     fn gmod_pow(&self, other: &Self::X) -> Self::E;

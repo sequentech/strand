@@ -322,7 +322,7 @@ impl<C: Ctx> Zkp<C> {
 }
 
 /// A proof of knowledge of discrete logarithm.
-#[derive(Eq, PartialEq, BorshSerialize, BorshDeserialize)]
+#[derive(Eq, PartialEq, BorshSerialize, BorshDeserialize, Debug)]
 pub struct Schnorr<C: Ctx> {
     pub commitment: C::E,
     pub challenge: C::X,
@@ -330,7 +330,7 @@ pub struct Schnorr<C: Ctx> {
 }
 
 /// A proof of equality of discrete logarithms.
-#[derive(Eq, PartialEq, BorshSerialize, BorshDeserialize)]
+#[derive(Eq, PartialEq, BorshSerialize, BorshDeserialize, Debug)]
 pub struct ChaumPedersen<C: Ctx> {
     pub commitment1: C::E,
     pub commitment2: C::E,

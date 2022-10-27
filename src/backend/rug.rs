@@ -513,7 +513,7 @@ mod tests {
     use crate::shuffler::gen_permutation;
     use crate::shuffler::PermutationData;
     use crate::shuffler::Shuffler;
-    use crate::threshold::tests::test_threshold_generic;
+    use crate::threshold_test::tests::test_threshold_generic;
     use serde::Serialize;
 
     #[test]

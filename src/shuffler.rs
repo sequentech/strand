@@ -24,7 +24,7 @@ pub(crate) struct YChallengeInput<'a, C: Ctx> {
     pub pk: &'a PublicKey<C>,
 }
 
-#[derive(Clone, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, BorshSerialize, BorshDeserialize, Debug)]
 pub struct Commitments<C: Ctx> {
     pub t1: C::E,
     pub t2: C::E,
@@ -34,7 +34,7 @@ pub struct Commitments<C: Ctx> {
     pub t_hats: Vec<C::E>,
 }
 
-#[derive(Clone, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, BorshSerialize, BorshDeserialize, Debug)]
 pub struct Responses<C: Ctx> {
     pub(crate) s1: C::X,
     pub(crate) s2: C::X,
@@ -44,7 +44,7 @@ pub struct Responses<C: Ctx> {
     pub(crate) s_primes: Vec<C::X>,
 }
 
-#[derive(BorshSerialize, BorshDeserialize)]
+#[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct ShuffleProof<C: Ctx> {
     // proof commitment
     pub(crate) t: Commitments<C>,

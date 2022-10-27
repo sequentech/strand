@@ -12,7 +12,7 @@ use crate::context::{Ctx, Element};
 use crate::elgamal::{PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::shuffler::Shuffler;
-use crate::threshold::tests::test_threshold_generic;
+use crate::threshold_test::tests::test_threshold_generic;
 use crate::util;
 use crate::util::Par;
 use crate::zkp::Zkp;

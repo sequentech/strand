@@ -21,6 +21,7 @@ pub mod keymaker;
 /// Wikstrom proof of shuffle.
 pub mod shuffler;
 /// Support for threshold ElGamal.
+pub mod threshold_test;
 pub mod threshold;
 /// Miscellaneous functions.
 pub mod util;
