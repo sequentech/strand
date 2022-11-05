@@ -115,8 +115,10 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         let mut gen = StrandRandgen(StrandRng);
         let mut state = RandState::new_custom(&mut gen);
 
-        self.encode(&IntegerP(self.exp_modulus().0.clone().random_below(&mut state)))
-            .expect("0..(q-1) should always be encodable")
+        self.encode(&IntegerP(
+            self.exp_modulus().0.clone().random_below(&mut state),
+        ))
+        .expect("0..(q-1) should always be encodable")
     }
     #[inline(always)]
     fn rnd_exp(&self) -> Self::X {
@@ -351,7 +353,6 @@ pub struct IntegerE<P: RugCtxParams>(Integer, PhantomData<RugCtx<P>>);
 pub struct IntegerX<P: RugCtxParams>(Integer, PhantomData<RugCtx<P>>);
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct IntegerP(pub Integer);
-
 
 impl<P: RugCtxParams> IntegerE<P> {
     fn new(value: Integer) -> IntegerE<P> {

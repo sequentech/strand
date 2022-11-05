@@ -2,7 +2,11 @@ use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::Ciphertext;
 use crate::zkp::{ChaumPedersen, Zkp};
 
-pub fn gen_coefficients<C: Ctx>(trustees: usize, threshold: u32, ctx: &C) -> (Vec<C::X>, Vec<C::E>) {
+pub fn gen_coefficients<C: Ctx>(
+    trustees: usize,
+    threshold: u32,
+    ctx: &C,
+) -> (Vec<C::X>, Vec<C::E>) {
     let mut coefficients = vec![];
     let mut commitments = vec![];
 
@@ -68,7 +72,13 @@ pub fn verification_key_factor<C: Ctx>(
     accum
 }
 
-pub fn decryption_factor<C: Ctx>(c: &Ciphertext<C>, share: &C::X, v_key: &C::E, label: &[u8], ctx: C) -> (C::E, ChaumPedersen<C>) {
+pub fn decryption_factor<C: Ctx>(
+    c: &Ciphertext<C>,
+    share: &C::X,
+    v_key: &C::E,
+    label: &[u8],
+    ctx: C,
+) -> (C::E, ChaumPedersen<C>) {
     let zkp = Zkp::new(&ctx);
     let factor = c.gr.mod_pow(&share, ctx.modulus());
     let proof = zkp.decryption_proof(&share, &v_key, &factor, &c.mhr, &c.gr, label);
