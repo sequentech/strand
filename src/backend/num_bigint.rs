@@ -18,9 +18,9 @@
 //! let g_ba = g.mod_pow(&b, &m).mod_pow(&a, &m);
 //! assert_eq!(g_ab, g_ba);
 //! ```
-use std::marker::PhantomData;
 use std::fmt::Debug;
 use std::io::{Error, ErrorKind};
+use std::marker::PhantomData;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use ed25519_dalek::{Digest, Sha512};
@@ -34,12 +34,15 @@ use num_traits::{One, Zero};
 use crate::backend::constants::*;
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
-use crate::serialization::{StrandSerialize,StrandDeserialize};
+use crate::serialization::{StrandDeserialize, StrandSerialize};
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct BigUintE<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct BigUintX<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
+
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct BigUintP(pub BigUint);
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct BigintCtx<P: BigintCtxParams> {
@@ -112,7 +115,7 @@ impl<P: BigintCtxParams> BigintCtx<P> {
 impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     type E = BigUintE<P>;
     type X = BigUintX<P>;
-    type P = BigUint;
+    type P = BigUintP;
 
     #[inline(always)]
     fn generator(&self) -> &Self::E {
@@ -138,7 +141,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn rnd(&self) -> Self::E {
         let mut gen = StrandRng;
         let one: BigUint = One::one();
-        let unencoded = gen.gen_biguint_below(&(&self.exp_modulus().0 - one));
+        let unencoded = BigUintP(gen.gen_biguint_below(&(&self.exp_modulus().0 - one)));
 
         self.encode(&unencoded)
             .expect("0..(q-1) should always be encodable")
@@ -149,7 +152,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         BigUintX::new(gen.gen_biguint_below(&self.exp_modulus().0))
     }
     fn rnd_plaintext(&self) -> Self::P {
-        self.rnd_exp().0
+        BigUintP(self.rnd_exp().0)
     }
     fn hash_to_exp(&self, bytes: &[u8]) -> Self::X {
         let mut hasher = Sha512::new();
@@ -162,10 +165,10 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
         let one: BigUint = One::one();
 
-        if plaintext >= &(&self.exp_modulus().0 - &one) {
+        if plaintext.0 >= (&self.exp_modulus().0 - &one) {
             return Err("Failed to encode, out of range");
         }
-        let notzero: BigUint = plaintext + one;
+        let notzero: BigUint = plaintext.0.clone() + one;
         let legendre = notzero.legendre(&self.modulus().0);
         if legendre == 0 {
             return Err("Failed to encode, legendre = 0");
@@ -183,9 +186,9 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn decode(&self, element: &Self::E) -> Self::P {
         let one: BigUint = One::one();
         if element.0 > self.exp_modulus().0 {
-            (&self.modulus().0 - &element.0) - one
+            BigUintP((&self.modulus().0 - &element.0) - one)
         } else {
-            &element.0 - one
+            BigUintP(&element.0 - one)
         }
     }
     fn exp_from_u64(&self, value: u64) -> Self::X {
@@ -393,9 +396,27 @@ impl<P: BigintCtxParams> BorshDeserialize for BigUintX<P> {
     }
 }
 
-/*********************************************************************/
-/*************************** SPECIALIZATIONS *************************/
-/*********************************************************************/
+impl BorshSerialize for BigUintP {
+    #[inline]
+    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        let bytes = self.0.to_bytes_le();
+        bytes.serialize(writer)
+    }
+}
+
+impl BorshDeserialize for BigUintP {
+    #[inline]
+    fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
+        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+
+        let biguint = BigUint::from_bytes_le(&bytes);
+        Ok(BigUintP(biguint))
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Specializations
+///////////////////////////////////////////////////////////////////////////
 use crate::util::Par;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
@@ -496,8 +517,8 @@ cfg_if::cfg_if! {
 mod tests {
     use crate::backend::num_bigint::*;
     use crate::backend::tests::*;
-    use crate::serialization::tests::*;
     use crate::context::Ctx;
+    use crate::serialization::tests::*;
     use crate::threshold_test::tests::test_threshold_generic;
 
     #[test]
@@ -650,7 +671,7 @@ mod tests {
     fn test_encode_err() {
         let ctx = BigintCtx::<P2048>::default();
         let one: BigUint = One::one();
-        let result = ctx.encode(&(&ctx.exp_modulus().0 - one));
+        let result = ctx.encode(&BigUintP((&ctx.exp_modulus().0 - one)));
         assert!(result.is_err())
     }
 }

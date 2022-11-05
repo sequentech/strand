@@ -20,6 +20,10 @@
 use std::io::Error;
 use std::io::ErrorKind;
 
+use crate::context::{Ctx, Element, Exponent};
+use crate::rnd::StrandRng;
+use crate::serialization::{StrandDeserialize, StrandSerialize};
+use crate::util;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use curve25519_dalek::constants::BASEPOINT_ORDER;
@@ -32,10 +36,6 @@ use ed25519_dalek::{Digest, Sha512};
 use rand::RngCore;
 use sha3::digest::{ExtendableOutput, Update, XofReader};
 use sha3::Shake256;
-use crate::context::{Ctx, Element, Exponent};
-use crate::rnd::StrandRng;
-use crate::util;
-use crate::serialization::{StrandSerialize,StrandDeserialize};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct RistrettoCtx;
@@ -43,7 +43,7 @@ pub struct RistrettoCtx;
 const DUMMY_SCALAR: Scalar = BASEPOINT_ORDER;
 const DUMMY_POINT: RistrettoPoint = RISTRETTO_BASEPOINT_POINT;
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Clone)]
 // RistrettoPoint for Strand
 pub struct RistrettoPointS(pub RistrettoPoint);
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -295,9 +295,9 @@ impl BorshDeserialize for ScalarS {
     }
 }
 
-/*********************************************************************/
-/*************************** SPECIALIZATIONS *************************/
-/*********************************************************************/
+///////////////////////////////////////////////////////////////////////////
+// Specializations
+///////////////////////////////////////////////////////////////////////////
 use crate::util::Par;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
@@ -390,6 +390,16 @@ cfg_if::cfg_if! {
                 Ok(results)
             }
         }
+    }
+}
+
+impl std::fmt::Debug for RistrettoPointS {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "RistrettoPointS {{ value={} }}",
+            &hex::encode(self.0.compress().as_bytes())[0..10]
+        )
     }
 }
 

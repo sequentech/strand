@@ -42,9 +42,9 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use std::marker::PhantomData;
 
+use crate::context::{Ctx, Element};
 use crate::serialization::StrandDeserialize;
 use crate::serialization::StrandSerialize;
-use crate::context::{Ctx, Element};
 use crate::symmetric;
 use crate::zkp::{ChaumPedersen, Schnorr, Zkp};
 
@@ -57,8 +57,8 @@ use crate::zkp::{ChaumPedersen, Schnorr, Zkp};
 /// where m = message, h = public key, g = generator, r = randomness.
 #[derive(Clone, Eq, PartialEq, Debug, BorshSerialize, BorshDeserialize)]
 pub struct Ciphertext<C: Ctx> {
-    pub(crate) mhr: C::E,
-    pub(crate) gr: C::E,
+    pub mhr: C::E,
+    pub gr: C::E,
 }
 impl<C: Ctx> Ciphertext<C> {
     /// Returns the ciphertext part computed as m * h^r.

@@ -25,14 +25,14 @@ use rug::{
     rand::{RandGen, RandState},
     Integer,
 };
+use std::fmt::Debug;
 use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
-use std::fmt::Debug;
 
 use crate::backend::constants::*;
-use crate::serialization::{StrandDeserialize, StrandSerialize};
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
+use crate::serialization::{StrandDeserialize, StrandSerialize};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct RugCtx<P: RugCtxParams> {
@@ -88,7 +88,7 @@ impl<P: RugCtxParams> RugCtx<P> {
 impl<P: RugCtxParams> Ctx for RugCtx<P> {
     type E = IntegerE<P>;
     type X = IntegerX<P>;
-    type P = Integer;
+    type P = IntegerP;
 
     #[inline(always)]
     fn generator(&self) -> &Self::E {
@@ -115,7 +115,7 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         let mut gen = StrandRandgen(StrandRng);
         let mut state = RandState::new_custom(&mut gen);
 
-        self.encode(&self.exp_modulus().0.clone().random_below(&mut state))
+        self.encode(&IntegerP(self.exp_modulus().0.clone().random_below(&mut state)))
             .expect("0..(q-1) should always be encodable")
     }
     #[inline(always)]
@@ -126,17 +126,17 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         IntegerX::new(self.exp_modulus().0.clone().random_below(&mut state))
     }
     fn rnd_plaintext(&self) -> Self::P {
-        self.rnd_exp().0
+        IntegerP(self.rnd_exp().0)
     }
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
-        if plaintext >= &(self.exp_modulus().0.clone() - 1i32) {
+        if plaintext.0 >= (self.exp_modulus().0.clone() - 1i32) {
             return Err("Failed to encode, out of range");
         }
-        if plaintext < &0i32 {
+        if plaintext.0 < 0i32 {
             return Err("Failed to encode, negative");
         }
 
-        let notzero: Integer = plaintext.clone() + 1i32;
+        let notzero: Integer = plaintext.0.clone() + 1i32;
         let legendre = notzero.legendre(&self.modulus().0);
         if legendre == 0 {
             return Err("Failed to encode, legendre = 0");
@@ -152,9 +152,9 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     fn decode(&self, element: &Self::E) -> Self::P {
         if element.0 > self.exp_modulus().0 {
             let sub: Integer = self.modulus().0.clone() - element.0.clone();
-            sub - 1i32
+            IntegerP(sub - 1i32)
         } else {
-            element.0.clone() - 1i32
+            IntegerP(element.0.clone() - 1i32)
         }
     }
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E> {
@@ -349,6 +349,9 @@ impl RugCtxParams for P2048 {
 pub struct IntegerE<P: RugCtxParams>(Integer, PhantomData<RugCtx<P>>);
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct IntegerX<P: RugCtxParams>(Integer, PhantomData<RugCtx<P>>);
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct IntegerP(pub Integer);
+
 
 impl<P: RugCtxParams> IntegerE<P> {
     fn new(value: Integer) -> IntegerE<P> {
@@ -403,9 +406,27 @@ impl<P: RugCtxParams> BorshDeserialize for IntegerX<P> {
     }
 }
 
-/*********************************************************************/
-/*************************** SPECIALIZATIONS *************************/
-/*********************************************************************/
+impl BorshSerialize for IntegerP {
+    #[inline]
+    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        let bytes = self.0.to_digits::<u8>(Order::MsfLe);
+        bytes.serialize(writer)
+    }
+}
+
+impl BorshDeserialize for IntegerP {
+    #[inline]
+    fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
+        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+
+        let i = Integer::from_digits(&bytes, Order::MsfLe);
+        Ok(IntegerP(i))
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Specializations
+///////////////////////////////////////////////////////////////////////////
 use crate::util::Par;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
@@ -506,10 +527,10 @@ cfg_if::cfg_if! {
 mod tests {
     use crate::backend::rug::*;
     use crate::backend::tests::*;
-    use crate::serialization::tests::*;
     use crate::context::Ctx;
     use crate::elgamal::Ciphertext;
     use crate::elgamal::PrivateKey;
+    use crate::serialization::tests::*;
     use crate::shuffler::gen_permutation;
     use crate::shuffler::PermutationData;
     use crate::shuffler::Shuffler;
@@ -629,7 +650,7 @@ mod tests {
     #[test]
     fn test_encode_err() {
         let ctx = RugCtx::<P2048>::default();
-        let result = ctx.encode(&(ctx.exp_modulus().0.clone() - 1i32));
+        let result = ctx.encode(&IntegerP(ctx.exp_modulus().0.clone() - 1i32));
         assert!(result.is_err())
     }
 
@@ -660,7 +681,7 @@ mod tests {
         let mut es: Vec<Ciphertext<RugCtx<P2048>>> = Vec::with_capacity(n);
 
         for _ in 0..n {
-            let plaintext: Integer = ctx.rnd_plaintext();
+            let plaintext: IntegerP = ctx.rnd_plaintext();
             let element = ctx.encode(&plaintext).unwrap();
             let c = pk.encrypt(&element);
             es.push(c);

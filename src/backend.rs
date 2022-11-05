@@ -26,12 +26,12 @@ pub(crate) mod constants {
 
 #[cfg(any(test, feature = "wasmtest"))]
 pub(crate) mod tests {
-    use crate::serialization::StrandDeserialize;
-    use crate::serialization::StrandSerialize;
     use crate::context::Ctx;
     use crate::context::Element;
     use crate::elgamal::*;
     use crate::keymaker::*;
+    use crate::serialization::StrandDeserialize;
+    use crate::serialization::StrandSerialize;
     use crate::shuffler::{ShuffleProof, Shuffler};
     use crate::symmetric;
 

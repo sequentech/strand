@@ -1,6 +1,6 @@
-use borsh::{BorshDeserialize, BorshSerialize};
-use crate::elgamal::Ciphertext;
 use crate::context::Ctx;
+use crate::elgamal::Ciphertext;
+use borsh::{BorshDeserialize, BorshSerialize};
 
 pub trait StrandSerialize {
     fn strand_serialize(&self) -> Vec<u8>;

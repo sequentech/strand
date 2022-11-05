@@ -9,10 +9,10 @@ use rand::Rng;
 use rayon::prelude::*;
 use std::sync::Mutex;
 
-use crate::serialization::StrandSerialize;
 use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::{Ciphertext, PublicKey};
 use crate::rnd::StrandRng;
+use crate::serialization::StrandSerialize;
 use crate::util::Par;
 use crate::zkp::ChallengeInput;
 

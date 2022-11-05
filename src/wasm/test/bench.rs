@@ -6,10 +6,10 @@ use wasm_bindgen::prelude::*;
 
 use crate::backend::num_bigint::{BigintCtx, P2048};
 use crate::backend::ristretto::RistrettoCtx;
-use crate::serialization::StrandSerialize;
 use crate::context::{Ctx, Element};
 use crate::elgamal::{PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
+use crate::serialization::StrandSerialize;
 use crate::shuffler::Shuffler;
 use crate::util;
 use crate::zkp::Zkp;
