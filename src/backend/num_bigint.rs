@@ -41,7 +41,7 @@ pub struct BigUintE<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct BigUintX<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Hash)]
 pub struct BigUintP(pub BigUint);
 
 #[derive(Eq, PartialEq, Clone, Debug)]

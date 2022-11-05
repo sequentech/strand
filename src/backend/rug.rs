@@ -351,7 +351,7 @@ impl RugCtxParams for P2048 {
 pub struct IntegerE<P: RugCtxParams>(Integer, PhantomData<RugCtx<P>>);
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct IntegerX<P: RugCtxParams>(Integer, PhantomData<RugCtx<P>>);
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Hash)]
 pub struct IntegerP(pub Integer);
 
 impl<P: RugCtxParams> IntegerE<P> {

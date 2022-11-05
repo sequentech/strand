@@ -44,7 +44,7 @@ use std::{
 pub trait Ctx: Sync + Sized + Clone + Default + Debug {
     type E: Element<Self>;
     type X: Exponent<Self>;
-    type P: Send + Sync + Eq + Debug + BorshSerialize + BorshDeserialize;
+    type P: Send + Sync + Eq + Debug + BorshSerialize + BorshDeserialize + std::hash::Hash + Clone;
 
     fn generator(&self) -> &Self::E;
     fn gmod_pow(&self, other: &Self::X) -> Self::E;
