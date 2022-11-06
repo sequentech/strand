@@ -71,7 +71,7 @@ rustc_version = "0.4.0"
 name = "shuffle"
 harness = false
 # remove this to run benchmark
-bench = false
+bench = true
 
 [[bench]]
 name = "encrypt"

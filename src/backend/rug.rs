@@ -33,6 +33,7 @@ use crate::backend::constants::*;
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
 use crate::serialization::{StrandDeserialize, StrandSerialize};
+use crate::elgamal::{PrivateKey, PublicKey, Ciphertext};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct RugCtx<P: RugCtxParams> {
@@ -158,6 +159,15 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         } else {
             IntegerP(element.0.clone() - 1i32)
         }
+    }
+    fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
+        let encrypted = pk.encrypt(&self.encode(&IntegerP(exp.0.clone())).unwrap());
+        encrypted.strand_serialize()
+    }
+    fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X> {
+        let encrypted = Ciphertext::<Self>::strand_deserialize(bytes).ok()?;
+        let decrypted = sk.decrypt(&encrypted);
+        Some(IntegerX(self.decode(&decrypted).0, PhantomData))
     }
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E> {
         self.generators_fips(size, contest, seed)
@@ -552,6 +562,12 @@ mod tests {
         test_elgamal_enc_pok_generic(&ctx, plaintext);
     }
 
+    #[test]
+    fn test_encrypt_exp() {
+        let ctx = RugCtx::<P2048>::default();
+        test_encrypt_exp_generic(&ctx);
+    }
+    
     #[test]
     fn test_schnorr() {
         let ctx = RugCtx::<P2048>::default();

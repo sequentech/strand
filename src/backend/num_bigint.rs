@@ -35,6 +35,7 @@ use crate::backend::constants::*;
 use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
 use crate::serialization::{StrandDeserialize, StrandSerialize};
+use crate::elgamal::{PrivateKey, PublicKey, Ciphertext};
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct BigUintE<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
@@ -190,6 +191,15 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         } else {
             BigUintP(&element.0 - one)
         }
+    }
+    fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
+        let encrypted = pk.encrypt(&self.encode(&BigUintP(exp.0.clone())).unwrap());
+        encrypted.strand_serialize()
+    }
+    fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X> {
+        let encrypted = Ciphertext::<Self>::strand_deserialize(bytes).ok()?;
+        let decrypted = sk.decrypt(&encrypted);
+        Some(BigUintX(self.decode(&decrypted).0, PhantomData))
     }
     fn exp_from_u64(&self, value: u64) -> Self::X {
         BigUintX::new(BigUint::from(value))
@@ -536,6 +546,12 @@ mod tests {
     }
 
     #[test]
+    fn test_encrypt_exp() {
+        let ctx = BigintCtx::<P2048>::default();
+        test_encrypt_exp_generic(&ctx);
+    }
+    
+    #[test]
     fn test_schnorr() {
         let ctx = BigintCtx::<P2048>::default();
         test_schnorr_generic(&ctx);
@@ -671,7 +687,7 @@ mod tests {
     fn test_encode_err() {
         let ctx = BigintCtx::<P2048>::default();
         let one: BigUint = One::one();
-        let result = ctx.encode(&BigUintP((&ctx.exp_modulus().0 - one)));
+        let result = ctx.encode(&BigUintP(&ctx.exp_modulus().0 - one));
         assert!(result.is_err())
     }
 }

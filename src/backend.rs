@@ -38,6 +38,16 @@ pub(crate) mod tests {
     use crate::util;
     use crate::zkp::{ChaumPedersen, Schnorr};
 
+    pub(crate) fn test_encrypt_exp_generic<C: Ctx>(ctx: &C) {
+        let exp = ctx.rnd_exp();
+        let sk = PrivateKey::<C>::gen(ctx);
+
+        let encrypted = ctx.encrypt_exp(&exp, sk.get_pk());
+        let decrypted = ctx.decrypt_exp(&encrypted, sk);
+
+        assert_eq!(exp, decrypted.unwrap());
+    }
+    
     pub(crate) fn test_elgamal_generic<C: Ctx>(ctx: &C, data: C::P) {
         let sk = PrivateKey::gen(ctx);
         let pk = sk.get_pk();

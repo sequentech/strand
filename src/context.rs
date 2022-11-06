@@ -39,6 +39,7 @@ use std::{
     fmt::Debug,
     marker::{Send, Sync},
 };
+use crate::elgamal::{PrivateKey, PublicKey};
 
 /// A cryptographic context loosely corresponds to the underlying modular arithmetic group.
 pub trait Ctx: Sync + Sized + Clone + Default + Debug {
@@ -61,6 +62,8 @@ pub trait Ctx: Sync + Sized + Clone + Default + Debug {
 
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str>;
     fn decode(&self, element: &Self::E) -> Self::P;
+    fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8>;
+    fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X>;
     fn exp_from_u64(&self, value: u64) -> Self::X;
     fn hash_to_exp(&self, bytes: &[u8]) -> Self::X;
     fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E>;

@@ -44,7 +44,7 @@ pub struct Responses<C: Ctx> {
     pub(crate) s_primes: Vec<C::X>,
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Debug)]
+#[derive(BorshSerialize, BorshDeserialize, Debug, Clone)]
 pub struct ShuffleProof<C: Ctx> {
     // proof commitment
     pub(crate) t: Commitments<C>,

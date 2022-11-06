@@ -20,10 +20,6 @@
 use std::io::Error;
 use std::io::ErrorKind;
 
-use crate::context::{Ctx, Element, Exponent};
-use crate::rnd::StrandRng;
-use crate::serialization::{StrandDeserialize, StrandSerialize};
-use crate::util;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use curve25519_dalek::constants::BASEPOINT_ORDER;
@@ -36,6 +32,13 @@ use ed25519_dalek::{Digest, Sha512};
 use rand::RngCore;
 use sha3::digest::{ExtendableOutput, Update, XofReader};
 use sha3::Shake256;
+
+use crate::elgamal::Ciphertext;
+use crate::elgamal::{PrivateKey, PublicKey};
+use crate::context::{Ctx, Element, Exponent};
+use crate::rnd::StrandRng;
+use crate::serialization::{StrandDeserialize, StrandSerialize};
+use crate::util;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct RistrettoCtx;
@@ -150,6 +153,36 @@ impl Ctx for RistrettoCtx {
         // the 30 bytes of data are placed in the range 1-30
         let slice = &compressed.as_bytes()[1..31];
         util::to_u8_30(slice)
+    }
+    fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
+        let bytes = exp.0.to_bytes();
+        let mut blank = vec![0; 30];
+        blank[0..16].copy_from_slice(&bytes[0..16]);
+        let first = self.encode(&util::to_u8_30(&blank));
+        blank[0..16].copy_from_slice(&bytes[16..32]);
+        let second = self.encode(&util::to_u8_30(&blank));
+        let first_c = pk.encrypt(&first.unwrap());
+        let second_c = pk.encrypt(&second.unwrap());
+        
+        vec![first_c, second_c].strand_serialize()
+    }
+    fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X> {
+        let vector = Vec::<Ciphertext<Self>>::strand_deserialize(bytes).ok()?;
+        if vector.len() == 2 {
+            let first = self.decode(&sk.decrypt(&vector[0]));
+            let second = self.decode(&sk.decrypt(&vector[1]));
+
+            let mut concat = first[0..16].to_vec();
+            concat.extend_from_slice(&second[0..16]);
+
+            let ret = self.exp_from_bytes(&concat).ok()?;
+
+            Some(ret)
+            
+        }
+        else {
+            None
+        }
     }
     fn exp_from_u64(&self, value: u64) -> Self::X {
         let val_bytes = value.to_le_bytes();
@@ -430,6 +463,12 @@ mod tests {
         csprng.fill_bytes(&mut fill);
         let plaintext = util::to_u8_30(&fill.to_vec());
         test_elgamal_enc_pok_generic(&ctx, plaintext);
+    }
+
+    #[test]
+    fn test_encrypt_exp() {
+        let ctx = RistrettoCtx;
+        test_encrypt_exp_generic(&ctx);
     }
 
     #[test]
