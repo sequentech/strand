@@ -7,6 +7,10 @@ use borsh::{BorshDeserialize, BorshSerialize};
 
 use crate::rnd::StrandRng;
 
+#[derive(Clone)]
+pub struct StrandSignature(Signature);
+
+#[derive(Clone)]
 pub struct StrandSignaturePk(VerificationKey);
 impl StrandSignaturePk {
     pub fn from(sk: &StrandSignatureSk) -> StrandSignaturePk {
@@ -15,8 +19,20 @@ impl StrandSignaturePk {
     pub fn verify(&self, signature: &StrandSignature, msg: &[u8]) -> Result<(), &'static str> {
         self.0.verify(&signature.0, msg).map_err(|_| "Failed to verify signature")
     }
-    
 }
+impl PartialEq for StrandSignaturePk {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.as_ref() == other.0.as_ref()
+    }
+}
+impl std::fmt::Debug for StrandSignaturePk {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &hex::encode(self.0.as_ref())[0..10])
+    }
+}
+impl Eq for StrandSignaturePk {}
+
+
 pub struct StrandSignatureSk(SigningKey);
 impl StrandSignatureSk {
     pub fn new(rng: &mut StrandRng) -> StrandSignatureSk {
@@ -25,6 +41,11 @@ impl StrandSignatureSk {
     }
     pub fn sign(&self, msg: &[u8]) -> StrandSignature {
         StrandSignature(self.0.sign(msg))
+    }
+}
+impl std::fmt::Debug for StrandSignatureSk {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &hex::encode(self.0.as_ref())[0..10])
     }
 }
 
@@ -75,8 +96,6 @@ impl BorshDeserialize for StrandSignature {
         Ok(StrandSignature(signature))
     }
 }
-
-pub struct StrandSignature(Signature);
 
 #[cfg(test)] 
 pub(crate) mod tests {
