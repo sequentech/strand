@@ -3,7 +3,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 // SPDX-FileCopyrightText: 2021 David Ruescas <david@sequentech.io>
 //
 // SPDX-License-Identifier: AGPL-3.0-only
-use ed25519_dalek::{Digest, Sha512};
+use sha3::{Digest, Sha3_512 as Sha512};
 use rand::Rng;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;

@@ -32,8 +32,7 @@ pub mod wasm;
 pub mod zkp;
 
 pub mod serialization;
-// pub mod byte_tree;
-mod rnd;
-mod symmetric;
+pub mod rnd;
+pub mod signature;
 
-pub use ed25519_dalek;
+pub use sha3;

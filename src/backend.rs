@@ -33,7 +33,6 @@ pub(crate) mod tests {
     use crate::serialization::StrandDeserialize;
     use crate::serialization::StrandSerialize;
     use crate::shuffler::{ShuffleProof, Shuffler};
-    use crate::symmetric;
 
     use crate::util;
     use crate::zkp::{ChaumPedersen, Schnorr};
@@ -168,26 +167,23 @@ pub(crate) mod tests {
         let km2 = Keymaker::gen(ctx);
         let (pk1, proof1) = km1.share(&vec![]);
         let (pk2, proof2) = km2.share(&vec![]);
-        let sym1 = symmetric::gen_key();
-        let sym2 = symmetric::gen_key();
-        let esk1 = km1.get_encrypted_sk(sym1);
-        let esk2 = km2.get_encrypted_sk(sym2);
+        
 
         let share1_pk_b = pk1.strand_serialize();
         let share1_proof_b = proof1.strand_serialize();
-        let sk1_b = esk1.strand_serialize();
+        
 
         let share2_pk_b = pk2.strand_serialize();
         let share2_proof_b = proof2.strand_serialize();
-        let sk2_b = esk2.strand_serialize();
+        
 
         let share1_pk_d = PublicKey::<C>::strand_deserialize(&share1_pk_b).unwrap();
         let share1_proof_d = Schnorr::<C>::strand_deserialize(&share1_proof_b).unwrap();
-        let _sk1_d = EncryptedPrivateKey::<C>::strand_deserialize(&sk1_b).unwrap();
+        
 
         let share2_pk_d = PublicKey::<C>::strand_deserialize(&share2_pk_b).unwrap();
         let share2_proof_d = Schnorr::<C>::strand_deserialize(&share2_proof_b).unwrap();
-        let _sk2_d = EncryptedPrivateKey::<C>::strand_deserialize(&sk2_b).unwrap();
+        
 
         let verified1 = Keymaker::verify_share(ctx, &share1_pk_d, &share1_proof_d, &vec![]);
         let verified2 = Keymaker::verify_share(ctx, &share2_pk_d, &share2_proof_d, &vec![]);
@@ -299,21 +295,4 @@ pub(crate) mod tests {
         assert!(ok_d);
     }
 
-    pub(crate) fn test_encrypted_sk_generic<C: Ctx>(ctx: &C, data: C::P) {
-        let sk = PrivateKey::gen(ctx);
-        let pk: PublicKey<C> = sk.get_pk();
-        let plaintext = ctx.encode(&data).unwrap();
-        let c = pk.encrypt(&plaintext);
-        let sym_key = symmetric::gen_key();
-        let enc_sk = sk.to_encrypted(sym_key);
-
-        let enc_sk_b = enc_sk.strand_serialize();
-        let enc_sk_d = EncryptedPrivateKey::strand_deserialize(&enc_sk_b).unwrap();
-
-        let sk_d = PrivateKey::from_encrypted(sym_key, enc_sk_d, ctx);
-        let d = sk_d.decrypt(&c);
-
-        let recovered = ctx.decode(&d);
-        assert_eq!(data, recovered);
-    }
 }

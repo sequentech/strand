@@ -45,7 +45,6 @@ use std::marker::PhantomData;
 use crate::context::{Ctx, Element};
 use crate::serialization::StrandDeserialize;
 use crate::serialization::StrandSerialize;
-use crate::symmetric;
 use crate::zkp::{ChaumPedersen, Schnorr, Zkp};
 
 /// An ElGamal ciphertext.
@@ -174,33 +173,6 @@ impl<C: Ctx> PrivateKey<C> {
             ctx: (*ctx).clone(),
         }
     }
-    pub fn to_encrypted(&self, key: [u8; 32]) -> EncryptedPrivateKey<C> {
-        let key_bytes = self.value.strand_serialize();
-        let (b, iv) = symmetric::encrypt(key, &key_bytes);
-        let phantom = PhantomData;
-        EncryptedPrivateKey {
-            bytes: b,
-            iv,
-            phantom,
-        }
-    }
-    pub fn from_encrypted(
-        key: [u8; 32],
-        encrypted: EncryptedPrivateKey<C>,
-        ctx: &C,
-    ) -> PrivateKey<C> {
-        let key_bytes = symmetric::decrypt(key, encrypted.iv, &encrypted.bytes);
-        // FIXME handle this error
-        let value = C::X::strand_deserialize(&key_bytes).unwrap();
-        let pk_element = ctx.gmod_pow(&value);
-
-        PrivateKey {
-            value,
-            pk_element,
-            ctx: (*ctx).clone(),
-        }
-    }
-
     pub fn pk_element(&self) -> &C::E {
         &self.pk_element
     }

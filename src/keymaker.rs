@@ -46,10 +46,6 @@ impl<C: Ctx> Keymaker<C> {
         (pk, proof)
     }
 
-    pub fn get_encrypted_sk(&self, symmetric: [u8; 32]) -> EncryptedPrivateKey<C> {
-        self.sk.to_encrypted(symmetric)
-    }
-
     pub fn verify_share(ctx: &C, pk: &PublicKey<C>, proof: &Schnorr<C>, label: &[u8]) -> bool {
         let zkp = Zkp::new(ctx);
         zkp.schnorr_verify(&pk.element, None, proof, label)

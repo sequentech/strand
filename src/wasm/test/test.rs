@@ -38,7 +38,6 @@ pub fn test() {
     test_distributed();
     test_distributed_serialization();
     test_threshold();
-    test_encrypted_sk();
     // test_shuffle();
     test_shuffle_serialization();
 }
@@ -52,22 +51,6 @@ pub fn test_shuffle_serialization() {
     message("* BigInt shuffle + serialization..");
     let ctx: BigintCtx<P2048> = Default::default();
     test_shuffle_serialization_generic(&ctx);
-}
-
-#[wasm_bindgen]
-pub fn test_encrypted_sk() {
-    message("* Ristretto encrypted_sk..");
-    let mut csprng = StrandRng;
-    let ctx = RistrettoCtx;
-    let mut fill = [0u8; 30];
-    csprng.fill_bytes(&mut fill);
-    let plaintext = util::to_u8_30(&fill.to_vec());
-    test_encrypted_sk_generic(&ctx, plaintext);
-
-    message("* BigInt encrypted_sk..");
-    let ctx: BigintCtx<P2048> = Default::default();
-    let plaintext = ctx.rnd_plaintext();
-    test_encrypted_sk_generic(&ctx, plaintext);
 }
 
 #[wasm_bindgen]

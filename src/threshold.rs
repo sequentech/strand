@@ -110,12 +110,3 @@ pub fn lagrange<C: Ctx>(trustee: usize, present: &[usize], ctx: &C) -> C::X {
 
     numerator.div(&denominator, ctx.exp_modulus())
 }
-
-fn secret_share<C: Ctx>(shares: Vec<C::X>, num_t: usize, ctx: &C) -> C::X {
-    let mut sum = C::X::add_identity();
-    for i in 0..num_t {
-        sum = sum.add(&shares[i]);
-    }
-
-    sum.modulo(ctx.exp_modulus())
-}

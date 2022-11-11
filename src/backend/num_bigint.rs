@@ -23,7 +23,7 @@ use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use ed25519_dalek::{Digest, Sha512};
+use sha2::{Digest, Sha512};
 use num_bigint::BigUint;
 use num_bigint::RandBigInt;
 use num_integer::Integer;
@@ -598,13 +598,6 @@ mod tests {
     fn test_shuffle_serialization() {
         let ctx = BigintCtx::<P2048>::default();
         test_shuffle_serialization_generic(&ctx);
-    }
-
-    #[test]
-    fn test_encrypted_sk() {
-        let ctx = BigintCtx::<P2048>::default();
-        let plaintext = ctx.rnd_plaintext();
-        test_encrypted_sk_generic(&ctx, plaintext);
     }
 
     #[test]

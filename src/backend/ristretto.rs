@@ -28,7 +28,7 @@ use curve25519_dalek::constants::RISTRETTO_BASEPOINT_TABLE;
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
 use curve25519_dalek::traits::Identity;
-use ed25519_dalek::{Digest, Sha512};
+use sha2::{Digest, Sha512};
 use rand::RngCore;
 use sha3::digest::{ExtendableOutput, Update, XofReader};
 use sha3::Shake256;
@@ -530,17 +530,6 @@ mod tests {
     fn test_shuffle_serialization() {
         let ctx = RistrettoCtx;
         test_shuffle_serialization_generic(&ctx);
-    }
-
-    #[test]
-    fn test_encrypted_sk() {
-        let mut csprng = StrandRng;
-
-        let ctx = RistrettoCtx;
-        let mut fill = [0u8; 30];
-        csprng.fill_bytes(&mut fill);
-        let plaintext = util::to_u8_30(&fill.to_vec());
-        test_encrypted_sk_generic(&ctx, plaintext);
     }
 
     #[test]

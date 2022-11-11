@@ -18,7 +18,7 @@
 //! assert_eq!(g_ab, g_ba);
 //! ```
 use borsh::{BorshDeserialize, BorshSerialize};
-use ed25519_dalek::{Digest, Sha512};
+use sha2::{Digest, Sha512};
 use rand::RngCore;
 use rug::{
     integer::Order,
@@ -615,13 +615,6 @@ mod tests {
     fn test_shuffle_serialization() {
         let ctx = RugCtx::<P2048>::default();
         test_shuffle_serialization_generic(&ctx);
-    }
-
-    #[test]
-    fn test_encrypted_sk() {
-        let ctx = RugCtx::<P2048>::default();
-        let plaintext = ctx.rnd_plaintext();
-        test_encrypted_sk_generic(&ctx, plaintext);
     }
 
     #[test]

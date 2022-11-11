@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 use crate::context::Ctx;
 use crate::elgamal::Ciphertext;
-use ed25519_dalek::Digest;
-use ed25519_dalek::Sha512;
+use sha2::Digest;
+use sha2::Sha512;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "rayon")] {
