@@ -3,7 +3,7 @@ use crate::elgamal::Ciphertext;
 use crate::zkp::{ChaumPedersen, Zkp};
 
 pub fn gen_coefficients<C: Ctx>(
-    trustees: usize,
+    _trustees: usize,
     threshold: u32,
     ctx: &C,
 ) -> (Vec<C::X>, Vec<C::E>) {
@@ -39,16 +39,7 @@ pub fn compute_peer_share<C: Ctx>(
     ctx: &C,
 ) -> C::X {
     // i + 1: trustees start at 1
-    eval_poly(target_trustee + 1, threshold, &coefficients, ctx)
-}
-
-fn compute_secret_share<C: Ctx>(private_shares: &[C::X], trustees: usize, ctx: &C) -> C::X {
-    let mut sum = C::X::add_identity();
-    for i in 0..trustees {
-        sum = sum.add(&private_shares[i]);
-    }
-
-    sum.modulo(ctx.exp_modulus())
+    eval_poly(target_trustee + 1, threshold, coefficients, ctx)
 }
 
 pub fn verification_key_factor<C: Ctx>(
@@ -80,8 +71,8 @@ pub fn decryption_factor<C: Ctx>(
     ctx: C,
 ) -> (C::E, ChaumPedersen<C>) {
     let zkp = Zkp::new(&ctx);
-    let factor = c.gr.mod_pow(&share, ctx.modulus());
-    let proof = zkp.decryption_proof(&share, &v_key, &factor, &c.mhr, &c.gr, label);
+    let factor = c.gr.mod_pow(share, ctx.modulus());
+    let proof = zkp.decryption_proof(share, v_key, &factor, &c.mhr, &c.gr, label);
     // let ok = zkp.decryption_verify(&v_key, &factor, None, &c.mhr, &c.gr, &proof, label);
     // assert!(ok);
     (factor, proof)

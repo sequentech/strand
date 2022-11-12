@@ -101,7 +101,6 @@ impl BorshDeserialize for StrandSignature {
 pub(crate) mod tests {
     use super::*;
     use crate::serialization::{StrandDeserialize, StrandSerialize};
-    use ed25519_zebra::*;
 
     // Adapted from ed25519-zebra
     #[test]

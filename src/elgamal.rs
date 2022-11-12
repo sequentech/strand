@@ -40,11 +40,8 @@
 //! ```
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use std::marker::PhantomData;
 
 use crate::context::{Ctx, Element};
-use crate::serialization::StrandDeserialize;
-use crate::serialization::StrandSerialize;
 use crate::zkp::{ChaumPedersen, Schnorr, Zkp};
 
 /// An ElGamal ciphertext.
