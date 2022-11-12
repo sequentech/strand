@@ -6,7 +6,7 @@
 use rayon::prelude::*;
 
 use crate::context::{Ctx, Element};
-use crate::elgamal::{Ciphertext, EncryptedPrivateKey, PrivateKey, PublicKey};
+use crate::elgamal::{Ciphertext, PrivateKey, PublicKey};
 use crate::util::Par;
 use crate::zkp::{ChaumPedersen, Schnorr, Zkp};
 

@@ -35,11 +35,11 @@
 
 use borsh::{BorshDeserialize, BorshSerialize};
 // use crate::zkp::Zkp;
+use crate::elgamal::{PrivateKey, PublicKey};
 use std::{
     fmt::Debug,
     marker::{Send, Sync},
 };
-use crate::elgamal::{PrivateKey, PublicKey};
 
 /// A cryptographic context loosely corresponds to the underlying modular arithmetic group.
 pub trait Ctx: Sync + Sized + Clone + Default + Debug {

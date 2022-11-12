@@ -3,10 +3,10 @@ use borsh::{BorshDeserialize, BorshSerialize};
 // SPDX-FileCopyrightText: 2021 David Ruescas <david@sequentech.io>
 //
 // SPDX-License-Identifier: AGPL-3.0-only
-use sha3::{Digest, Sha3_512 as Sha512};
 use rand::Rng;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
+use sha3::{Digest, Sha3_512 as Sha512};
 use std::sync::Mutex;
 
 use crate::context::{Ctx, Element, Exponent};

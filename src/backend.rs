@@ -46,7 +46,7 @@ pub(crate) mod tests {
 
         assert_eq!(exp, decrypted.unwrap());
     }
-    
+
     pub(crate) fn test_elgamal_generic<C: Ctx>(ctx: &C, data: C::P) {
         let sk = PrivateKey::gen(ctx);
         let pk = sk.get_pk();
@@ -167,23 +167,18 @@ pub(crate) mod tests {
         let km2 = Keymaker::gen(ctx);
         let (pk1, proof1) = km1.share(&vec![]);
         let (pk2, proof2) = km2.share(&vec![]);
-        
 
         let share1_pk_b = pk1.strand_serialize();
         let share1_proof_b = proof1.strand_serialize();
-        
 
         let share2_pk_b = pk2.strand_serialize();
         let share2_proof_b = proof2.strand_serialize();
-        
 
         let share1_pk_d = PublicKey::<C>::strand_deserialize(&share1_pk_b).unwrap();
         let share1_proof_d = Schnorr::<C>::strand_deserialize(&share1_proof_b).unwrap();
-        
 
         let share2_pk_d = PublicKey::<C>::strand_deserialize(&share2_pk_b).unwrap();
         let share2_proof_d = Schnorr::<C>::strand_deserialize(&share2_proof_b).unwrap();
-        
 
         let verified1 = Keymaker::verify_share(ctx, &share1_pk_d, &share1_proof_d, &vec![]);
         let verified2 = Keymaker::verify_share(ctx, &share2_pk_d, &share2_proof_d, &vec![]);
@@ -294,5 +289,4 @@ pub(crate) mod tests {
 
         assert!(ok_d);
     }
-
 }

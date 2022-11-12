@@ -23,19 +23,19 @@ use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use sha2::{Digest, Sha512};
 use num_bigint::BigUint;
 use num_bigint::RandBigInt;
 use num_integer::Integer;
 use num_modular::{ModularSymbols, ModularUnaryOps};
 use num_traits::Num;
 use num_traits::{One, Zero};
+use sha2::{Digest, Sha512};
 
 use crate::backend::constants::*;
 use crate::context::{Ctx, Element, Exponent};
+use crate::elgamal::{Ciphertext, PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::serialization::{StrandDeserialize, StrandSerialize};
-use crate::elgamal::{PrivateKey, PublicKey, Ciphertext};
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct BigUintE<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
@@ -550,7 +550,7 @@ mod tests {
         let ctx = BigintCtx::<P2048>::default();
         test_encrypt_exp_generic(&ctx);
     }
-    
+
     #[test]
     fn test_schnorr() {
         let ctx = BigintCtx::<P2048>::default();

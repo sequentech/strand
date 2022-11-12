@@ -18,22 +18,22 @@
 //! assert_eq!(g_ab, g_ba);
 //! ```
 use borsh::{BorshDeserialize, BorshSerialize};
-use sha2::{Digest, Sha512};
 use rand::RngCore;
 use rug::{
     integer::Order,
     rand::{RandGen, RandState},
     Integer,
 };
+use sha2::{Digest, Sha512};
 use std::fmt::Debug;
 use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
 
 use crate::backend::constants::*;
 use crate::context::{Ctx, Element, Exponent};
+use crate::elgamal::{Ciphertext, PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::serialization::{StrandDeserialize, StrandSerialize};
-use crate::elgamal::{PrivateKey, PublicKey, Ciphertext};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct RugCtx<P: RugCtxParams> {
@@ -567,7 +567,7 @@ mod tests {
         let ctx = RugCtx::<P2048>::default();
         test_encrypt_exp_generic(&ctx);
     }
-    
+
     #[test]
     fn test_schnorr() {
         let ctx = RugCtx::<P2048>::default();

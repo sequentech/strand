@@ -31,8 +31,8 @@ pub mod wasm;
 /// Schnorr and Chaum-Pedersen zero knowledge proofs.
 pub mod zkp;
 
-pub mod serialization;
 pub mod rnd;
+pub mod serialization;
 pub mod signature;
 
 pub use sha3;

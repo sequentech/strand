@@ -1,9 +1,8 @@
-
-use std::io::{Error, ErrorKind};
+use borsh::{BorshDeserialize, BorshSerialize};
 use ed25519_zebra::Signature;
 use ed25519_zebra::SigningKey;
 use ed25519_zebra::VerificationKey;
-use borsh::{BorshDeserialize, BorshSerialize};
+use std::io::{Error, ErrorKind};
 
 use crate::rnd::StrandRng;
 
@@ -17,7 +16,9 @@ impl StrandSignaturePk {
         StrandSignaturePk(VerificationKey::from(&sk.0))
     }
     pub fn verify(&self, signature: &StrandSignature, msg: &[u8]) -> Result<(), &'static str> {
-        self.0.verify(&signature.0, msg).map_err(|_| "Failed to verify signature")
+        self.0
+            .verify(&signature.0, msg)
+            .map_err(|_| "Failed to verify signature")
     }
 }
 impl PartialEq for StrandSignaturePk {
@@ -31,7 +32,6 @@ impl std::fmt::Debug for StrandSignaturePk {
     }
 }
 impl Eq for StrandSignaturePk {}
-
 
 pub struct StrandSignatureSk(SigningKey);
 impl StrandSignatureSk {
@@ -97,16 +97,15 @@ impl BorshDeserialize for StrandSignature {
     }
 }
 
-#[cfg(test)] 
+#[cfg(test)]
 pub(crate) mod tests {
-    use crate::serialization::{StrandSerialize,StrandDeserialize};
-    use ed25519_zebra::*;
     use super::*;
+    use crate::serialization::{StrandDeserialize, StrandSerialize};
+    use ed25519_zebra::*;
 
     // Adapted from ed25519-zebra
     #[test]
     pub fn test_signature() {
-
         let msg = b"ok";
         let msg2 = b"not_ok";
         let mut rng = StrandRng;
@@ -115,7 +114,7 @@ pub(crate) mod tests {
             let sk = StrandSignatureSk(SigningKey::new(&mut rng));
             let sk_b = sk.strand_serialize();
             let sk_d = StrandSignatureSk::strand_deserialize(&sk_b).unwrap();
-            
+
             let sig = sk_d.sign(msg);
 
             let sig_bytes = sig.strand_serialize();
@@ -124,15 +123,13 @@ pub(crate) mod tests {
             (vk_bytes, sig_bytes)
         };
 
-        
         let vk = StrandSignaturePk::strand_deserialize(&vk_bytes).unwrap();
         let sig = StrandSignature::strand_deserialize(&sig_bytes).unwrap();
-        
+
         let ok = vk.verify(&sig, msg);
         assert!(ok.is_ok());
 
         let not_ok = vk.verify(&sig, msg2);
         assert!(not_ok.is_err());
-        
     }
 }

@@ -28,14 +28,14 @@ use curve25519_dalek::constants::RISTRETTO_BASEPOINT_TABLE;
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
 use curve25519_dalek::traits::Identity;
-use sha2::{Digest, Sha512};
 use rand::RngCore;
+use sha2::{Digest, Sha512};
 use sha3::digest::{ExtendableOutput, Update, XofReader};
 use sha3::Shake256;
 
+use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::Ciphertext;
 use crate::elgamal::{PrivateKey, PublicKey};
-use crate::context::{Ctx, Element, Exponent};
 use crate::rnd::StrandRng;
 use crate::serialization::{StrandDeserialize, StrandSerialize};
 use crate::util;
@@ -163,7 +163,7 @@ impl Ctx for RistrettoCtx {
         let second = self.encode(&util::to_u8_30(&blank));
         let first_c = pk.encrypt(&first.unwrap());
         let second_c = pk.encrypt(&second.unwrap());
-        
+
         vec![first_c, second_c].strand_serialize()
     }
     fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X> {
@@ -178,9 +178,7 @@ impl Ctx for RistrettoCtx {
             let ret = self.exp_from_bytes(&concat).ok()?;
 
             Some(ret)
-            
-        }
-        else {
+        } else {
             None
         }
     }

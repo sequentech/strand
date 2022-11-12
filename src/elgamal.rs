@@ -87,14 +87,6 @@ pub struct PrivateKey<C: Ctx> {
     pub(crate) ctx: C,
 }
 
-#[doc(hidden)]
-#[derive(Eq, PartialEq, BorshSerialize, BorshDeserialize)]
-pub struct EncryptedPrivateKey<C: Ctx> {
-    pub(crate) bytes: Vec<u8>,
-    pub(crate) iv: [u8; 16],
-    pub(crate) phantom: PhantomData<C>,
-}
-
 impl<C: Ctx> PublicKey<C> {
     pub fn encrypt(&self, plaintext: &C::E) -> Ciphertext<C> {
         let randomness = self.ctx.rnd_exp();
