@@ -42,7 +42,7 @@ use std::{
 };
 
 /// A cryptographic context loosely corresponds to the underlying modular arithmetic group.
-pub trait Ctx: Sync + Sized + Clone + Default + Debug {
+pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
     type E: Element<Self>;
     type X: Exponent<Self>;
     type P: Send + Sync + Eq + Debug + BorshSerialize + BorshDeserialize + std::hash::Hash + Clone;

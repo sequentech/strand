@@ -9,6 +9,7 @@ use crate::rnd::StrandRng;
 #[derive(Clone)]
 pub struct StrandSignature(Signature);
 
+// Allows Configuration to be Clonable in Braid
 #[derive(Clone)]
 pub struct StrandSignaturePk(VerificationKey);
 impl StrandSignaturePk {
@@ -33,6 +34,7 @@ impl std::fmt::Debug for StrandSignaturePk {
 }
 impl Eq for StrandSignaturePk {}
 
+#[derive(Clone)]
 pub struct StrandSignatureSk(SigningKey);
 impl StrandSignatureSk {
     pub fn new(rng: &mut StrandRng) -> StrandSignatureSk {
