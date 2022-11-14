@@ -2,6 +2,8 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use ed25519_zebra::Signature;
 use ed25519_zebra::SigningKey;
 use ed25519_zebra::VerificationKey;
+use std::hash::Hash;
+use std::hash::Hasher;
 use std::io::{Error, ErrorKind};
 
 use crate::rnd::StrandRng;
@@ -9,7 +11,7 @@ use crate::rnd::StrandRng;
 #[derive(Clone)]
 pub struct StrandSignature(Signature);
 
-// Allows Configuration to be Clonable in Braid
+// Clone: Allows Configuration to be Clonable in Braid
 #[derive(Clone)]
 pub struct StrandSignaturePk(VerificationKey);
 impl StrandSignaturePk {
@@ -25,6 +27,11 @@ impl StrandSignaturePk {
 impl PartialEq for StrandSignaturePk {
     fn eq(&self, other: &Self) -> bool {
         self.0.as_ref() == other.0.as_ref()
+    }
+}
+impl Hash for StrandSignaturePk {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.as_ref().hash(state);
     }
 }
 impl std::fmt::Debug for StrandSignaturePk {
