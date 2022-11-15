@@ -4,7 +4,7 @@
 
 #![doc = include_str!("../README.md")]
 // https://github.com/rust-lang/rfcs/blob/master/text/1210-impl-specialization.md
-#![cfg_attr(feature = "specialization", feature(specialization))]
+#![cfg_attr(feature = "specialization", feature(min_specialization))]
 
 // #![warn(missing_docs)]
 
