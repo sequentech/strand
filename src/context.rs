@@ -35,7 +35,7 @@
 
 use borsh::{BorshDeserialize, BorshSerialize};
 // use crate::zkp::Zkp;
-use crate::elgamal::{PrivateKey, PublicKey};
+use crate::{elgamal::{PrivateKey, PublicKey}, serialization};
 use std::{
     fmt::Debug,
     marker::{Send, Sync},
@@ -76,7 +76,7 @@ pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
 ///
 /// Operations depend on the backend and are given below for multiplicative groups / elliptic curves.
 pub trait Element<C: Ctx>:
-    Clone + Eq + Send + Sync + BorshSerialize + BorshDeserialize + Debug
+    Clone + Eq + Send + Sync + BorshSerialize + BorshDeserialize + Debug + serialization::DefaultSerialization
 {
     /// Modular multiplication / point addition.
     fn mul(&self, other: &C::E) -> C::E;
@@ -96,7 +96,7 @@ pub trait Element<C: Ctx>:
 
 /// A member of the "exponent ring" associated to the element group, or scalar ring for elliptic curves.
 pub trait Exponent<C: Ctx>:
-    Clone + Eq + Send + Sync + BorshSerialize + BorshDeserialize + Debug
+    Clone + Eq + Send + Sync + BorshSerialize + BorshDeserialize + Debug + serialization::DefaultSerialization
 {
     // Modular addition.
     fn add(&self, other: &C::X) -> C::X;

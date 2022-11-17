@@ -3,8 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 #![doc = include_str!("../README.md")]
-// https://github.com/rust-lang/rfcs/blob/master/text/1210-impl-specialization.md
-#![cfg_attr(feature = "specialization", feature(min_specialization))]
+
+#![feature(negative_impls)]
+#![feature(auto_traits)]
+
 
 // #![warn(missing_docs)]
 

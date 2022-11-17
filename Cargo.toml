@@ -58,7 +58,6 @@ wasmrayon = ["rayon", "wasm", "dep:wasm-bindgen-rayon"]
 wasmtest = ["wasm", "dep:web-sys"]
 wasm = ["wasm-bindgen", "serde-wasm-bindgen"]
 rug = ["dep:rug"]
-specialization = ["rayon"]
 
 [dev-dependencies]
 criterion = {version = "0.3", features=["html_reports"]}

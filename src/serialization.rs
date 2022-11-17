@@ -1,4 +1,4 @@
-use crate::context::Ctx;
+
 use crate::elgamal::Ciphertext;
 use borsh::{BorshDeserialize, BorshSerialize};
 
@@ -16,91 +16,70 @@ use crate::util::Par;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
 
-cfg_if::cfg_if! {
-    if #[cfg(feature="specialization")] {
-        impl<T: BorshSerialize> StrandSerialize for T {
-            default fn strand_serialize(&self) -> Vec<u8> {
-                // FIXME log on failure
-                self.try_to_vec().unwrap()
-            }
+use crate::backend::num_bigint::{BigUintE, BigUintX};
+use crate::{context::Ctx, backend::num_bigint::BigintCtxParams};
+
+// https://doc.rust-lang.org/beta/unstable-book/language-features/auto-traits.html
+pub auto trait DefaultSerialization {}
+
+// For some reason must opt in with these (rug opt-ins are in the rug module)
+impl<P: BigintCtxParams + Eq> DefaultSerialization for BigUintE<P>{}
+impl<P: BigintCtxParams + Eq> DefaultSerialization for BigUintX<P>{}
+impl<C: Ctx> DefaultSerialization for crate::elgamal::PublicKey<C>{}
+impl<C: Ctx> DefaultSerialization for crate::elgamal::PrivateKey<C>{}
+impl<C: Ctx> DefaultSerialization for crate::shuffler::ShuffleProof<C>{}
+impl DefaultSerialization for crate::zkp::ChallengeInput{}
+
+// Exclude those for which we will have a parallel implementation
+impl<T: BorshSerialize> !DefaultSerialization for Vec<T> {}
+
+// Default serialization
+impl<T: BorshSerialize + DefaultSerialization> StrandSerialize for T {
+    fn strand_serialize(&self) -> Vec<u8> {
+        // FIXME log on failure
+        self.try_to_vec().unwrap()
+    }
+}
+
+impl<T: BorshDeserialize + DefaultSerialization> StrandDeserialize for T {
+    fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
+    where
+        Self: Sized,
+    {
+        let value = T::try_from_slice(bytes);
+        if value.is_err() {
+            // FIXME log on failure
         }
+        value.map_err(|_| "borsh deserialize failed")
+    }
+}
 
-        impl<T: BorshDeserialize> StrandDeserialize for T {
-            default fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
-            where
-                Self: Sized,
-            {
-                let value = T::try_from_slice(bytes);
-                if value.is_err() {
-                    // FIXME log on failure
-                }
-                value.map_err(|_| "borsh deserialize failed")
-            }
-        }
+// Parallel serialization
+impl<T: BorshSerialize + Send + Sync> StrandSerialize for Vec<T> {
+    fn strand_serialize(&self) -> Vec<u8> {
+        // FIXME log on failure
+        let vectors: Vec<Vec<u8>> = self
+            .par()
+            .map(|c| c.try_to_vec().unwrap()).collect();
 
-        impl<C: Ctx> StrandSerialize for Vec<Ciphertext<C>> {
-            fn strand_serialize(&self) -> Vec<u8> {
-                println!("Specialization: V<C> >>>");
-                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+        vectors.try_to_vec().unwrap()
+    }
+}
 
-                vectors.try_to_vec().unwrap()
-            }
-        }
+impl<T: BorshDeserialize + Sync + Send> StrandDeserialize for Vec<T> {
+    fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
+    where
+        Self: Sized,
+    {
+        
+        let vectors = <Vec<Vec<u8>>>::try_from_slice(bytes).unwrap();
 
-        impl<C: Ctx> StrandSerialize for [Ciphertext<C>] {
-            fn strand_serialize(&self) -> Vec<u8> {
-                println!("Specialization: C[] >>>");
-                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
+        let results: Vec<T> = vectors
+            .par()
+            .map(|v| T::try_from_slice(&v).unwrap())
+            .collect();
 
-                vectors.try_to_vec().unwrap()
-            }
-        }
-
-        impl<C: Ctx> StrandSerialize for &[Ciphertext<C>] {
-            fn strand_serialize(&self) -> Vec<u8> {
-                println!("Specialization: &C[] >>>");
-                let vectors: Vec<Vec<u8>> = self.par().map(|c| c.try_to_vec().unwrap()).collect();
-
-                vectors.try_to_vec().unwrap()
-            }
-        }
-
-        impl<C: Ctx> StrandDeserialize for Vec<Ciphertext<C>> {
-            fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
-            where
-                Self: Sized,
-            {
-                println!("Specialization: V<C> <<<");
-                let vectors = <Vec<Vec<u8>>>::try_from_slice(bytes).unwrap();
-
-                let results: Vec<Ciphertext<C>> = vectors
-                    .par()
-                    .map(|v| Ciphertext::<C>::try_from_slice(&v).unwrap())
-                    .collect();
-
-                Ok(results)
-            }
-        }
-    } else {
-        impl<T: BorshSerialize> StrandSerialize for T {
-            fn strand_serialize(&self) -> Vec<u8> {
-                // FIXME log on failure
-                self.try_to_vec().unwrap()
-            }
-        }
-
-        impl<T: BorshDeserialize> StrandDeserialize for T {
-            fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
-            where
-                Self: Sized,
-            {
-                let value = T::try_from_slice(bytes);
-                if value.is_err() {
-                    // FIXME log on failure
-                }
-                value.map_err(|_| "borsh deserialize failed")
-            }
-        }
+        Ok(results)
     }
 }
 
