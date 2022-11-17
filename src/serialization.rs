@@ -2,6 +2,13 @@
 use crate::elgamal::Ciphertext;
 use borsh::{BorshDeserialize, BorshSerialize};
 
+use crate::backend::num_bigint::{BigUintE, BigUintX};
+use crate::{context::Ctx, backend::num_bigint::BigintCtxParams};
+
+use crate::util::Par;
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
+
 pub trait StrandSerialize {
     fn strand_serialize(&self) -> Vec<u8>;
 }
@@ -12,14 +19,9 @@ pub trait StrandDeserialize {
         Self: Sized;
 }
 
-use crate::util::Par;
-#[cfg(feature = "rayon")]
-use rayon::prelude::*;
-
-use crate::backend::num_bigint::{BigUintE, BigUintX};
-use crate::{context::Ctx, backend::num_bigint::BigintCtxParams};
-
+// Emulating negative bounds
 // https://doc.rust-lang.org/beta/unstable-book/language-features/auto-traits.html
+// https://stackoverflow.com/questions/65131776/pick-preferred-implementation-on-conflicting-trait-implementation-using-negativ
 pub auto trait DefaultSerialization {}
 
 // For some reason must opt in with these (rug opt-ins are in the rug module)
