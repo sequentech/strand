@@ -435,9 +435,6 @@ impl BorshDeserialize for IntegerP {
     }
 }
 
-impl<P: RugCtxParams + Eq> crate::serialization::DefaultSerialization for IntegerE<P>{}
-impl<P: RugCtxParams + Eq> crate::serialization::DefaultSerialization for IntegerX<P>{}
-
 #[cfg(test)]
 mod tests {
     use crate::backend::rug::*;

@@ -199,9 +199,8 @@ pub(crate) mod tests {
     }
 }
 
-
+#[derive(Clone, Debug)]
 pub struct StrandVectorP<C: Ctx>(pub Vec<C::P>);
-// impl DefaultSerialization for StrandVector2{}
  
 impl<C: Ctx> BorshSerialize for StrandVectorP<C> {
     fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
@@ -237,6 +236,7 @@ impl<C: Ctx> BorshDeserialize for StrandVectorP<C> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct StrandVectorE<C: Ctx>(pub Vec<C::E>);
  
 impl<C: Ctx> BorshSerialize for StrandVectorE<C> {
@@ -273,6 +273,7 @@ impl<C: Ctx> BorshDeserialize for StrandVectorE<C> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct StrandVectorX<C: Ctx>(pub Vec<C::X>);
  
 impl<C: Ctx> BorshSerialize for StrandVectorX<C> {
@@ -309,6 +310,7 @@ impl<C: Ctx> BorshDeserialize for StrandVectorX<C> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct StrandVectorC<C: Ctx>(pub Vec<Ciphertext<C>>);
 
 impl<C: Ctx> BorshSerialize for StrandVectorC<C> {

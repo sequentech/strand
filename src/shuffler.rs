@@ -15,6 +15,7 @@ use crate::rnd::StrandRng;
 use crate::serialization::StrandSerialize;
 use crate::util::Par;
 use crate::zkp::ChallengeInput;
+use crate::serialization::{StrandVectorE, StrandVectorX};
 
 pub(crate) struct YChallengeInput<'a, C: Ctx> {
     pub es: &'a [Ciphertext<C>],
@@ -31,7 +32,7 @@ pub struct Commitments<C: Ctx> {
     pub t3: C::E,
     pub t4_1: C::E,
     pub t4_2: C::E,
-    pub t_hats: Vec<C::E>,
+    pub t_hats: StrandVectorE<C>,
 }
 
 #[derive(Clone, BorshSerialize, BorshDeserialize, Debug)]
@@ -40,8 +41,8 @@ pub struct Responses<C: Ctx> {
     pub(crate) s2: C::X,
     pub(crate) s3: C::X,
     pub(crate) s4: C::X,
-    pub(crate) s_hats: Vec<C::X>,
-    pub(crate) s_primes: Vec<C::X>,
+    pub(crate) s_hats: StrandVectorX<C>,
+    pub(crate) s_primes: StrandVectorX<C>,
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Debug, Clone)]
@@ -51,9 +52,9 @@ pub struct ShuffleProof<C: Ctx> {
     // proof response
     pub(crate) s: Responses<C>,
     // permutation commitment
-    pub(crate) cs: Vec<C::E>,
+    pub(crate) cs: StrandVectorE<C>,
     // commitment chain
-    pub(crate) c_hats: Vec<C::E>,
+    pub(crate) c_hats: StrandVectorE<C>,
 }
 
 pub(super) struct PermutationData<'a, C: Ctx> {
@@ -293,7 +294,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             t3,
             t4_1,
             t4_2,
-            t_hats,
+            t_hats: StrandVectorE(t_hats),
         };
 
         // COST
@@ -325,13 +326,13 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             s2,
             s3,
             s4,
-            s_hats,
-            s_primes,
+            s_hats: StrandVectorX(s_hats),
+            s_primes: StrandVectorX(s_primes),
         };
 
         let cs = cs.to_vec();
 
-        (ShuffleProof { t, s, cs, c_hats }, us, c)
+        (ShuffleProof { t, s, cs: StrandVectorE(cs), c_hats: StrandVectorE(c_hats) }, us, c)
     }
 
     pub fn check_proof(
@@ -355,7 +356,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         let gmod = ctx.modulus();
         let xmod = ctx.exp_modulus();
 
-        let us: Vec<C::X> = self.shuffle_proof_us(es, e_primes, &proof.cs, N, label);
+        let us: Vec<C::X> = self.shuffle_proof_us(es, e_primes, &proof.cs.0, N, label);
 
         let mut c_bar_num: C::E = C::E::mul_identity();
         let mut c_bar_den: C::E = C::E::mul_identity();
@@ -372,12 +373,12 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             .par()
             .map(|i| {
                 (
-                    proof.cs[i].mod_pow(&us[i], gmod),
+                    proof.cs.0[i].mod_pow(&us[i], gmod),
                     es[i].mhr.mod_pow(&us[i], gmod),
                     es[i].gr.mod_pow(&us[i], gmod),
-                    h_generators[i].mod_pow(&proof.s.s_primes[i], gmod),
-                    e_primes[i].mhr.mod_pow(&proof.s.s_primes[i], gmod),
-                    e_primes[i].gr.mod_pow(&proof.s.s_primes[i], gmod),
+                    h_generators[i].mod_pow(&proof.s.s_primes.0[i], gmod),
+                    e_primes[i].mhr.mod_pow(&proof.s.s_primes.0[i], gmod),
+                    e_primes[i].gr.mod_pow(&proof.s.s_primes.0[i], gmod),
                 )
             })
             .collect();
@@ -385,7 +386,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         // let now = Instant::now();
 
         for i in 0..N {
-            c_bar_num = c_bar_num.mul(&proof.cs[i]).modulo(gmod);
+            c_bar_num = c_bar_num.mul(&proof.cs.0[i]).modulo(gmod);
             c_bar_den = c_bar_den.mul(&h_generators[i]).modulo(gmod);
             u = u.mul(&us[i]).modulo(xmod);
 
@@ -401,15 +402,15 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         let c_bar = c_bar_num.div(&c_bar_den, gmod).modulo(gmod);
 
-        let c_hat = proof.c_hats[N - 1]
+        let c_hat = proof.c_hats.0[N - 1]
             .div(&h_initial.mod_pow(&u, gmod), gmod)
             .modulo(gmod);
 
         let y = YChallengeInput {
             es,
             e_primes,
-            cs: &proof.cs,
-            c_hats: &proof.c_hats,
+            cs: &proof.cs.0,
+            c_hats: &proof.c_hats.0,
             pk: self.pk,
         };
 
@@ -445,13 +446,13 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
                 let c_term = if i == 0 {
                     h_initial
                 } else {
-                    &proof.c_hats[i - 1]
+                    &proof.c_hats.0[i - 1]
                 };
 
-                let inverse = proof.c_hats[i].inv(gmod);
+                let inverse = proof.c_hats.0[i].inv(gmod);
                 (inverse.mod_pow(&c, gmod))
-                    .mul(&ctx.gmod_pow(&proof.s.s_hats[i]))
-                    .mul(&c_term.mod_pow(&proof.s.s_primes[i], gmod))
+                    .mul(&ctx.gmod_pow(&proof.s.s_hats.0[i]))
+                    .mul(&c_term.mod_pow(&proof.s.s_primes.0[i], gmod))
                     .modulo(gmod)
             })
             .collect();
@@ -464,7 +465,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         checks.push(proof.t.t4_2.eq(&t_prime42));
 
         // batch verification OPT 3b
-        for (i, t_hat) in proof.t.t_hats.iter().enumerate().take(N) {
+        for (i, t_hat) in proof.t.t_hats.0.iter().enumerate().take(N) {
             checks.push(t_hat.eq(&t_hat_primes[i]));
         }
         !checks.contains(&false)
