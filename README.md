@@ -43,7 +43,7 @@ The library supports pluggable [discrete log] backends, there are currently thre
 
 * Compute intensive portions are parallelized using [rayon].
 * Symmetric encryption using [RustCrypto](https://github.com/RustCrypto/block-ciphers).
-* Serialization of intermediate byte trees using [bincode](https://crates.io/crates/bincode) and serde.
+* Serialization for transport and hashing using [borsh](https://crates.io/crates/borsh).
 * Randomness is sourced from [rand::rngs::OsRng], in wasm builds [getrandom] is backed by [Crypto.getRandomValues].
 
 ## Continuous Integration
