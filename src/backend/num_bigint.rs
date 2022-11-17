@@ -424,7 +424,6 @@ impl BorshDeserialize for BigUintP {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use crate::backend::num_bigint::*;

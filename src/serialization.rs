@@ -1,9 +1,8 @@
-
 use crate::elgamal::Ciphertext;
 use borsh::{BorshDeserialize, BorshSerialize};
 
 use crate::backend::num_bigint::{BigUintE, BigUintX};
-use crate::{context::Ctx, backend::num_bigint::BigintCtxParams};
+use crate::{backend::num_bigint::BigintCtxParams, context::Ctx};
 
 use crate::util::Par;
 #[cfg(feature = "rayon")]
@@ -94,7 +93,7 @@ impl<T: BorshDeserialize + Sync + Send> StrandDeserialize for Vec<T> {
     where
         Self: Sized,
     {
-        
+
         let vectors = <Vec<Vec<u8>>>::try_from_slice(bytes).unwrap();
 
         let results: Vec<T> = vectors
@@ -201,25 +200,21 @@ pub(crate) mod tests {
 
 #[derive(Clone, Debug)]
 pub struct StrandVectorP<C: Ctx>(pub Vec<C::P>);
- 
+
 impl<C: Ctx> BorshSerialize for StrandVectorP<C> {
     fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
         let vector = &self.0;
-        
-        let vecs: Result<Vec<Vec<u8>>, std::io::Error> = vector.par().map(
-            |t| {
-                
-                t.try_to_vec()
-            }).collect();
+
+        let vecs: Result<Vec<Vec<u8>>, std::io::Error> =
+            vector.par().map(|t| t.try_to_vec()).collect();
         let inside = vecs?;
-        
+
         inside.serialize(writer)
     }
 }
 
 impl<C: Ctx> BorshDeserialize for StrandVectorP<C> {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
-    
         let vectors = <Vec<Vec<u8>>>::deserialize(buf)?;
 
         let results: Vec<C::P> = vectors
@@ -230,33 +225,27 @@ impl<C: Ctx> BorshDeserialize for StrandVectorP<C> {
             })
             .collect();
 
-
         Ok(StrandVectorP(results))
-    
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct StrandVectorE<C: Ctx>(pub Vec<C::E>);
- 
+
 impl<C: Ctx> BorshSerialize for StrandVectorE<C> {
     fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
         let vector = &self.0;
-        
-        let vecs: Result<Vec<Vec<u8>>, std::io::Error> = vector.par().map(
-            |t| {
-                
-                t.try_to_vec()
-            }).collect();
+
+        let vecs: Result<Vec<Vec<u8>>, std::io::Error> =
+            vector.par().map(|t| t.try_to_vec()).collect();
         let inside = vecs?;
-        
+
         inside.serialize(writer)
     }
 }
 
 impl<C: Ctx> BorshDeserialize for StrandVectorE<C> {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
-    
         let vectors = <Vec<Vec<u8>>>::deserialize(buf)?;
 
         let results: Vec<C::E> = vectors
@@ -267,33 +256,27 @@ impl<C: Ctx> BorshDeserialize for StrandVectorE<C> {
             })
             .collect();
 
-
         Ok(StrandVectorE(results))
-    
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct StrandVectorX<C: Ctx>(pub Vec<C::X>);
- 
+
 impl<C: Ctx> BorshSerialize for StrandVectorX<C> {
     fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
         let vector = &self.0;
-        
-        let vecs: Result<Vec<Vec<u8>>, std::io::Error> = vector.par().map(
-            |t| {
-                
-                t.try_to_vec()
-            }).collect();
+
+        let vecs: Result<Vec<Vec<u8>>, std::io::Error> =
+            vector.par().map(|t| t.try_to_vec()).collect();
         let inside = vecs?;
-        
+
         inside.serialize(writer)
     }
 }
 
 impl<C: Ctx> BorshDeserialize for StrandVectorX<C> {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
-    
         let vectors = <Vec<Vec<u8>>>::deserialize(buf)?;
 
         let results: Vec<C::X> = vectors
@@ -304,9 +287,7 @@ impl<C: Ctx> BorshDeserialize for StrandVectorX<C> {
             })
             .collect();
 
-
         Ok(StrandVectorX(results))
-    
     }
 }
 
@@ -316,21 +297,17 @@ pub struct StrandVectorC<C: Ctx>(pub Vec<Ciphertext<C>>);
 impl<C: Ctx> BorshSerialize for StrandVectorC<C> {
     fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
         let vector = &self.0;
-        
-        let vecs: Result<Vec<Vec<u8>>, std::io::Error> = vector.par().map(
-            |t| {
-                
-                t.try_to_vec()
-            }).collect();
+
+        let vecs: Result<Vec<Vec<u8>>, std::io::Error> =
+            vector.par().map(|t| t.try_to_vec()).collect();
         let inside = vecs?;
-        
+
         inside.serialize(writer)
     }
 }
 
 impl<C: Ctx> BorshDeserialize for StrandVectorC<C> {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
-    
         let vectors = <Vec<Vec<u8>>>::deserialize(buf)?;
 
         let results: Vec<Ciphertext<C>> = vectors
@@ -341,8 +318,6 @@ impl<C: Ctx> BorshDeserialize for StrandVectorC<C> {
             })
             .collect();
 
-
         Ok(StrandVectorC(results))
-    
     }
 }

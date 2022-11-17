@@ -13,9 +13,9 @@ use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::{Ciphertext, PublicKey};
 use crate::rnd::StrandRng;
 use crate::serialization::StrandSerialize;
+use crate::serialization::{StrandVectorE, StrandVectorX};
 use crate::util::Par;
 use crate::zkp::ChallengeInput;
-use crate::serialization::{StrandVectorE, StrandVectorX};
 
 pub(crate) struct YChallengeInput<'a, C: Ctx> {
     pub es: &'a [Ciphertext<C>],
@@ -332,7 +332,16 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         let cs = cs.to_vec();
 
-        (ShuffleProof { t, s, cs: StrandVectorE(cs), c_hats: StrandVectorE(c_hats) }, us, c)
+        (
+            ShuffleProof {
+                t,
+                s,
+                cs: StrandVectorE(cs),
+                c_hats: StrandVectorE(c_hats),
+            },
+            us,
+            c,
+        )
     }
 
     pub fn check_proof(
