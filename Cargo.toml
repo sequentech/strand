@@ -17,7 +17,6 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 bench = false
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 # Backends
@@ -72,7 +71,7 @@ rustc_version = "0.4.0"
 name = "shuffle"
 harness = false
 # remove this to run benchmark
-bench = true
+bench = false
 
 [[bench]]
 name = "encrypt"
