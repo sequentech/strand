@@ -19,6 +19,27 @@ pub trait StrandDeserialize {
         Self: Sized;
 }
 
+impl<T: BorshSerialize> StrandSerialize for T {
+    fn strand_serialize(&self) -> Vec<u8> {
+        // FIXME log on failure
+        self.try_to_vec().unwrap()
+    }
+}
+
+impl<T: BorshDeserialize> StrandDeserialize for T {
+    fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
+    where
+        Self: Sized,
+    {
+        let value = T::try_from_slice(bytes);
+        if value.is_err() {
+            // FIXME log on failure
+        }
+        value.map_err(|_| "borsh deserialize failed")
+    }
+}
+
+/*
 // Emulating negative bounds
 // https://doc.rust-lang.org/beta/unstable-book/language-features/auto-traits.html
 // https://stackoverflow.com/questions/65131776/pick-preferred-implementation-on-conflicting-trait-implementation-using-negativ
@@ -83,7 +104,7 @@ impl<T: BorshDeserialize + Sync + Send> StrandDeserialize for Vec<T> {
 
         Ok(results)
     }
-}
+}*/
 
 #[cfg(test)]
 pub(crate) mod tests {
