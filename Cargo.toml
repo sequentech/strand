@@ -20,7 +20,9 @@ bench = false
 
 [dependencies]
 # Backends
+# requires nightly
 curve25519-dalek = {version = "3", features = ["simd_backend"]}
+# curve25519-dalek = {version = "3", features = []}
 num-bigint = { version = "0.4", features = ["rand"] }
 num-traits = "0.2"
 num-integer = "0.1"
