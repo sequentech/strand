@@ -37,7 +37,6 @@ use borsh::{BorshDeserialize, BorshSerialize};
 // use crate::zkp::Zkp;
 use crate::{
     elgamal::{PrivateKey, PublicKey},
-    serialization,
 };
 use std::{
     fmt::Debug,
