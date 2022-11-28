@@ -149,6 +149,7 @@ impl<C: Ctx> KeymakerT<C> {
             }
             let present_exp = ctx.exp_from_u64(*p as u64);
             let diff_exp = present_exp
+                // We use sub_mod in case the result is negative
                 .sub_mod(&trustee_exp, ctx)
                 .modulo(ctx.exp_modulus());
 
