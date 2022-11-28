@@ -641,14 +641,16 @@ mod tests {
 
         let c_hats: Vec<String> = proof
             .c_hats
-            .0.iter()
+            .0
+            .iter()
             .map(|c| c.0.to_string_radix(16))
             .collect();
         let t3 = proof.t.t3.0.to_string_radix(16);
         let t_hats: Vec<String> = proof
             .t
             .t_hats
-            .0.iter()
+            .0
+            .iter()
             .map(|c| c.0.to_string_radix(16))
             .collect();
         let t1 = proof.t.t1.0.to_string_radix(16);
@@ -687,13 +689,15 @@ mod tests {
         let s_hats: Vec<String> = proof
             .s
             .s_hats
-            .0.iter()
+            .0
+            .iter()
             .map(|c| c.0.to_string_radix(16))
             .collect();
         let s_primes: Vec<String> = proof
             .s
             .s_primes
-            .0.iter()
+            .0
+            .iter()
             .map(|c| c.0.to_string_radix(16))
             .collect();
 

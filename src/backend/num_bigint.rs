@@ -21,6 +21,7 @@
 use std::fmt::Debug;
 use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
+use std::ops::Rem;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use num_bigint::BigUint;
@@ -290,7 +291,7 @@ impl<P: BigintCtxParams + Eq> Exponent<BigintCtx<P>> for BigUintX<P> {
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
-        BigUintX::new(self.0.mod_floor(&modulus.0))
+        BigUintX::new(self.0.div_rem(&modulus.0).1)
     }
     fn add_identity() -> Self {
         BigUintX::new(Zero::zero())

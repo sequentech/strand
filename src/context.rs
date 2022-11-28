@@ -35,9 +35,7 @@
 
 use borsh::{BorshDeserialize, BorshSerialize};
 // use crate::zkp::Zkp;
-use crate::{
-    elgamal::{PrivateKey, PublicKey},
-};
+use crate::elgamal::{PrivateKey, PublicKey};
 use std::{
     fmt::Debug,
     marker::{Send, Sync},
@@ -124,4 +122,7 @@ pub trait Exponent<C: Ctx>:
     fn mul_identity() -> C::X;
 }
 
-pub trait Plaintext:  Send + Sync + Eq + Debug + BorshSerialize + BorshDeserialize + std::hash::Hash + Clone {}
+pub trait Plaintext:
+    Send + Sync + Eq + Debug + BorshSerialize + BorshDeserialize + std::hash::Hash + Clone
+{
+}

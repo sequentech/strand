@@ -293,9 +293,7 @@ impl Exponent<RistrettoCtx> for ScalarS {
     }
 }
 
-impl Plaintext for [u8;30] {
-
-}
+impl Plaintext for [u8; 30] {}
 
 impl BorshSerialize for RistrettoPointS {
     #[inline]
