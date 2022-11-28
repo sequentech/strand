@@ -111,6 +111,10 @@ impl Ctx for RistrettoCtx {
     fn exp_modulo(&self, value: &Self::X) -> Self::X {
         value.clone()
     }
+    fn xsub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X {
+        value.sub(other)
+    }
+
     #[inline(always)]
     fn rnd(&self) -> Self::E {
         let mut rng = StrandRng;
@@ -268,6 +272,10 @@ impl Exponent<RistrettoCtx> for ScalarS {
     #[inline(always)]
     fn sub(&self, other: &Self) -> Self {
         ScalarS(self.0 - other.0)
+    }
+    #[inline(always)]
+    fn sub_mod(&self, other: &Self, ctx: &RistrettoCtx) -> Self {
+        ctx.xsub_mod(self, other)
     }
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {

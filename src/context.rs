@@ -60,6 +60,8 @@ pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
 
     fn modulo(&self, value: &Self::E) -> Self::E;
     fn exp_modulo(&self, value: &Self::X) -> Self::X;
+    
+    fn xsub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X;
 
     fn rnd(&self) -> Self::E;
     fn rnd_exp(&self) -> Self::X;
@@ -83,9 +85,9 @@ pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
 pub trait Element<C: Ctx>:
     Clone + Eq + Send + Sync + BorshSerialize + BorshDeserialize + Debug
 {
-    /// Modular multiplication / point addition.
+    /// Multiplication / point addition.
     fn mul(&self, other: &C::E) -> C::E;
-    /// Modular division (a div b = a * b^1) / point subtraction.
+    /// Division (a div b = a * b^1) / point subtraction.
     fn div(&self, other: &C::E, modulus: &C::E) -> C::E;
     /// Modular inverse / point negation.
     fn inv(&self, modulus: &C::E) -> C::E;
@@ -93,7 +95,6 @@ pub trait Element<C: Ctx>:
     fn mod_pow(&self, exp: &C::X, modulus: &C::E) -> C::E;
     /// Modulo operation / not necessary, applied automatically.
     fn modulo(&self, modulus: &C::E) -> C::E;
-    // fn modl(&self, ctx: &C) -> C::E;
 
     /// Multiplicative identity / point at infinity.
     fn mul_identity() -> C::E;
@@ -103,18 +104,21 @@ pub trait Element<C: Ctx>:
 pub trait Exponent<C: Ctx>:
     Clone + Eq + Send + Sync + BorshSerialize + BorshDeserialize + Debug
 {
-    // Modular addition.
+    // Addition.
     fn add(&self, other: &C::X) -> C::X;
-    // Modular subtraction.
+    // Subtraction.
     fn sub(&self, other: &C::X) -> C::X;
-    // Modular multiplication.
+    // Multiplication.
     fn mul(&self, other: &C::X) -> C::X;
-    // Modular division (a div b = a * b^1).
+    // Division (a div b = a * b^-1).
     fn div(&self, other: &C::X, modulus: &C::X) -> C::X;
     /// Modular inverse.
     fn inv(&self, modulus: &C::X) -> C::X;
-    /// Modulo operation (applied automatically for elliptic curves)
+    /// Modulo operation (NOOP for elliptic curves)
     fn modulo(&self, modulus: &C::X) -> C::X;
+
+    // Modular subtraction.
+    fn sub_mod(&self, other: &C::X, ctx: &C) -> C::X;
 
     /// Additive identity.
     fn add_identity() -> C::X;

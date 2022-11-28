@@ -146,6 +146,17 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn exp_modulo(&self, value: &Self::X) -> Self::X {
         value.modulo(self.params.exp_modulus())
     }
+    #[inline(always)]
+    fn xsub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X {
+        if value.0 > other.0 {
+            value.sub(other).modulo(self.params.exp_modulus())
+        }
+        else {
+            // BigUint cannot hold negative numbers, so we add exp_modulus first
+            value.add(self.params.exp_modulus()).sub(other)
+            .modulo(self.params.exp_modulus())
+        }
+    }
 
     #[inline(always)]
     fn rnd(&self) -> Self::E {
@@ -274,6 +285,10 @@ impl<P: BigintCtxParams + Eq> Exponent<BigintCtx<P>> for BigUintX<P> {
     #[inline(always)]
     fn sub(&self, other: &Self) -> Self {
         BigUintX::new(&self.0 - &other.0)
+    }
+    #[inline(always)]
+    fn sub_mod(&self, other: &Self, ctx: &BigintCtx<P>) -> Self {
+        ctx.xsub_mod(self, other)
     }
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {

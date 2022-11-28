@@ -150,7 +150,6 @@ impl<C: Ctx> BorshSerialize for StrandVectorC<C> {
 impl<C: Ctx> BorshDeserialize for StrandVectorC<C> {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
         let vectors = <Vec<Vec<u8>>>::deserialize(buf)?;
-
         let results: Vec<Ciphertext<C>> = vectors
             .par()
             .map(|v| {

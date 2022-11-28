@@ -148,12 +148,8 @@ impl<C: Ctx> KeymakerT<C> {
                 continue;
             }
             let present_exp = ctx.exp_from_u64(*p as u64);
-            // We add exp_modulus to avoid calculating a modulus with negative numbers
-            // whose behaviour can be implementation specific 
-            // (also, the num_bigint backend does not support it)
             let diff_exp = present_exp
-                .add(ctx.exp_modulus())
-                .sub(&trustee_exp)
+                .sub_mod(&trustee_exp, ctx)
                 .modulo(ctx.exp_modulus());
 
             numerator = numerator.mul(&present_exp).modulo(ctx.exp_modulus());

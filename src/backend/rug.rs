@@ -119,6 +119,11 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         value.modulo(self.params.exp_modulus())
     }
     #[inline(always)]
+    fn xsub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X {
+        value.sub(other).modulo(self.params.exp_modulus())
+    }
+
+    #[inline(always)]
     fn rnd(&self) -> Self::E {
         let mut gen = StrandRandgen(StrandRng);
         let mut state = RandState::new_custom(&mut gen);
@@ -271,6 +276,10 @@ impl<P: RugCtxParams> Exponent<RugCtx<P>> for IntegerX<P> {
         IntegerX::new(self.0.clone() - other.0.clone())
     }
     #[inline(always)]
+    fn sub_mod(&self, other: &Self, ctx: &RugCtx<P>) -> Self {
+        ctx.xsub_mod(self, other)
+    }
+    #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
         IntegerX::new(self.0.clone() * other.0.clone())
     }
@@ -290,11 +299,6 @@ impl<P: RugCtxParams> Exponent<RugCtx<P>> for IntegerX<P> {
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
-        // FIXME remove this check
-        assert!(self.0 >= 0);
-        // From https://docs.rs/rug/latest/rug/struct.Integer.html#method.div_rem
-        // "The remainder has the same sign as the dividend."
-        // thus if self is >= 0 then the result >= 0, and remainder === modulo
         let (_, rem) = self.0.clone().div_rem(modulus.0.clone());
 
         IntegerX::new(rem)
