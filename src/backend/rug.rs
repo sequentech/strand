@@ -112,6 +112,14 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         self.params.exp_modulus()
     }
     #[inline(always)]
+    fn modulo(&self, value: &Self::E) -> Self::E {
+        value.modulo(self.params.modulus())
+    }
+    #[inline(always)]
+    fn exp_modulo(&self, value: &Self::X) -> Self::X {
+        value.modulo(self.params.exp_modulus())
+    }
+    #[inline(always)]
     fn rnd(&self) -> Self::E {
         let mut gen = StrandRandgen(StrandRng);
         let mut state = RandState::new_custom(&mut gen);

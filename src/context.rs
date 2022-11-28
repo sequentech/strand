@@ -60,6 +60,9 @@ pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
     // Although the modulus is not an element of the ring, we reuse the type here
     fn exp_modulus(&self) -> &Self::X;
 
+    fn modulo(&self, value: &Self::E) -> Self::E;
+    fn exp_modulo(&self, value: &Self::X) -> Self::X;
+
     fn rnd(&self) -> Self::E;
     fn rnd_exp(&self) -> Self::X;
     fn rnd_plaintext(&self) -> Self::P;

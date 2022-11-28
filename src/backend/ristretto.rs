@@ -103,6 +103,16 @@ impl Ctx for RistrettoCtx {
         &ScalarS(DUMMY_SCALAR)
     }
     #[inline(always)]
+    // identity
+    fn modulo(&self, value: &Self::E) -> Self::E {
+        value.clone()
+    }
+    #[inline(always)]
+    // identity
+    fn exp_modulo(&self, value: &Self::X) -> Self::X {
+        value.clone()
+    }
+    #[inline(always)]
     fn rnd(&self) -> Self::E {
         let mut rng = StrandRng;
         let mut uniform_bytes = [0u8; 64];
