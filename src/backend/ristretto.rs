@@ -33,7 +33,7 @@ use sha2::{Digest, Sha512};
 use sha3::digest::{ExtendableOutput, Update, XofReader};
 use sha3::Shake256;
 
-use crate::context::{Ctx, Element, Exponent};
+use crate::context::{Ctx, Element, Exponent, Plaintext};
 use crate::elgamal::Ciphertext;
 use crate::elgamal::{PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
@@ -282,6 +282,10 @@ impl Exponent<RistrettoCtx> for ScalarS {
     fn mul_identity() -> Self {
         ScalarS(Scalar::one())
     }
+}
+
+impl Plaintext for [u8;30] {
+
 }
 
 impl BorshSerialize for RistrettoPointS {

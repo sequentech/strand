@@ -32,7 +32,7 @@ use num_traits::{One, Zero};
 use sha2::{Digest, Sha512};
 
 use crate::backend::constants::*;
-use crate::context::{Ctx, Element, Exponent};
+use crate::context::{Ctx, Element, Exponent, Plaintext};
 use crate::elgamal::{Ciphertext, PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::serialization::{StrandDeserialize, StrandSerialize};
@@ -291,6 +291,8 @@ impl<P: BigintCtxParams + Eq> Exponent<BigintCtx<P>> for BigUintX<P> {
         BigUintX::new(One::one())
     }
 }
+
+impl Plaintext for BigUintP {}
 
 pub trait BigintCtxParams: Clone + Eq + Send + Sync + Debug {
     fn generator(&self) -> &BigUintE<Self>;

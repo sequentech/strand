@@ -30,7 +30,7 @@ use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
 
 use crate::backend::constants::*;
-use crate::context::{Ctx, Element, Exponent};
+use crate::context::{Ctx, Element, Exponent, Plaintext};
 use crate::elgamal::{Ciphertext, PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::serialization::{StrandDeserialize, StrandSerialize};
@@ -300,6 +300,8 @@ impl<P: RugCtxParams> Exponent<RugCtx<P>> for IntegerX<P> {
         IntegerX::new(Integer::from(1i32))
     }
 }
+
+impl Plaintext for IntegerP {}
 
 struct StrandRandgen(StrandRng);
 
