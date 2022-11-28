@@ -236,7 +236,7 @@ pub(crate) mod tests {
 
         let es = util::random_ballots(10, ctx);
         let seed = vec![];
-        let hs = ctx.generators(es.len() + 1, 0, &seed);
+        let hs = ctx.generators(es.len() + 1, &seed);
         let shuffler = Shuffler {
             pk: &pk,
             generators: &hs,
@@ -257,7 +257,7 @@ pub(crate) mod tests {
 
         let es = util::random_ballots(10, ctx);
         let seed = vec![];
-        let hs = ctx.generators(es.len() + 1, 0, &seed);
+        let hs = ctx.generators(es.len() + 1, &seed);
         let shuffler = Shuffler {
             pk: &pk,
             generators: &hs,

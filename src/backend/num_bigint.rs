@@ -52,13 +52,12 @@ pub struct BigintCtx<P: BigintCtxParams> {
 
 impl<P: BigintCtxParams> BigintCtx<P> {
     // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf A.2.3
-    fn generators_fips(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<BigUintE<P>> {
+    fn generators_fips(&self, size: usize, seed: &[u8]) -> Vec<BigUintE<P>> {
         let mut ret = Vec::with_capacity(size);
         let two = BigUint::from(2u32);
 
         let mut prefix = seed.to_vec();
         prefix.extend("ggen".to_string().into_bytes());
-        prefix.extend(contest.to_le_bytes());
 
         let mut index: u64 = 0;
         for _ in 0..size {
@@ -213,8 +212,8 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn exp_from_u64(&self, value: u64) -> Self::X {
         BigUintX::new(BigUint::from(value))
     }
-    fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E> {
-        self.generators_fips(size, contest, seed)
+    fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E> {
+        self.generators_fips(size, seed)
     }
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
         let biguint = BigUint::from_bytes_le(bytes);

@@ -42,13 +42,12 @@ pub struct RugCtx<P: RugCtxParams> {
 
 impl<P: RugCtxParams> RugCtx<P> {
     // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf A.2.3
-    fn generators_fips(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<IntegerE<P>> {
+    fn generators_fips(&self, size: usize, seed: &[u8]) -> Vec<IntegerE<P>> {
         let mut ret = Vec::with_capacity(size);
         let two = Integer::from(2i32);
 
         let mut prefix = seed.to_vec();
         prefix.extend("ggen".to_string().into_bytes());
-        prefix.extend(contest.to_le_bytes());
 
         let mut index: u64 = 0;
         for _ in 0..size {
@@ -177,8 +176,8 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         let decrypted = sk.decrypt(&encrypted);
         Some(IntegerX(self.decode(&decrypted).0, PhantomData))
     }
-    fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E> {
-        self.generators_fips(size, contest, seed)
+    fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E> {
+        self.generators_fips(size, seed)
     }
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
         let ret = Integer::from_digits(bytes, Order::MsfLe);
@@ -608,7 +607,7 @@ mod tests {
             es.push(c);
         }
         let seed = vec![];
-        let hs = ctx.generators(es.len() + 1, 0, &seed);
+        let hs = ctx.generators(es.len() + 1, &seed);
 
         let shuffler = Shuffler {
             pk: &pk,

@@ -55,9 +55,8 @@ pub struct ScalarS(pub Scalar);
 
 impl RistrettoCtx {
     // https://docs.rs/bulletproofs/4.0.0/src/bulletproofs/generators.rs.html
-    fn generators_shake(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<RistrettoPointS> {
-        let mut seed_ = seed.to_vec();
-        seed_.extend(contest.to_le_bytes());
+    fn generators_shake(&self, size: usize, seed: &[u8]) -> Vec<RistrettoPointS> {
+        let seed_ = seed.to_vec();
 
         let mut ret: Vec<RistrettoPointS> = Vec::with_capacity(size);
         let mut shake = Shake256::default();
@@ -211,8 +210,8 @@ impl Ctx for RistrettoCtx {
 
         ScalarS(scalar)
     }
-    fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E> {
-        self.generators_shake(size, contest, seed)
+    fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E> {
+        self.generators_shake(size, seed)
     }
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
         let b32 = util::to_u8_32(bytes)?;
