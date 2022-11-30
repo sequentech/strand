@@ -95,7 +95,7 @@ fn bench_shuffle_serialization_generic<C: Ctx>(ctx: C, n: usize) {
 
     log("generators..");
     let now = performance.now();
-    let hs = ctx.generators(es.len() + 1, 0, &seed);
+    let hs = ctx.generators(es.len() + 1, &seed);
     let shuffler = Shuffler {
         pk: &pk,
         generators: &hs,

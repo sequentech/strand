@@ -12,7 +12,7 @@ use crate::context::{Ctx, Element};
 use crate::elgamal::{PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::shuffler::Shuffler;
-use crate::threshold_test::tests::test_threshold_generic;
+use crate::threshold::tests::test_threshold_generic;
 use crate::util;
 use crate::util::Par;
 use crate::zkp::Zkp;
@@ -142,7 +142,7 @@ pub fn shuffle(value: JsValue) -> JsValue {
 
     let es: Vec<Ciphertext<RistrettoCtx>> = values.iter().map(|v| from_ciphertext_s(v)).collect();
     let seed = vec![];
-    let hs = ctx.generators(es.len() + 1, 0, &seed);
+    let hs = ctx.generators(es.len() + 1, &seed);
     let shuffler = Shuffler {
         pk: &pk,
         generators: &hs,
