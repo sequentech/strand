@@ -451,17 +451,19 @@ mod tests {
         test_shuffle_serialization_generic(&ctx);
     }
 
+    use rand::Rng;
+
     #[test]
     fn test_threshold() {
         let mut csprng = StrandRng;
 
+        let trustees = rand::thread_rng().gen_range(2..11);
+        let threshold = rand::thread_rng().gen_range(2..trustees + 1);
         let ctx = RistrettoCtx;
         let mut fill = [0u8; 30];
         csprng.fill_bytes(&mut fill);
         let plaintext = util::to_u8_30(&fill.to_vec());
-        let trustees = 5usize;
-        let threshold = 3usize;
-
+ 
         test_threshold_generic(&ctx, trustees, threshold, plaintext);
     }
 

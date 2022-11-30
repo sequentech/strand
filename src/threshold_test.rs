@@ -10,6 +10,7 @@
 use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::Ciphertext;
 use crate::zkp::{ChaumPedersen, Zkp};
+use crate::threshold;
 
 pub struct KeymakerT<C: Ctx> {
     num_trustees: usize,
@@ -24,24 +25,15 @@ pub struct KeymakerT<C: Ctx> {
 
 impl<C: Ctx> KeymakerT<C> {
     pub fn gen(num_trustees: usize, threshold: usize, ctx: &C) -> KeymakerT<C> {
-        let mut coefficients = vec![];
-        let mut commitments = vec![];
         let mut shares = vec![];
         let external_shares = vec![C::X::mul_identity(); num_trustees];
         let v_key_factors = vec![];
 
-        // a degree n polynomial is determined by n + 1 points
-        // a degree n polynomial has n + 1 coefficients
-        // thus, the number of coefficients = threshold
-        for _ in 0..threshold {
-            let coeff = ctx.rnd_exp();
-            let commitment = ctx.gmod_pow(&coeff);
-            coefficients.push(coeff);
-            commitments.push(commitment);
-        }
+        let (coefficients, commitments) = threshold::gen_coefficients(threshold, ctx);
+
         for i in 0..num_trustees {
             // i + 1: trustees start at 1
-            let share = Self::eval_poly(i + 1, threshold, &coefficients, ctx);
+            let share = threshold::eval_poly(i + 1, threshold, &coefficients, ctx);
             shares.push(share);
         }
 
@@ -57,18 +49,6 @@ impl<C: Ctx> KeymakerT<C> {
         }
     }
 
-    fn eval_poly(trustee: usize, threshold: usize, coefficients: &[C::X], ctx: &C) -> C::X {
-        let mut sum = coefficients[0].clone();
-        let mut power = C::X::mul_identity();
-        let trustee_exp = ctx.exp_from_u64(trustee as u64);
-
-        for coefficient in coefficients.iter().take(threshold).skip(1) {
-            power = power.mul(&trustee_exp).modulo(ctx.exp_modulus());
-            sum = sum.add(&coefficient.mul(&power).modulo(ctx.exp_modulus()));
-        }
-        sum.modulo(ctx.exp_modulus())
-    }
-
     fn add_external_share(
         &mut self,
         source: usize,
@@ -77,7 +57,7 @@ impl<C: Ctx> KeymakerT<C> {
         self_position: usize,
     ) -> bool {
         let vkf =
-            Self::verification_key_factor(commitments, self.threshold, self_position, &self.ctx);
+            threshold::verification_key_factor(commitments, self.threshold, self_position, &self.ctx);
         let check = self.ctx.gmod_pow(&share);
         let ok = check == vkf;
         if ok {
@@ -85,27 +65,6 @@ impl<C: Ctx> KeymakerT<C> {
             self.v_key_factors.push(vkf);
         }
         ok
-    }
-
-    fn verification_key_factor(
-        sender_commitments: &[C::E],
-        threshold: usize,
-        receiver_trustee: usize,
-        ctx: &C,
-    ) -> C::E {
-        let mut accum = C::E::mul_identity();
-        // trustees start at 1
-        let t = receiver_trustee + 1;
-        for (i, commitment) in sender_commitments.iter().enumerate().take(threshold) {
-            let power = t.pow(i as u32);
-            let power_element = ctx.exp_from_u64(power as u64);
-
-            accum = accum
-                .mul(&commitment.mod_pow(&power_element, ctx.modulus()))
-                .modulo(ctx.modulus());
-        }
-
-        accum
     }
 
     fn secret_share(&self) -> C::X {
@@ -138,27 +97,6 @@ impl<C: Ctx> KeymakerT<C> {
         key
     }
 
-    pub fn lagrange(trustee: usize, present: &[usize], ctx: &C) -> C::X {
-        let mut numerator = C::X::mul_identity();
-        let mut denominator = C::X::mul_identity();
-        let trustee_exp = ctx.exp_from_u64(trustee as u64);
-
-        for p in present {
-            if *p == trustee {
-                continue;
-            }
-            let present_exp = ctx.exp_from_u64(*p as u64);
-            let diff_exp = present_exp
-                // We use sub_mod in case the result is negative
-                .sub_mod(&trustee_exp, ctx)
-                .modulo(ctx.exp_modulus());
-
-            numerator = numerator.mul(&present_exp).modulo(ctx.exp_modulus());
-            denominator = denominator.mul(&diff_exp).modulo(ctx.exp_modulus());
-        }
-
-        numerator.div(&denominator, ctx.exp_modulus())
-    }
 }
 
 #[cfg(any(test, feature = "wasmtest"))]
@@ -166,6 +104,7 @@ pub(crate) mod tests {
     use crate::context::{Ctx, Element};
     use crate::elgamal::{Ciphertext, PublicKey};
     use crate::threshold_test::*;
+    use crate::threshold;
 
     pub(crate) fn test_threshold_generic<C: Ctx>(
         ctx: &C,
@@ -208,7 +147,8 @@ pub(crate) mod tests {
 
         assert_eq!(data, decoded);
 
-        let present = vec![5, 3, 1];
+        let all = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        let present = &all[0..threshold];
         let mut divider = C::E::mul_identity();
 
         for i in 0..present.len() {
@@ -217,7 +157,7 @@ pub(crate) mod tests {
             let ok = zkp.verify_decryption(&v_key, &base, &c.mhr, &c.gr, &proof, &vec![]);
             assert!(ok);
 
-            let lagrange = KeymakerT::lagrange(present[i], &present, ctx);
+            let lagrange = threshold::lagrange(present[i], &present, ctx);
 
             let next = base.mod_pow(&lagrange, &ctx.modulus());
             divider = divider.mul(&next).modulo(&ctx.modulus())
@@ -228,7 +168,7 @@ pub(crate) mod tests {
 
         assert_eq!(data, decoded);
 
-        let present = vec![1, 4];
+        let present = &all[0..threshold - 1];
         let mut divider = C::E::mul_identity();
 
         for i in 0..present.len() {
@@ -237,7 +177,7 @@ pub(crate) mod tests {
             let ok = zkp.verify_decryption(&v_key, &base, &c.mhr, &c.gr, &proof, &vec![]);
             assert!(ok);
 
-            let lagrange = KeymakerT::lagrange(present[i], &present, ctx);
+            let lagrange = threshold::lagrange(present[i], &present, ctx);
 
             let next = base.mod_pow(&lagrange, &ctx.modulus());
             divider = divider.mul(&next).modulo(&ctx.modulus())

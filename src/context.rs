@@ -41,7 +41,7 @@ use std::{
     marker::{Send, Sync},
 };
 
-/// A cryptographic context loosely corresponds to the underlying modular arithmetic group.
+/// A cryptographic context loosely corresponds to the underlying modular arithmetic groups.
 pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
     type E: Element<Self>;
     type X: Exponent<Self>;
@@ -50,8 +50,10 @@ pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
     fn generator(&self) -> &Self::E;
     fn gmod_pow(&self, other: &Self::X) -> Self::E;
     fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E;
+    
     // FIXME this is wrong. Remove modulus and exp_modulus from trait,
-    // implementors should use emod_pow, mod(), exp_mod() (latter 2 not written yet)
+    // implementors should use emod_pow, modulo(), exp_modulo()
+    
     // We reuse the E and X types to prevent mixing moduli
     // Although the modulus is not an element of the group, we reuse the type here
     fn modulus(&self) -> &Self::E;

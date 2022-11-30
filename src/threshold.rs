@@ -2,9 +2,11 @@ use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::Ciphertext;
 use crate::zkp::{ChaumPedersen, Zkp};
 
+// A degree n polynomial is determined by n + 1 points.
+// A degree n polynomial has n + 1 coefficients.
+// Thus, the number of coefficients = threshold.
 pub fn gen_coefficients<C: Ctx>(
-    _trustees: usize,
-    threshold: u32,
+    threshold: usize,
     ctx: &C,
 ) -> (Vec<C::X>, Vec<C::E>) {
     let mut coefficients = vec![];
@@ -49,7 +51,7 @@ pub fn verification_key_factor<C: Ctx>(
     ctx: &C,
 ) -> C::E {
     let mut accum = C::E::mul_identity();
-    // trustees start at 1
+    // Trustees start at 1
     let t = receiver_trustee + 1;
     for (i, commitment) in sender_commitments.iter().enumerate().take(threshold) {
         let power = t.pow(i as u32);

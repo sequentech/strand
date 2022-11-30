@@ -531,10 +531,13 @@ mod tests {
         test_shuffle_serialization_generic(&ctx);
     }
 
+    use rand::Rng;
+
     #[test]
     fn test_threshold() {
-        let trustees = 5usize;
-        let threshold = 3usize;
+
+        let trustees = rand::thread_rng().gen_range(2..11);
+        let threshold = rand::thread_rng().gen_range(2..trustees + 1);
         let ctx = RugCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
 

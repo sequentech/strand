@@ -21,7 +21,6 @@
 use std::fmt::Debug;
 use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
-use std::ops::Rem;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use num_bigint::BigUint;
@@ -527,10 +526,12 @@ mod tests {
         test_shuffle_serialization_generic(&ctx);
     }
 
+    use rand::Rng;
+
     #[test]
     fn test_threshold() {
-        let trustees = 5usize;
-        let threshold = 3usize;
+        let trustees = rand::thread_rng().gen_range(2..11);
+        let threshold = rand::thread_rng().gen_range(2..trustees + 1);
         let ctx = BigintCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
 
@@ -554,48 +555,24 @@ mod tests {
         let ctx = BigintCtx::<P2048>::default();
         test_borsh_exponent(&ctx);
     }
-    /*
-    #[test]
-    fn test_ciphertext_bytes() {
-        let ctx = BigintCtx::<P2048>::default();
-        test_ciphertext_bytes_generic(&ctx);
-    }*/
 
     #[test]
     fn test_ciphertext_borsh() {
         let ctx = BigintCtx::<P2048>::default();
         test_ciphertext_borsh_generic(&ctx);
     }
-    /*
-    #[test]
-    fn test_key_bytes() {
-        let ctx = BigintCtx::<P2048>::default();
-        test_key_bytes_generic(&ctx);
-    }*/
 
     #[test]
     fn test_key_borsh() {
         let ctx = BigintCtx::<P2048>::default();
         test_key_borsh_generic(&ctx);
     }
-    /*
-    #[test]
-    fn test_schnorr_bytes() {
-        let ctx = BigintCtx::<P2048>::default();
-        test_schnorr_bytes_generic(&ctx);
-    }*/
 
     #[test]
     fn test_schnorr_borsh() {
         let ctx = BigintCtx::<P2048>::default();
         test_schnorr_borsh_generic(&ctx);
     }
-    /*
-    #[test]
-    fn test_cp_bytes() {
-        let ctx = BigintCtx::<P2048>::default();
-        test_cp_bytes_generic(&ctx);
-    }*/
 
     #[test]
     fn test_cp_borsh() {
@@ -611,36 +588,3 @@ mod tests {
         assert!(result.is_err())
     }
 }
-
-/*
-impl<P: BigintCtxParams> ToByteTree for BigintCtx<P> {
-    fn to_byte_tree(&self) -> ByteTree {
-        let ctx = P::new_ctx();
-        let bytes: Vec<ByteTree> = vec![
-            ctx.params.generator().to_byte_tree(),
-            ctx.params.modulus().to_byte_tree(),
-            ctx.params.exp_modulus().to_byte_tree(),
-            ctx.params.co_factor().to_byte_tree(),
-        ];
-        ByteTree::Tree(bytes)
-    }
-}
-
-impl<P: BigintCtxParams> FromByteTree for BigintCtx<P> {
-    fn from_byte_tree(tree: &ByteTree) -> Result<BigintCtx<P>, ByteError> {
-        let trees = tree.tree(4)?;
-        let generator = BigUint::from_byte_tree(&trees[0])?;
-        let modulus = BigUint::from_byte_tree(&trees[1])?;
-        let exp_modulus = BigUint::from_byte_tree(&trees[2])?;
-        let co_factor = BigUint::from_byte_tree(&trees[3])?;
-
-        let params = P::new();
-        assert_eq!(&generator, params.generator());
-        assert_eq!(&modulus, params.modulus());
-        assert_eq!(&exp_modulus, params.exp_modulus());
-        assert_eq!(&co_factor, params.co_factor());
-
-        let ctx = BigintCtx { params };
-        Ok(&ctx)
-    }
-}*/

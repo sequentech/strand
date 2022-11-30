@@ -241,7 +241,6 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         let mut t4_1_temp = C::E::mul_identity();
         let mut t4_2_temp = C::E::mul_identity();
 
-        // fixed base exponentiation OPT 1
         let values: Vec<(C::E, C::E, C::E)> = (0..N)
             .par()
             .map(|i| {
@@ -268,7 +267,6 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             .mul(&t4_2_temp)
             .modulo(gmod);
 
-        // fixed base exponentiation OPT 2
         let t_hats = (0..c_hats.len())
             .par()
             .map(|i| {
@@ -448,7 +446,6 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             .mul(&t_tilde42_temp)
             .modulo(gmod);
 
-        // batch verification OPT 3a
         let t_hat_primes: Vec<C::E> = (0..N)
             .par()
             .map(|i| {
@@ -472,8 +469,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         checks.push(proof.t.t3.eq(&t_prime3));
         checks.push(proof.t.t4_1.eq(&t_prime41));
         checks.push(proof.t.t4_2.eq(&t_prime42));
-
-        // batch verification OPT 3b
+        
         for (i, t_hat) in proof.t.t_hats.0.iter().enumerate().take(N) {
             checks.push(t_hat.eq(&t_hat_primes[i]));
         }
