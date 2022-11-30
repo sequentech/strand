@@ -360,7 +360,7 @@ mod tests {
     use crate::backend::ristretto::*;
     use crate::backend::tests::*;
     use crate::serialization::tests::*;
-    use crate::threshold_test::tests::test_threshold_generic;
+    use crate::threshold::tests::test_threshold_generic;
 
     #[test]
     fn test_elgamal() {
@@ -463,7 +463,7 @@ mod tests {
         let mut fill = [0u8; 30];
         csprng.fill_bytes(&mut fill);
         let plaintext = util::to_u8_30(&fill.to_vec());
- 
+
         test_threshold_generic(&ctx, trustees, threshold, plaintext);
     }
 

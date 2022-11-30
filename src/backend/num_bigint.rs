@@ -149,11 +149,12 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn xsub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X {
         if value.0 > other.0 {
             value.sub(other).modulo(self.params.exp_modulus())
-        }
-        else {
+        } else {
             // BigUint cannot hold negative numbers, so we add exp_modulus first
-            value.add(self.params.exp_modulus()).sub(other)
-            .modulo(self.params.exp_modulus())
+            value
+                .add(self.params.exp_modulus())
+                .sub(other)
+                .modulo(self.params.exp_modulus())
         }
     }
 
@@ -455,7 +456,7 @@ mod tests {
     use crate::backend::tests::*;
     use crate::context::Ctx;
     use crate::serialization::tests::*;
-    use crate::threshold_test::tests::test_threshold_generic;
+    use crate::threshold::tests::test_threshold_generic;
 
     #[test]
     fn test_elgamal() {

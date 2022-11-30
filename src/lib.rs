@@ -18,9 +18,8 @@ pub mod elgamal;
 pub mod keymaker;
 /// Wikstrom proof of shuffle.
 pub mod shuffler;
-pub mod threshold;
 /// Support for threshold ElGamal.
-pub mod threshold_test;
+pub mod threshold;
 /// Miscellaneous functions.
 pub mod util;
 #[cfg(feature = "wasm")]

@@ -459,7 +459,7 @@ mod tests {
     use crate::shuffler::gen_permutation;
     use crate::shuffler::PermutationData;
     use crate::shuffler::Shuffler;
-    use crate::threshold_test::tests::test_threshold_generic;
+    use crate::threshold::tests::test_threshold_generic;
     use serde::Serialize;
 
     #[test]
@@ -535,7 +535,6 @@ mod tests {
 
     #[test]
     fn test_threshold() {
-
         let trustees = rand::thread_rng().gen_range(2..11);
         let threshold = rand::thread_rng().gen_range(2..trustees + 1);
         let ctx = RugCtx::<P2048>::default();

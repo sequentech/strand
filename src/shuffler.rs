@@ -469,7 +469,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         checks.push(proof.t.t3.eq(&t_prime3));
         checks.push(proof.t.t4_1.eq(&t_prime41));
         checks.push(proof.t.t4_2.eq(&t_prime42));
-        
+
         for (i, t_hat) in proof.t.t_hats.0.iter().enumerate().take(N) {
             checks.push(t_hat.eq(&t_hat_primes[i]));
         }
