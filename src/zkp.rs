@@ -109,7 +109,7 @@ impl<C: Ctx> Zkp<C> {
         g: Option<&C::E>,
         label: &[u8],
     ) -> Schnorr<C> {
-        let context = ChallengeInput::from(&[("label", &label.to_vec())]);
+        let context = ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
         self.schnorr_prove_private(secret, public, g, context)
     }
 
@@ -120,7 +120,7 @@ impl<C: Ctx> Zkp<C> {
         proof: &Schnorr<C>,
         label: &[u8],
     ) -> bool {
-        let context = ChallengeInput::from(&[("label", &label.to_vec())]);
+        let context = ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
         self.schnorr_verify_private(public, g, proof, context)
     }
 
@@ -134,7 +134,7 @@ impl<C: Ctx> Zkp<C> {
         g2: &C::E,
         label: &[u8],
     ) -> ChaumPedersen<C> {
-        let context = ChallengeInput::from(&[("label", &label.to_vec())]);
+        let context = ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
         self.cp_prove_private(secret, public1, public2, g1, g2, context)
     }
 
@@ -147,7 +147,7 @@ impl<C: Ctx> Zkp<C> {
         proof: &ChaumPedersen<C>,
         label: &[u8],
     ) -> bool {
-        let context = ChallengeInput::from(&[("label", &label.to_vec())]);
+        let context = ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
         self.cp_verify_private(public1, public2, g1, g2, proof, context)
     }
 
@@ -351,12 +351,12 @@ impl ChallengeInput {
         ChallengeInput(map)
     }
 
-    pub(crate) fn from_bytes(values: &[(&'static str, Vec<u8>)]) -> ChallengeInput {
+    pub(crate) fn from_bytes(values: Vec<(&'static str, Vec<u8>)>) -> ChallengeInput {
         let serialized = values
-            .iter()
-            .map(|value| (value.0.to_string(), value.1.clone()));
+            .into_iter()
+            .map(|(string, value)| (string.to_string(), value));
 
-        let map = HashMap::from_iter(serialized);
+        let map: HashMap<String, Vec<u8>> = HashMap::from_iter(serialized);
 
         ChallengeInput(map)
     }

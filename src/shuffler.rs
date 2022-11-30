@@ -567,7 +567,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         (0..n)
             .par()
             .map(|i| {
-                let next = ChallengeInput::from_bytes(&[
+                let next = ChallengeInput::from_bytes(vec![
                     ("prefix", prefix_hash.clone()),
                     ("counter", i.to_le_bytes().to_vec()),
                 ]);
