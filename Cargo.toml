@@ -82,4 +82,4 @@ bench = false
 name = "encrypt"
 harness = false
 # remove this to run benchmark
-bench = false
+bench = true

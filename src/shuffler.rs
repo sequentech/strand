@@ -6,7 +6,8 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use rand::Rng;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
-use sha3::{Digest, Sha3_512 as Sha512};
+// use sha3::{Digest, Sha3_512 as Sha512};
+use sha2::Digest;
 use std::sync::Mutex;
 
 use crate::context::{Ctx, Element, Exponent};
@@ -74,7 +75,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         Shuffler {
             pk,
             generators,
-            ctx: (*ctx).clone(),
+            ctx: ctx.clone(),
         }
     }
 
@@ -149,14 +150,14 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         };
 
         // let now = Instant::now();
-        let transcript = self.gen_proof_ext(es, e_primes, r_primes, &perm_data, label);
+        let (proof, _, _) = self.gen_proof_ext(es, e_primes, r_primes, &perm_data, label);
         // println!("gen_proof_ext {}", now.elapsed().as_millis());
 
-        transcript.0
+        proof
     }
 
     // gen_proof_ext has support for
-    // 1. Returns extra transcript data used in coq test
+    // 1. Returns extra data used for coq test transcript
     // 2. Allows passing in permutation data for multi-shuffling
     pub(super) fn gen_proof_ext(
         &self,
@@ -295,7 +296,6 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             t_hats: StrandVectorE(t_hats),
         };
 
-        // COST
         // let now = Instant::now();
         // ~0 cost
         let c: C::X = self.shuffle_proof_challenge(&y, &t, label);
@@ -554,13 +554,12 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         prefix_challenge_input.add("cs", &cs);
         prefix_challenge_input.add("label", &label.to_vec());
 
-        // let prefix_bytes = ByteTree::Tree(trees).to_hashable_bytes();
         let prefix_bytes = prefix_challenge_input.strand_serialize();
 
         // optimization: instead of calculating u = H(prefix || i),
         // we do u = H(H(prefix) || i)
         // that way we avoid allocating prefix-size bytes n times
-        let mut hasher = Sha512::new();
+        let mut hasher = crate::util::hasher();
         hasher.update(prefix_bytes);
         let prefix_hash = hasher.finalize().to_vec();
 

@@ -9,7 +9,7 @@ use strand::backend::num_bigint::{BigintCtx, P2048};
 use strand::backend::ristretto::RistrettoCtx;
 use strand::context::Ctx;
 use strand::elgamal::*;
-use strand::util;
+use strand::backend::ristretto;
 use strand::zkp::Zkp;
 
 fn encrypt<C: Ctx>(ctx: &C, pk: &PublicKey<C>, data: C::P, n: usize) {
@@ -27,7 +27,7 @@ fn encrypt_ristretto(ctx: &RistrettoCtx, pk: &PublicKey<RistrettoCtx>, n: usize)
     let mut csprng = OsRng;
     let mut fill = [0u8; 30];
     csprng.fill_bytes(&mut fill);
-    let plaintext = util::to_u8_30(&fill.to_vec());
+    let plaintext = ristretto::to_ristretto_plaintext_array(&fill.to_vec()).unwrap();
     encrypt(ctx, pk, plaintext, n);
 }
 

@@ -11,6 +11,7 @@ use crate::elgamal::{PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::serialization::StrandSerialize;
 use crate::shuffler::Shuffler;
+use crate::backend::ristretto;
 use crate::util;
 use crate::zkp::Zkp;
 
@@ -80,7 +81,7 @@ pub fn bench_enc_pok(n: u32) {
     let mut csprng = StrandRng;
     let mut fill = [0u8; 30];
     csprng.fill_bytes(&mut fill);
-    let plaintext = util::to_u8_30(&fill.to_vec());
+    let plaintext = ristretto::to_ristretto_plaintext_array(&fill.to_vec()).unwrap();
     postMessage("> Ristretto enc_pok");
     bench_enc_pok_generic(ctx, plaintext, n);
 }

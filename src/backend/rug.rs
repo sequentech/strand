@@ -24,7 +24,7 @@ use rug::{
     rand::{RandGen, RandState},
     Integer,
 };
-use sha2::{Digest, Sha512};
+use sha2::Digest;
 use std::fmt::Debug;
 use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
@@ -75,7 +75,7 @@ impl<P: RugCtxParams> RugCtx<P> {
     }
 
     fn hash_to_element(&self, bytes: &[u8]) -> Integer {
-        let mut hasher = Sha512::new();
+        let mut hasher = crate::util::hasher();
         hasher.update(bytes);
         let hashed = hasher.finalize();
 
@@ -203,7 +203,7 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         }
     }
     fn hash_to_exp(&self, bytes: &[u8]) -> Self::X {
-        let mut hasher = Sha512::new();
+        let mut hasher = crate::util::hasher();
         hasher.update(bytes);
         let hashed = hasher.finalize();
 

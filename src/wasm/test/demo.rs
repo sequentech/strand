@@ -13,7 +13,7 @@ use crate::elgamal::{PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::shuffler::Shuffler;
 use crate::threshold::tests::test_threshold_generic;
-use crate::util;
+use crate::backend::ristretto;
 use crate::util::Par;
 use crate::zkp::Zkp;
 use rayon::iter::ParallelIterator;
@@ -85,7 +85,7 @@ fn from_plaintext_s(plaintext: &PlaintextS) -> RistrettoPointS {
     let ctx = RistrettoCtx;
 
     let bytes = hex::decode(&plaintext.value).unwrap();
-    ctx.encode(&util::to_u8_30(&bytes)).unwrap()
+    ctx.encode(&ristretto::to_ristretto_plaintext_array(&bytes).unwrap()).unwrap()
 }
 
 fn secret_key() -> PrivateKey<RistrettoCtx> {

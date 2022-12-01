@@ -86,7 +86,7 @@ pub fn test_elgamal() {
     let mut csprng = StrandRng;
     let mut fill = [0u8; 30];
     csprng.fill_bytes(&mut fill);
-    let plaintext = util::to_u8_30(&fill.to_vec());
+    let plaintext = to_plaintext_array(&fill.to_vec());
     test_elgamal_generic(&ctx, plaintext);
 }
 
@@ -108,7 +108,7 @@ pub fn test_vdecryption() {
     let ctx = RistrettoCtx;
     let mut fill = [0u8; 30];
     csprng.fill_bytes(&mut fill);
-    let plaintext = util::to_u8_30(&fill.to_vec());
+    let plaintext = to_plaintext_array(&fill.to_vec());
     test_vdecryption_generic(&ctx, plaintext);
 
     message("* BigInt vdecryption..");
@@ -123,7 +123,7 @@ pub fn test_distributed() {
     let ctx = RistrettoCtx;
     let mut fill = [0u8; 30];
     csprng.fill_bytes(&mut fill);
-    let plaintext = util::to_u8_30(&fill.to_vec());
+    let plaintext = to_plaintext_array(&fill.to_vec());
     test_distributed_generic(&ctx, plaintext);
 
     message("* BigInt distributed..");
@@ -141,7 +141,7 @@ pub fn test_distributed_serialization() {
     for _ in 0..1 {
         let mut fill = [0u8; 30];
         csprng.fill_bytes(&mut fill);
-        let p = util::to_u8_30(&fill.to_vec());
+        let p = to_plaintext_array(&fill.to_vec());
         ps.push(p);
     }
     test_distributed_serialization_generic(&ctx, ps);
@@ -162,7 +162,7 @@ pub fn test_threshold() {
     let ctx = RistrettoCtx;
     let mut fill = [0u8; 30];
     csprng.fill_bytes(&mut fill);
-    let plaintext = util::to_u8_30(&fill.to_vec());
+    let plaintext = to_plaintext_array(&fill.to_vec());
     let trustees = 5usize;
     let threshold = 3usize;
     test_threshold_generic(&ctx, trustees, threshold, plaintext);
@@ -173,4 +173,8 @@ pub fn test_threshold() {
     let ctx: BigintCtx<P2048> = Default::default();
     let plaintext = ctx.rnd_plaintext();
     test_threshold_generic(&ctx, trustees, threshold, plaintext);
+}
+
+fn to_plaintext_array(input: &[u8]) -> [u8; 30] {
+    crate::backend::ristretto::to_ristretto_plaintext_array(input).unwrap()
 }

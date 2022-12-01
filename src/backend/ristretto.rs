@@ -29,7 +29,7 @@ use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
 use curve25519_dalek::traits::Identity;
 use rand::RngCore;
-use sha2::{Digest, Sha512};
+use sha2::Digest;
 use sha3::digest::{ExtendableOutput, Update, XofReader};
 use sha3::Shake256;
 
@@ -139,7 +139,7 @@ impl Ctx for RistrettoCtx {
         value
     }
     fn hash_to_exp(&self, bytes: &[u8]) -> Self::X {
-        let mut hasher = Sha512::new();
+        let mut hasher = util::hasher();
         Digest::update(&mut hasher, bytes);
 
         ScalarS(Scalar::from_hash(hasher))
@@ -165,15 +165,17 @@ impl Ctx for RistrettoCtx {
         let compressed = element.0.compress();
         // the 30 bytes of data are placed in the range 1-30
         let slice = &compressed.as_bytes()[1..31];
-        util::to_u8_30(slice)
+        to_ristretto_plaintext_array(slice).unwrap()
     }
     fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
         let bytes = exp.0.to_bytes();
         let mut blank = vec![0; 30];
         blank[0..16].copy_from_slice(&bytes[0..16]);
-        let first = self.encode(&util::to_u8_30(&blank));
+        let first_array = to_ristretto_plaintext_array(&blank).unwrap(); 
+        let first = self.encode(&first_array);
         blank[0..16].copy_from_slice(&bytes[16..32]);
-        let second = self.encode(&util::to_u8_30(&blank));
+        let second_array = to_ristretto_plaintext_array(&blank).unwrap(); 
+        let second = self.encode(&second_array);
         let first_c = pk.encrypt(&first.unwrap());
         let second_c = pk.encrypt(&second.unwrap());
 
@@ -218,14 +220,14 @@ impl Ctx for RistrettoCtx {
         self.generators_shake(size, seed)
     }
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
-        let b32 = util::to_u8_32(bytes)?;
+        let b32 = to_ristretto_point_array(bytes)?;
         CompressedRistretto(b32)
             .decompress()
             .map(RistrettoPointS)
             .ok_or("Failed constructing ristretto point")
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
-        let b32 = util::to_u8_32(bytes)?;
+        let b32 = to_ristretto_point_array(bytes)?;
         Scalar::from_canonical_bytes(b32)
             .map(ScalarS)
             .ok_or("Failed constructing scalar")
@@ -355,6 +357,14 @@ impl std::fmt::Debug for RistrettoPointS {
     }
 }
 
+
+pub(crate) fn to_ristretto_point_array(input: &[u8]) -> Result<[u8; 32], &'static str> {
+    util::to_u8_array(input)
+}
+pub fn to_ristretto_plaintext_array(input: &[u8]) -> Result<[u8; 30], &'static str> {
+    util::to_u8_array(input)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::backend::ristretto::*;
@@ -362,6 +372,10 @@ mod tests {
     use crate::serialization::tests::*;
     use crate::threshold::tests::test_threshold_generic;
 
+    fn to_plaintext_array(input: &[u8]) -> [u8; 30] {
+        super::to_ristretto_plaintext_array(input).unwrap()
+    }
+    
     #[test]
     fn test_elgamal() {
         let mut csprng = StrandRng;
@@ -369,7 +383,7 @@ mod tests {
         let ctx = RistrettoCtx;
         let mut fill = [0u8; 30];
         csprng.fill_bytes(&mut fill);
-        let plaintext = util::to_u8_30(&fill.to_vec());
+        let plaintext = to_plaintext_array(&fill.to_vec());
         test_elgamal_generic(&ctx, plaintext);
     }
 
@@ -380,7 +394,7 @@ mod tests {
         let ctx = RistrettoCtx;
         let mut fill = [0u8; 30];
         csprng.fill_bytes(&mut fill);
-        let plaintext = util::to_u8_30(&fill.to_vec());
+        let plaintext = to_plaintext_array(&fill.to_vec());
         test_elgamal_enc_pok_generic(&ctx, plaintext);
     }
 
@@ -409,7 +423,7 @@ mod tests {
         let ctx = RistrettoCtx;
         let mut fill = [0u8; 30];
         csprng.fill_bytes(&mut fill);
-        let plaintext = util::to_u8_30(&fill.to_vec());
+        let plaintext = to_plaintext_array(&fill.to_vec());
         test_vdecryption_generic(&ctx, plaintext);
     }
 
@@ -420,7 +434,7 @@ mod tests {
         let ctx = RistrettoCtx;
         let mut fill = [0u8; 30];
         csprng.fill_bytes(&mut fill);
-        let plaintext = util::to_u8_30(&fill.to_vec());
+        let plaintext = to_plaintext_array(&fill.to_vec());
         test_distributed_generic(&ctx, plaintext);
     }
 
@@ -433,7 +447,7 @@ mod tests {
         for _ in 0..10 {
             let mut fill = [0u8; 30];
             csprng.fill_bytes(&mut fill);
-            let p = util::to_u8_30(&fill.to_vec());
+            let p = to_plaintext_array(&fill.to_vec());
             ps.push(p);
         }
         test_distributed_serialization_generic(&ctx, ps);
@@ -462,7 +476,7 @@ mod tests {
         let ctx = RistrettoCtx;
         let mut fill = [0u8; 30];
         csprng.fill_bytes(&mut fill);
-        let plaintext = util::to_u8_30(&fill.to_vec());
+        let plaintext = to_plaintext_array(&fill.to_vec());
 
         test_threshold_generic(&ctx, trustees, threshold, plaintext);
     }
@@ -502,28 +516,4 @@ mod tests {
         let ctx = RistrettoCtx;
         test_cp_borsh_generic(&ctx);
     }
-    /*
-    #[test]
-    fn test_ciphertext_bytes() {
-        let ctx = RistrettoCtx::default();
-        test_ciphertext_bytes_generic(&ctx);
-    }
-
-    #[test]
-    fn test_key_bytes() {
-        let ctx = RistrettoCtx::default();
-        test_key_bytes_generic(&ctx);
-    }
-
-    #[test]
-    fn test_schnorr_bytes() {
-        let ctx = RistrettoCtx::default();
-        test_schnorr_bytes_generic(&ctx);
-    }
-
-    #[test]
-    fn test_cp_bytes() {
-        let ctx = RistrettoCtx::default();
-        test_cp_bytes_generic(&ctx);
-    }*/
 }

@@ -29,7 +29,7 @@ use num_integer::Integer;
 use num_modular::{ModularSymbols, ModularUnaryOps};
 use num_traits::Num;
 use num_traits::{One, Zero};
-use sha2::{Digest, Sha512};
+use sha2::Digest;
 
 use crate::backend::constants::*;
 use crate::context::{Ctx, Element, Exponent, Plaintext};
@@ -82,7 +82,7 @@ impl<P: BigintCtxParams> BigintCtx<P> {
     }
 
     fn hash_to_element(&self, bytes: &[u8]) -> BigUint {
-        let mut hasher = Sha512::new();
+        let mut hasher = crate::util::hasher();
         hasher.update(bytes);
         let hashed = hasher.finalize();
 
@@ -176,7 +176,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         BigUintP(self.rnd_exp().0)
     }
     fn hash_to_exp(&self, bytes: &[u8]) -> Self::X {
-        let mut hasher = Sha512::new();
+        let mut hasher = crate::util::hasher();
         hasher.update(bytes);
         let hashed = hasher.finalize();
 
