@@ -48,21 +48,18 @@ pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
     type P: Plaintext;
 
     fn generator(&self) -> &Self::E;
-    fn gmod_pow(&self, other: &Self::X) -> Self::E;
-    fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E;
-
     // FIXME this is wrong. Remove modulus and exp_modulus from trait,
     // implementors should use emod_pow, modulo(), exp_modulo()
-
     // We reuse the E and X types to prevent mixing moduli
     // Although the modulus is not an element of the group, we reuse the type here
     fn modulus(&self) -> &Self::E;
     // Although the modulus is not an element of the ring, we reuse the type here
     fn exp_modulus(&self) -> &Self::X;
 
+    fn gmod_pow(&self, other: &Self::X) -> Self::E;
+    fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E;
     fn modulo(&self, value: &Self::E) -> Self::E;
     fn exp_modulo(&self, value: &Self::X) -> Self::X;
-
     fn xsub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X;
 
     fn rnd(&self) -> Self::E;
@@ -71,14 +68,15 @@ pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
 
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str>;
     fn decode(&self, element: &Self::E) -> Self::P;
-    fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8>;
-    fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X>;
-    fn exp_from_u64(&self, value: u64) -> Self::X;
-    fn hash_to_exp(&self, bytes: &[u8]) -> Self::X;
-    fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E>;
-
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str>;
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str>;
+    fn exp_from_u64(&self, value: u64) -> Self::X;
+    fn hash_to_exp(&self, bytes: &[u8]) -> Self::X;
+    
+    fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8>;
+    fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X>;
+    
+    fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E>;
 }
 
 /// An element of the underlying group.

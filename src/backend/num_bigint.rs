@@ -122,20 +122,21 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         self.params.generator()
     }
     #[inline(always)]
-    fn gmod_pow(&self, other: &Self::X) -> Self::E {
-        BigUintE::new(self.generator().0.modpow(&other.0, &self.modulus().0))
-    }
-    #[inline(always)]
-    fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
-        BigUintE::new(base.0.modpow(&exponent.0, &self.modulus().0))
-    }
-    #[inline(always)]
     fn modulus(&self) -> &Self::E {
         self.params.modulus()
     }
     #[inline(always)]
     fn exp_modulus(&self) -> &Self::X {
         self.params.exp_modulus()
+    }
+    
+    #[inline(always)]
+    fn gmod_pow(&self, other: &Self::X) -> Self::E {
+        BigUintE::new(self.generator().0.modpow(&other.0, &self.modulus().0))
+    }
+    #[inline(always)]
+    fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
+        BigUintE::new(base.0.modpow(&exponent.0, &self.modulus().0))
     }
     #[inline(always)]
     fn modulo(&self, value: &Self::E) -> Self::E {
@@ -175,14 +176,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn rnd_plaintext(&self) -> Self::P {
         BigUintP(self.rnd_exp().0)
     }
-    fn hash_to_exp(&self, bytes: &[u8]) -> Self::X {
-        let mut hasher = crate::util::hasher();
-        hasher.update(bytes);
-        let hashed = hasher.finalize();
-
-        let num = BigUint::from_bytes_le(&hashed);
-        BigUintX::new(num.mod_floor(&self.exp_modulus().0))
-    }
+    
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
         let one: BigUint = One::one();
 
@@ -212,21 +206,6 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
             BigUintP(&element.0 - one)
         }
     }
-    fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
-        let encrypted = pk.encrypt(&self.encode(&BigUintP(exp.0.clone())).unwrap());
-        encrypted.strand_serialize()
-    }
-    fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X> {
-        let encrypted = Ciphertext::<Self>::strand_deserialize(bytes).ok()?;
-        let decrypted = sk.decrypt(&encrypted);
-        Some(BigUintX(self.decode(&decrypted).0, PhantomData))
-    }
-    fn exp_from_u64(&self, value: u64) -> Self::X {
-        BigUintX::new(BigUint::from(value))
-    }
-    fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E> {
-        self.generators_fips(size, seed)
-    }
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
         let biguint = BigUint::from_bytes_le(bytes);
         self.element_from_biguint(biguint)
@@ -240,6 +219,31 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
             Ok(BigUintX::new(ret))
         }
     }
+    fn exp_from_u64(&self, value: u64) -> Self::X {
+        BigUintX::new(BigUint::from(value))
+    }
+    fn hash_to_exp(&self, bytes: &[u8]) -> Self::X {
+        let mut hasher = crate::util::hasher();
+        hasher.update(bytes);
+        let hashed = hasher.finalize();
+
+        let num = BigUint::from_bytes_le(&hashed);
+        BigUintX::new(num.mod_floor(&self.exp_modulus().0))
+    }
+    fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
+        let encrypted = pk.encrypt(&self.encode(&BigUintP(exp.0.clone())).unwrap());
+        encrypted.strand_serialize()
+    }
+    fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X> {
+        let encrypted = Ciphertext::<Self>::strand_deserialize(bytes).ok()?;
+        let decrypted = sk.decrypt(&encrypted);
+        Some(BigUintX(self.decode(&decrypted).0, PhantomData))
+    }
+    
+    fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E> {
+        self.generators_fips(size, seed)
+    }
+    
 }
 
 impl<P: BigintCtxParams> Default for BigintCtx<P> {

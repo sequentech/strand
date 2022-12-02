@@ -62,6 +62,8 @@ pub fn random_ballots<C: Ctx>(n: usize, ctx: &C) -> Vec<Ciphertext<C>> {
         .collect()
 }
 
+pub const STRAND_HASH_LENGTH_BYTES: usize = 64;
+
 pub fn hash(bytes: &[u8]) -> Vec<u8> {
     let mut hasher = hasher();
     hasher.update(bytes);

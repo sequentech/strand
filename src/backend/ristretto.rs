@@ -83,14 +83,7 @@ impl Ctx for RistrettoCtx {
     fn generator(&self) -> &Self::E {
         &RistrettoPointS(RISTRETTO_BASEPOINT_POINT)
     }
-    #[inline(always)]
-    fn gmod_pow(&self, other: &ScalarS) -> Self::E {
-        RistrettoPointS(&other.0 * &RISTRETTO_BASEPOINT_TABLE)
-    }
-    #[inline(always)]
-    fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
-        RistrettoPointS(base.0 * exponent.0)
-    }
+   
     #[inline(always)]
     fn modulus(&self) -> &Self::E {
         // returning a dummy value as modulus does not apply to this backend
@@ -100,6 +93,15 @@ impl Ctx for RistrettoCtx {
     fn exp_modulus(&self) -> &Self::X {
         // returning a dummy value as modulus does not apply to this backend
         &ScalarS(DUMMY_SCALAR)
+    }
+
+    #[inline(always)]
+    fn gmod_pow(&self, other: &ScalarS) -> Self::E {
+        RistrettoPointS(&other.0 * &RISTRETTO_BASEPOINT_TABLE)
+    }
+    #[inline(always)]
+    fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
+        RistrettoPointS(base.0 * exponent.0)
     }
     #[inline(always)]
     // identity
@@ -144,7 +146,6 @@ impl Ctx for RistrettoCtx {
 
         ScalarS(Scalar::from_hash(hasher))
     }
-
     // see https://github.com/dalek-cryptography/curve25519-dalek/issues/322
     // see https://github.com/hdevalence/ristretto255-data-encoding/blob/master/src/main.rs
     fn encode(&self, data: &[u8; 30]) -> Result<Self::E, &'static str> {
@@ -167,6 +168,39 @@ impl Ctx for RistrettoCtx {
         let slice = &compressed.as_bytes()[1..31];
         to_ristretto_plaintext_array(slice).unwrap()
     }
+    fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
+        let b32 = to_ristretto_point_array(bytes)?;
+        CompressedRistretto(b32)
+            .decompress()
+            .map(RistrettoPointS)
+            .ok_or("Failed constructing ristretto point")
+    }
+    fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
+        let b32 = to_ristretto_point_array(bytes)?;
+        Scalar::from_canonical_bytes(b32)
+            .map(ScalarS)
+            .ok_or("Failed constructing scalar")
+    }
+    fn exp_from_u64(&self, value: u64) -> Self::X {
+        let val_bytes = value.to_le_bytes();
+        let mut bytes = [0u8; 32];
+        let mut vec = val_bytes.to_vec();
+        vec.resize(32, 0);
+        bytes.copy_from_slice(&vec);
+        let scalar = Scalar::from_bytes_mod_order(bytes);
+
+        ///// FIXME remove this sanity check
+        let mut scalar_bytes = scalar.as_bytes().to_vec();
+        scalar_bytes.resize(8, 0);
+        let mut bytes = [0u8; 8];
+        bytes.copy_from_slice(&scalar_bytes);
+        let check = u64::from_le_bytes(bytes);
+        assert_eq!(value, check);
+        /////
+
+        ScalarS(scalar)
+    }
+
     fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
         let bytes = exp.0.to_bytes();
         let mut blank = vec![0; 30];
@@ -197,41 +231,10 @@ impl Ctx for RistrettoCtx {
             None
         }
     }
-    fn exp_from_u64(&self, value: u64) -> Self::X {
-        let val_bytes = value.to_le_bytes();
-        let mut bytes = [0u8; 32];
-        let mut vec = val_bytes.to_vec();
-        vec.resize(32, 0);
-        bytes.copy_from_slice(&vec);
-        let scalar = Scalar::from_bytes_mod_order(bytes);
-
-        ///// FIXME remove this sanity check
-        let mut scalar_bytes = scalar.as_bytes().to_vec();
-        scalar_bytes.resize(8, 0);
-        let mut bytes = [0u8; 8];
-        bytes.copy_from_slice(&scalar_bytes);
-        let check = u64::from_le_bytes(bytes);
-        assert_eq!(value, check);
-        /////
-
-        ScalarS(scalar)
-    }
     fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E> {
         self.generators_shake(size, seed)
     }
-    fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
-        let b32 = to_ristretto_point_array(bytes)?;
-        CompressedRistretto(b32)
-            .decompress()
-            .map(RistrettoPointS)
-            .ok_or("Failed constructing ristretto point")
-    }
-    fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
-        let b32 = to_ristretto_point_array(bytes)?;
-        Scalar::from_canonical_bytes(b32)
-            .map(ScalarS)
-            .ok_or("Failed constructing scalar")
-    }
+    
 }
 
 impl Default for RistrettoCtx {

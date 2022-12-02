@@ -95,20 +95,20 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         self.params.generator()
     }
     #[inline(always)]
-    fn gmod_pow(&self, other: &Self::X) -> Self::E {
-        Element::<RugCtx<P>>::mod_pow(self.generator(), other, self.modulus())
-    }
-    #[inline(always)]
-    fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
-        Element::<RugCtx<P>>::mod_pow(base, exponent, self.modulus())
-    }
-    #[inline(always)]
     fn modulus(&self) -> &Self::E {
         self.params.modulus()
     }
     #[inline(always)]
     fn exp_modulus(&self) -> &Self::X {
         self.params.exp_modulus()
+    }
+    #[inline(always)]
+    fn gmod_pow(&self, other: &Self::X) -> Self::E {
+        Element::<RugCtx<P>>::mod_pow(self.generator(), other, self.modulus())
+    }
+    #[inline(always)]
+    fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
+        Element::<RugCtx<P>>::mod_pow(base, exponent, self.modulus())
     }
     #[inline(always)]
     fn modulo(&self, value: &Self::E) -> Self::E {
@@ -172,18 +172,6 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
             IntegerP(element.0.clone() - 1i32)
         }
     }
-    fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
-        let encrypted = pk.encrypt(&self.encode(&IntegerP(exp.0.clone())).unwrap());
-        encrypted.strand_serialize()
-    }
-    fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X> {
-        let encrypted = Ciphertext::<Self>::strand_deserialize(bytes).ok()?;
-        let decrypted = sk.decrypt(&encrypted);
-        Some(IntegerX(self.decode(&decrypted).0, PhantomData))
-    }
-    fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E> {
-        self.generators_fips(size, seed)
-    }
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
         let ret = Integer::from_digits(bytes, Order::MsfLe);
         if (ret < 1) || ret >= self.modulus().0 {
@@ -202,6 +190,9 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
             Ok(IntegerX::new(ret))
         }
     }
+    fn exp_from_u64(&self, value: u64) -> Self::X {
+        IntegerX::new(Integer::from(value))
+    }
     fn hash_to_exp(&self, bytes: &[u8]) -> Self::X {
         let mut hasher = crate::util::hasher();
         hasher.update(bytes);
@@ -212,8 +203,19 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
 
         IntegerX::new(rem)
     }
-    fn exp_from_u64(&self, value: u64) -> Self::X {
-        IntegerX::new(Integer::from(value))
+
+    fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
+        let encrypted = pk.encrypt(&self.encode(&IntegerP(exp.0.clone())).unwrap());
+        encrypted.strand_serialize()
+    }
+    fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X> {
+        let encrypted = Ciphertext::<Self>::strand_deserialize(bytes).ok()?;
+        let decrypted = sk.decrypt(&encrypted);
+        Some(IntegerX(self.decode(&decrypted).0, PhantomData))
+    }
+
+    fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E> {
+        self.generators_fips(size, seed)
     }
 }
 impl<P: RugCtxParams> Default for RugCtx<P> {
