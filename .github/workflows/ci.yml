@@ -63,7 +63,7 @@ jobs:
         nix \
           --extra-experimental-features "nix-command flakes" \
           develop \
-          --command bash -c "RUSTFLAGS='-C target-feature=+atomics,+bulk-memory,+mutable-globals' wasm-pack build --out-name index --release --target web --features=wasmtest,wasmrayon -- -Z build-std=panic_abort,std"
+          --command bash -c "RUSTFLAGS='-C target-feature=+atomics,+bulk-memory,+mutable-globals' wasm-pack build --out-name index --release --target web --features=wasmtest,wasmrayon -- -Z build-std=panic_abort,std && cp -r pkg/ ./src/wasm/test/"
 
     # publish gh-pages branch
     - name: Deploy gh-pages
