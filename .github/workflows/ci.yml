@@ -63,8 +63,17 @@ jobs:
         nix \
           --extra-experimental-features "nix-command flakes" \
           develop \
-          --command bash -c "RUSTFLAGS='-C target-feature=+atomics,+bulk-memory,+mutable-globals' wasm-pack build --out-name index --release --target web --features=wasmtest,wasmrayon -- -Z build-std=panic_abort,std && cp -r pkg/ ./src/wasm/test/"
+          --command bash -c "RUSTFLAGS='-C target-feature=+atomics,+bulk-memory,+mutable-globals' wasm-pack build --out-name index --release --target web --features=wasmtest,wasmrayon -- -Z build-std=panic_abort,std"
+ 
+    - name: Add pkg to deploy and list files in deployment dir
+      run: cp -r ./pkg/ ./src/wasm/test/pkg/ && ls -lah ./src/wasm/test/
 
+    - name: Archive deployment dir as an artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: deployment-dir
+        path: ./src/wasm/test/
+        
     # publish gh-pages branch
     - name: Deploy gh-pages
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
