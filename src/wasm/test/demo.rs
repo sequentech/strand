@@ -46,6 +46,19 @@ pub struct PlaintextS {
     pub value: String,
 }
 
+fn pretty_print_int(number: isize) -> String {
+    let mut pretty_number = String::new();
+    let number_str = number.to_string();
+    let chars = number_str.chars().rev().enumerate();
+    for (index, character) in chars {
+        if index != 0 && index % 3 == 0 {
+            pretty_number.insert(0, ',');
+        }
+        pretty_number.insert(0, character);
+    }
+    return pretty_number;
+}
+
 use crate::elgamal::Ciphertext;
 pub fn to_ciphertext_s(ciphertext: &Ciphertext<RistrettoCtx>) -> CiphertextS {
     let gr = hex::encode(ciphertext.gr.compress().to_bytes());
@@ -123,9 +136,19 @@ pub fn encrypt(nyes: u32, nno: u32) -> JsValue {
         })
         .collect();
 
+    let per_sec = ((nyes + nno) as f64 / ((performance.now() - now) / 1000.0)) as isize;
+    let per_hour = per_sec * 3_600;
+
     message(&format!(
-        "Encrypt: {:.3} c / s",
-        (nyes + nno) as f64 / ((performance.now() - now) / 1000.0)
+        "Encrypt: {} ciphertexts/second - {} ciphertexts/hour",
+        pretty_print_int(per_sec),
+        pretty_print_int(per_hour)
+    ));
+
+    message(&format!(
+        "Encrypted {} values",
+        pretty_print_int((nyes + nno) as isize)
+
     ));
 
     let _ = &ys.append(&mut ns);
@@ -159,9 +182,16 @@ pub fn shuffle(value: JsValue) -> JsValue {
     let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
     message(&format!("Proof ok: {}", ok));
 
+    let per_sec = (es.len() as f64 / ((performance.now() - now) / 1000.0)) as isize;
+    let per_hour = per_sec * 3_600;
     message(&format!(
-        "Prove + Verify: {:.3} c / s",
-        es.len() as f64 / ((performance.now() - now) / 1000.0)
+        "Prove + Verify: {} ciphertexts/second - {} ciphertexts/hour",
+        pretty_print_int(per_sec),
+        pretty_print_int(per_hour)
+    ));
+    message(&format!(
+        "Shuffled {} values",
+        pretty_print_int(es.len() as isize)
     ));
 
     let cs: Vec<CiphertextS> = e_primes.iter().map(|e| to_ciphertext_s(e)).collect();
@@ -184,9 +214,17 @@ pub fn decrypt(value: JsValue) -> JsValue {
             to_plaintext_s(&sk.decrypt(&c))
         })
         .collect();
+
+    let per_sec = (ps.len() as f64 / ((performance.now() - now) / 1000.0)) as isize;
+    let per_hour = per_sec * 3_600;
     message(&format!(
-        "Decrypt: {:.3} c / s",
-        ps.len() as f64 / ((performance.now() - now) / 1000.0)
+        "Decrypt: {} ciphertexts/second - {} ciphertexts/hour",
+        pretty_print_int(per_sec),
+        pretty_print_int(per_hour)
+    ));
+    message(&format!(
+        "Decrypted {} values",
+        pretty_print_int(ps.len() as isize)
     ));
 
     serde_wasm_bindgen::to_value(&ps).unwrap()

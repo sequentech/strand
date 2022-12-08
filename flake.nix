@@ -87,7 +87,14 @@
           nativeBuildInputs = 
             defaultPackage.nativeBuildInputs; 
           buildInputs = 
-            [ pkgs.bash pkgs.reuse pkgs.cargo-deny pkgs.clippy ]; 
+            [
+              pkgs.bash
+              pkgs.reuse
+              pkgs.cargo-deny
+              pkgs.clippy
+              pkgs.pkg-config
+              pkgs.openssl
+            ]; 
         };
 
       }

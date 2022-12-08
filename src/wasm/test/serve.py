@@ -18,5 +18,7 @@ handler.extensions_map.update({
     '.wasm': 'application/wasm',
     '.js': 'text/javascript',
 })
-httpd = HTTPServer(('localhost', 8080), handler)
+
+print("Launching server on 127.0.0.1:8000..")
+httpd = HTTPServer(('127.0.0.1', 8080), handler)
 httpd.serve_forever()
