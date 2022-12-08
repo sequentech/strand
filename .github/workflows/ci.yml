@@ -69,7 +69,7 @@ jobs:
       run: cp -r ./pkg/ ./src/wasm/test/pkg/ && ls -lah ./src/wasm/test/
 
     - name: Archive deployment dir as an artifact
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v3
       with:
         name: deployment-dir
         path: ./src/wasm/test/
@@ -81,6 +81,7 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./src/wasm/test/
+        cname: strand_github_pages.sequentech.io
 
   check:
     name: 'Static Analysis: cargo check'
