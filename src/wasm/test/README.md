@@ -31,6 +31,7 @@ wasm-pack build \
     --target web \
     --features=wasmtest,wasmrayon \
     -- -Z build-std=panic_abort,std
+
 ```
 * `python3 src/wasm/test/serve.py`
 * http://localhost:8080/src/wasm/test/test.html?threaded=true

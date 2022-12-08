@@ -20,7 +20,7 @@
 //! use strand::elgamal::{PrivateKey, PublicKey};
 //!
 //! // obtain a context for a 2048-bit prime, with num_bigint backend
-//! let ctx = BigintCtx::<P2048>::new();
+//! let ctx: BigintCtx::<P2048> = Default::default();
 //! // generate an ElGamal keypair
 //! let sk = PrivateKey::gen(&ctx);
 //! let pk = sk.get_pk();
@@ -33,21 +33,34 @@
 //! assert_eq!(plaintext, plaintext_);
 //! ```
 
-use crate::byte_tree::ToFromBTree;
+use borsh::{BorshDeserialize, BorshSerialize};
 // use crate::zkp::Zkp;
-use std::marker::{Send, Sync};
+use crate::elgamal::{PrivateKey, PublicKey};
+use std::{
+    fmt::Debug,
+    marker::{Send, Sync},
+};
 
-/// A cryptographic context loosely corresponds to the underlying modular arithmetic group.
-pub trait Ctx: Sync + Sized + Clone {
+/// A cryptographic context loosely corresponds to the underlying modular arithmetic groups.
+pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
     type E: Element<Self>;
     type X: Exponent<Self>;
-    type P: Send + Sync + Eq + std::fmt::Debug;
+    type P: Plaintext;
 
     fn generator(&self) -> &Self::E;
+    // FIXME this is wrong. Remove modulus and exp_modulus from trait,
+    // implementors should use emod_pow, modulo(), exp_modulo()
+    // We reuse the E and X types to prevent mixing moduli
+    // Although the modulus is not an element of the group, we reuse the type here
+    fn modulus(&self) -> &Self::E;
+    // Although the modulus is not an element of the ring, we reuse the type here
+    fn exp_modulus(&self) -> &Self::X;
+
     fn gmod_pow(&self, other: &Self::X) -> Self::E;
     fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E;
-    fn modulus(&self) -> &Self::E;
-    fn exp_modulus(&self) -> &Self::X;
+    fn modulo(&self, value: &Self::E) -> Self::E;
+    fn exp_modulo(&self, value: &Self::X) -> Self::X;
+    fn xsub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X;
 
     fn rnd(&self) -> Self::E;
     fn rnd_exp(&self) -> Self::X;
@@ -55,23 +68,26 @@ pub trait Ctx: Sync + Sized + Clone {
 
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str>;
     fn decode(&self, element: &Self::E) -> Self::P;
-    fn exp_from_u64(&self, value: u64) -> Self::X;
-    fn hash_to_exp(&self, bytes: &[u8]) -> Self::X;
-    fn generators(&self, size: usize, contest: u32, seed: &[u8]) -> Vec<Self::E>;
-
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str>;
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str>;
-
-    fn new() -> Self;
+    fn exp_from_u64(&self, value: u64) -> Self::X;
+    fn hash_to_exp(&self, bytes: &[u8]) -> Self::X;
+    
+    fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8>;
+    fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X>;
+    
+    fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E>;
 }
 
 /// An element of the underlying group.
 ///
 /// Operations depend on the backend and are given below for multiplicative groups / elliptic curves.
-pub trait Element<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree<C> {
-    /// Modular multiplication / point addition.
+pub trait Element<C: Ctx>:
+    Clone + Eq + Send + Sync + BorshSerialize + BorshDeserialize + Debug
+{
+    /// Multiplication / point addition.
     fn mul(&self, other: &C::E) -> C::E;
-    /// Modular division (a div b = a * b^1) / point subtraction.
+    /// Division (a div b = a * b^1) / point subtraction.
     fn div(&self, other: &C::E, modulus: &C::E) -> C::E;
     /// Modular inverse / point negation.
     fn inv(&self, modulus: &C::E) -> C::E;
@@ -79,29 +95,38 @@ pub trait Element<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree<C> {
     fn mod_pow(&self, exp: &C::X, modulus: &C::E) -> C::E;
     /// Modulo operation / not necessary, applied automatically.
     fn modulo(&self, modulus: &C::E) -> C::E;
-    // fn modl(&self, ctx: &C) -> C::E;
 
     /// Multiplicative identity / point at infinity.
     fn mul_identity() -> C::E;
 }
 
 /// A member of the "exponent ring" associated to the element group, or scalar ring for elliptic curves.
-pub trait Exponent<C: Ctx>: Clone + Eq + Send + Sync + ToFromBTree<C> {
-    // Modular addition.
+pub trait Exponent<C: Ctx>:
+    Clone + Eq + Send + Sync + BorshSerialize + BorshDeserialize + Debug
+{
+    // Addition.
     fn add(&self, other: &C::X) -> C::X;
-    // Modular subtraction.
+    // Subtraction.
     fn sub(&self, other: &C::X) -> C::X;
-    // Modular multiplication.
+    // Multiplication.
     fn mul(&self, other: &C::X) -> C::X;
-    // Modular division (a div b = a * b^1).
+    // Division (a div b = a * b^-1).
     fn div(&self, other: &C::X, modulus: &C::X) -> C::X;
     /// Modular inverse.
     fn inv(&self, modulus: &C::X) -> C::X;
-    /// Modulo operation (applied automatically for elliptic curves)
+    /// Modulo operation (NOOP for elliptic curves)
     fn modulo(&self, modulus: &C::X) -> C::X;
+
+    // Modular subtraction.
+    fn sub_mod(&self, other: &C::X, ctx: &C) -> C::X;
 
     /// Additive identity.
     fn add_identity() -> C::X;
     /// Multiplicative identity.
     fn mul_identity() -> C::X;
+}
+
+pub trait Plaintext:
+    Send + Sync + Eq + Debug + BorshSerialize + BorshDeserialize + std::hash::Hash + Clone
+{
 }

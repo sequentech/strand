@@ -10,7 +10,7 @@
 //! use strand::elgamal::{PrivateKey, PublicKey};
 //! use strand::zkp::Zkp;
 //!
-//! let ctx = BigintCtx::<P2048>::new();
+//! let ctx: BigintCtx::<P2048> = Default::default();
 //! let zkp = Zkp::new(&ctx);
 //! let exponent = ctx.rnd_exp();
 //! let g = ctx.generator();
@@ -28,10 +28,11 @@
 //! ```
 #![allow(clippy::too_many_arguments)]
 
-use serde_bytes::ByteBuf;
+use std::collections::HashMap;
 
-use crate::byte_tree::ByteTree;
-use crate::byte_tree::ToByteTree;
+use borsh::BorshDeserialize;
+use borsh::BorshSerialize;
+
 use crate::context::{Ctx, Element, Exponent};
 
 /// Interface to zero knowledge proof functionality.
@@ -51,10 +52,8 @@ impl<C: Ctx> Zkp<C> {
         gr: &C::E,
         label: &[u8],
     ) -> Schnorr<C> {
-        let values = [mhr].to_vec();
-        let mut tree: Vec<ByteTree> = values.iter().map(|e| e.to_byte_tree()).collect();
-        tree.push(ByteTree::Leaf(ByteBuf::from(label.to_vec())));
-        let context = ByteTree::Tree(tree);
+        let mut context = ChallengeInput::from(&[("mhr", &mhr)]);
+        context.add("label", &label.to_vec());
 
         self.schnorr_prove_private(secret, gr, None, context)
     }
@@ -66,10 +65,8 @@ impl<C: Ctx> Zkp<C> {
         proof: &Schnorr<C>,
         label: &[u8],
     ) -> bool {
-        let values = [mhr].to_vec();
-        let mut tree: Vec<ByteTree> = values.iter().map(|e| e.to_byte_tree()).collect();
-        tree.push(ByteTree::Leaf(ByteBuf::from(label.to_vec())));
-        let context = ByteTree::Tree(tree);
+        let mut context = ChallengeInput::from(&[("mhr", &mhr)]);
+        context.add("label", &label.to_vec());
 
         self.schnorr_verify_private(gr, None, proof, context)
     }
@@ -83,10 +80,8 @@ impl<C: Ctx> Zkp<C> {
         gr: &C::E,
         label: &[u8],
     ) -> ChaumPedersen<C> {
-        let values = [mhr].to_vec();
-        let mut tree: Vec<ByteTree> = values.iter().map(|e| e.to_byte_tree()).collect();
-        tree.push(ByteTree::Leaf(ByteBuf::from(label.to_vec())));
-        let context = ByteTree::Tree(tree);
+        let mut context = ChallengeInput::from(&[("mhr", &mhr)]);
+        context.add("label", &label.to_vec());
 
         self.cp_prove_private(secret, pk, dec_factor, None, gr, context)
     }
@@ -100,10 +95,8 @@ impl<C: Ctx> Zkp<C> {
         proof: &ChaumPedersen<C>,
         label: &[u8],
     ) -> bool {
-        let values = [mhr].to_vec();
-        let mut tree: Vec<ByteTree> = values.iter().map(|e| e.to_byte_tree()).collect();
-        tree.push(ByteTree::Leaf(ByteBuf::from(label.to_vec())));
-        let context = ByteTree::Tree(tree);
+        let mut context = ChallengeInput::from(&[("mhr", &mhr)]);
+        context.add("label", &label.to_vec());
 
         self.cp_verify_private(pk, dec_factor, None, gr, proof, context)
     }
@@ -116,7 +109,7 @@ impl<C: Ctx> Zkp<C> {
         g: Option<&C::E>,
         label: &[u8],
     ) -> Schnorr<C> {
-        let context = ByteTree::Leaf(ByteBuf::from(label.to_vec()));
+        let context = ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
         self.schnorr_prove_private(secret, public, g, context)
     }
 
@@ -127,7 +120,7 @@ impl<C: Ctx> Zkp<C> {
         proof: &Schnorr<C>,
         label: &[u8],
     ) -> bool {
-        let context = ByteTree::Leaf(ByteBuf::from(label.to_vec()));
+        let context = ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
         self.schnorr_verify_private(public, g, proof, context)
     }
 
@@ -141,7 +134,7 @@ impl<C: Ctx> Zkp<C> {
         g2: &C::E,
         label: &[u8],
     ) -> ChaumPedersen<C> {
-        let context = ByteTree::Leaf(ByteBuf::from(label.to_vec()));
+        let context = ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
         self.cp_prove_private(secret, public1, public2, g1, g2, context)
     }
 
@@ -154,7 +147,7 @@ impl<C: Ctx> Zkp<C> {
         proof: &ChaumPedersen<C>,
         label: &[u8],
     ) -> bool {
-        let context = ByteTree::Leaf(ByteBuf::from(label.to_vec()));
+        let context = ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
         self.cp_verify_private(public1, public2, g1, g2, proof, context)
     }
 
@@ -163,7 +156,7 @@ impl<C: Ctx> Zkp<C> {
         secret: &C::X,
         public: &C::E,
         g: Option<&C::E>,
-        context: ByteTree,
+        context: ChallengeInput,
     ) -> Schnorr<C> {
         let r = self.ctx.rnd_exp();
         let commitment = if let Some(g) = g {
@@ -191,7 +184,7 @@ impl<C: Ctx> Zkp<C> {
         public: &C::E,
         g: Option<&C::E>,
         proof: &Schnorr<C>,
-        context: ByteTree,
+        context: ChallengeInput,
     ) -> bool {
         let challenge_ = self.schnorr_proof_challenge(
             g.unwrap_or_else(|| self.ctx.generator()),
@@ -213,22 +206,6 @@ impl<C: Ctx> Zkp<C> {
         ok1 && ok2
     }
 
-    fn schnorr_proof_challenge(
-        &self,
-        g: &C::E,
-        public: &C::E,
-        commitment: &C::E,
-        context: ByteTree,
-    ) -> C::X {
-        let values = [g, public, commitment].to_vec();
-
-        let mut tree: Vec<ByteTree> = values.iter().map(|e| e.to_byte_tree()).collect();
-        tree.push(context);
-        let bytes = ByteTree::Tree(tree).to_hashable_bytes();
-
-        self.ctx.hash_to_exp(&bytes)
-    }
-
     fn cp_prove_private(
         &self,
         secret: &C::X,
@@ -236,7 +213,7 @@ impl<C: Ctx> Zkp<C> {
         public2: &C::E,
         g1: Option<&C::E>,
         g2: &C::E,
-        context: ByteTree,
+        context: ChallengeInput,
     ) -> ChaumPedersen<C> {
         let r = self.ctx.rnd_exp();
         let commitment1 = if let Some(g1) = g1 {
@@ -271,7 +248,7 @@ impl<C: Ctx> Zkp<C> {
         g1: Option<&C::E>,
         g2: &C::E,
         proof: &ChaumPedersen<C>,
-        context: ByteTree,
+        context: ChallengeInput,
     ) -> bool {
         let challenge_ = self.cp_proof_challenge(
             g1.unwrap_or_else(|| self.ctx.generator()),
@@ -304,6 +281,21 @@ impl<C: Ctx> Zkp<C> {
         ok1 && ok2 && ok3
     }
 
+    fn schnorr_proof_challenge(
+        &self,
+        g: &C::E,
+        public: &C::E,
+        commitment: &C::E,
+        context: ChallengeInput,
+    ) -> C::X {
+        let mut values =
+            ChallengeInput::from(&[("g", g), ("public", public), ("commitment", commitment)]);
+        values.add("context", &context);
+
+        let bytes = values.get_bytes();
+        self.ctx.hash_to_exp(&bytes)
+    }
+
     fn cp_proof_challenge(
         &self,
         g1: &C::E,
@@ -312,20 +304,25 @@ impl<C: Ctx> Zkp<C> {
         public2: &C::E,
         commitment1: &C::E,
         commitment2: &C::E,
-        context: ByteTree,
+        context: ChallengeInput,
     ) -> C::X {
-        let values = [g1, g2, public1, public2, commitment1, commitment2].to_vec();
+        let mut values = ChallengeInput::from(&[
+            ("g1", g1),
+            ("g2", g2),
+            ("public1", public1),
+            ("public2", public2),
+            ("commitment1", commitment1),
+            ("commitment2", commitment2),
+        ]);
+        values.add("context", &context);
 
-        let mut tree: Vec<ByteTree> = values.iter().map(|e| e.to_byte_tree()).collect();
-        tree.push(context);
-        let bytes = ByteTree::Tree(tree).to_hashable_bytes();
-
+        let bytes = values.get_bytes();
         self.ctx.hash_to_exp(&bytes)
     }
 }
 
 /// A proof of knowledge of discrete logarithm.
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, BorshSerialize, BorshDeserialize, Debug)]
 pub struct Schnorr<C: Ctx> {
     pub commitment: C::E,
     pub challenge: C::X,
@@ -333,10 +330,47 @@ pub struct Schnorr<C: Ctx> {
 }
 
 /// A proof of equality of discrete logarithms.
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, BorshSerialize, BorshDeserialize, Debug)]
 pub struct ChaumPedersen<C: Ctx> {
     pub commitment1: C::E,
     pub commitment2: C::E,
     pub challenge: C::X,
     pub response: C::X,
+}
+
+#[derive(BorshSerialize, BorshDeserialize)]
+pub(crate) struct ChallengeInput(HashMap<String, Vec<u8>>);
+impl ChallengeInput {
+    pub(crate) fn from<T: BorshSerialize>(values: &[(&'static str, &T)]) -> ChallengeInput {
+        let serialized = values
+            .iter()
+            .map(|value| (value.0.to_string(), value.1.try_to_vec().unwrap()));
+
+        let map = HashMap::from_iter(serialized);
+
+        ChallengeInput(map)
+    }
+
+    pub(crate) fn from_bytes(values: Vec<(&'static str, Vec<u8>)>) -> ChallengeInput {
+        let serialized = values
+            .into_iter()
+            .map(|(string, value)| (string.to_string(), value));
+
+        let map: HashMap<String, Vec<u8>> = HashMap::from_iter(serialized);
+
+        ChallengeInput(map)
+    }
+
+    pub(crate) fn add<T: BorshSerialize>(&mut self, name: &'static str, value: &T) {
+        let bytes = value.try_to_vec().unwrap();
+        self.0.insert(name.to_string(), bytes);
+    }
+
+    pub(crate) fn add_bytes(&mut self, name: &'static str, bytes: Vec<u8>) {
+        self.0.insert(name.to_string(), bytes);
+    }
+
+    pub(crate) fn get_bytes(&self) -> Vec<u8> {
+        self.try_to_vec().unwrap()
+    }
 }

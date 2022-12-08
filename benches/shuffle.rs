@@ -16,7 +16,7 @@ fn test_shuffle_generic<C: Ctx>(ctx: C, n: usize) {
 
     let es = util::random_ballots(n, &ctx);
     let seed = vec![];
-    let hs = ctx.generators(es.len() + 1, 0, &seed);
+    let hs = ctx.generators(es.len() + 1, &seed);
     let shuffler = Shuffler::new(&pk, &hs, &ctx);
 
     let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
@@ -32,7 +32,7 @@ fn shuffle_ristretto(n: usize) {
 }
 
 fn shuffle_bigint(n: usize) {
-    let ctx = BigintCtx::<P2048>::new();
+    let ctx: BigintCtx<P2048> = Default::default();
     test_shuffle_generic(ctx, n);
 }
 
@@ -41,7 +41,7 @@ cfg_if::cfg_if! {
         use strand::backend::rug::RugCtx;
         use strand::backend::rug::P2048 as RP2048;
         fn shuffle_rug(n: usize) {
-            let ctx = RugCtx::<RP2048>::new();
+            let ctx: RugCtx::<RP2048> = Default::default();
             test_shuffle_generic(ctx, n);
         }
     }

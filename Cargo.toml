@@ -1,6 +1,6 @@
-# SPDX-FileCopyrightText: 2021 David Ruescas <david@sequenttech.io>
-# SPDX-FileCopyrightText: 2022 Félix Robles <felix@sequenttech.io>
-# SPDX-FileCopyrightText: 2022 Eduardo Robles <edu@sequenttech.io>
+# SPDX-FileCopyrightText: 2021 David Ruescas <david@sequentech.io>
+# SPDX-FileCopyrightText: 2022 Félix Robles <felix@sequentech.io>
+# SPDX-FileCopyrightText: 2022 Eduardo Robles <edu@sequentech.io>
 #
 # SPDX-License-Identifier: AGPL-3.0-only
 [package]
@@ -17,48 +17,51 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 bench = false
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-# backends
-curve25519-dalek = {version = "3", features = ["serde"]}
-sha3 = "0.10"
+
+# Backends
+# The simd_backend feature requires nightly (also requires 
+# RUSTFLAGS="-C target_feature=+avx2" to select avx2)
+curve25519-dalek = {version = "3", features = ["simd_backend"]}
 num-bigint = { version = "0.4", features = ["rand"] }
 num-traits = "0.2"
 num-integer = "0.1"
 num-modular = { version = "0.5", features = ["num-bigint"] }
 rug = { version = "1.16", default-features = false, features = ["integer", "rand"], optional = true }
-# serialization
+
+# Signatures
+ed25519-zebra = "3.1.0"
+
+# Hashing 
+sha2 = "0.9"
+
+# Needed for extendable hashing function when deriving generators for ristretto
+sha3 = "0.10"
+
+# Serialization
+borsh = "0.9.3"
+
+# Only needed for wasm demo
 serde = { version = "1.0", features = ["derive"] }
-serde_bytes = "0.11"
-bincode = "1.3"
-# rng
+
+# RNG
 rand = { package="rand", version = "0.8" }
 getrandom = { version = "0.2", features = ["js"] }
-# aes
-cbc = { version="0.1", features=["alloc"] }
-aes = "0.8"
-# wasm
+
+# WASM
 wasm-bindgen-rayon = {version = "1.0.3", features = ["no-bundler"], optional = true}
 wasm-bindgen = {version = "=0.2.79", optional = true}
 serde-wasm-bindgen = {version = "0.4", optional = true}
-
-# static_init = "1.0"
 web-sys = { version = "0.3", features = ['Performance'], optional = true }
-ed25519-dalek = {version = "1", features = ["serde"]}
-quick-error = "2.0"
+
 rayon = { version = "1.5", optional = true }
-hex = { version = "0.4.2", optional = true }
-
-# [package.metadata.wasm-pack.profile.release]
-# wasm-opt = ['-O4']
-
+hex = { version = "0.4.2" }
 cfg-if = "1.0"
 
 [features]
 rayon = ["dep:rayon"]
 wasmrayon = ["rayon", "wasm", "dep:wasm-bindgen-rayon"]
-wasmtest = ["wasm", "dep:web-sys", "dep:hex"]
+wasmtest = ["wasm", "dep:web-sys"]
 wasm = ["wasm-bindgen", "serde-wasm-bindgen"]
 rug = ["dep:rug"]
 
@@ -66,12 +69,17 @@ rug = ["dep:rug"]
 criterion = {version = "0.3", features=["html_reports"]}
 serde_json = "1.0"
 
+[build-dependencies]
+rustc_version = "0.4.0"
+
 [[bench]]
 name = "shuffle"
 harness = false
+# remove this to run benchmark
 bench = false
 
 [[bench]]
 name = "encrypt"
 harness = false
-bench = false
+# remove this to run benchmark
+bench = true

@@ -6,16 +6,16 @@ use wasm_bindgen::prelude::*;
 
 use crate::backend::num_bigint::{BigintCtx, P2048};
 use crate::backend::ristretto::RistrettoCtx;
+use crate::backend::ristretto::RistrettoPointS;
 use crate::backend::tests::*;
 use crate::context::{Ctx, Element};
 use crate::elgamal::{PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::shuffler::Shuffler;
 use crate::threshold::tests::test_threshold_generic;
-use crate::util;
+use crate::backend::ristretto;
 use crate::util::Par;
 use crate::zkp::Zkp;
-use curve25519_dalek::ristretto::RistrettoPoint;
 use rayon::iter::ParallelIterator;
 
 #[wasm_bindgen]
@@ -61,8 +61,8 @@ fn pretty_print_int(number: isize) -> String {
 
 use crate::elgamal::Ciphertext;
 pub fn to_ciphertext_s(ciphertext: &Ciphertext<RistrettoCtx>) -> CiphertextS {
-    let gr = hex::encode(ciphertext.gr.compress().to_bytes());
-    let mhr = hex::encode(ciphertext.mhr.compress().to_bytes());
+    let gr = hex::encode(ciphertext.gr.0.compress().to_bytes());
+    let mhr = hex::encode(ciphertext.mhr.0.compress().to_bytes());
 
     CiphertextS { gr, mhr }
 }
@@ -79,7 +79,7 @@ fn from_ciphertext_s(ciphertext: &CiphertextS) -> Ciphertext<RistrettoCtx> {
     Ciphertext { gr, mhr }
 }
 
-fn to_plaintext_s(plaintext: &RistrettoPoint) -> PlaintextS {
+fn to_plaintext_s(plaintext: &RistrettoPointS) -> PlaintextS {
     let ctx = RistrettoCtx;
     // let value = hex::encode(ctx.decode(&plaintext));
     let decoded = ctx.decode(&plaintext);
@@ -94,11 +94,11 @@ fn to_plaintext_s(plaintext: &RistrettoPoint) -> PlaintextS {
     PlaintextS { value }
 }
 
-fn from_plaintext_s(plaintext: &PlaintextS) -> RistrettoPoint {
+fn from_plaintext_s(plaintext: &PlaintextS) -> RistrettoPointS {
     let ctx = RistrettoCtx;
 
     let bytes = hex::decode(&plaintext.value).unwrap();
-    ctx.encode(&util::to_u8_30(&bytes)).unwrap()
+    ctx.encode(&ristretto::to_ristretto_plaintext_array(&bytes).unwrap()).unwrap()
 }
 
 fn secret_key() -> PrivateKey<RistrettoCtx> {
@@ -165,7 +165,7 @@ pub fn shuffle(value: JsValue) -> JsValue {
 
     let es: Vec<Ciphertext<RistrettoCtx>> = values.iter().map(|v| from_ciphertext_s(v)).collect();
     let seed = vec![];
-    let hs = ctx.generators(es.len() + 1, 0, &seed);
+    let hs = ctx.generators(es.len() + 1, &seed);
     let shuffler = Shuffler {
         pk: &pk,
         generators: &hs,

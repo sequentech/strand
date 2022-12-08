@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #[cfg(feature = "wasmtest")]
 pub mod bench;
-#[cfg(feature = "wasmtest")]
+#[cfg(all(feature = "wasmtest", feature = "wasmrayon"))]
 pub mod demo;
 #[cfg(feature = "wasmtest")]
 pub mod test;

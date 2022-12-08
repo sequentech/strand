@@ -30,12 +30,22 @@ pub(crate) mod tests {
     use crate::context::Element;
     use crate::elgamal::*;
     use crate::keymaker::*;
+    use crate::serialization::StrandDeserialize;
+    use crate::serialization::StrandSerialize;
     use crate::shuffler::{ShuffleProof, Shuffler};
-    use crate::symmetric;
 
-    use crate::byte_tree::*;
     use crate::util;
     use crate::zkp::{ChaumPedersen, Schnorr};
+
+    pub(crate) fn test_encrypt_exp_generic<C: Ctx>(ctx: &C) {
+        let exp = ctx.rnd_exp();
+        let sk = PrivateKey::<C>::gen(ctx);
+
+        let encrypted = ctx.encrypt_exp(&exp, sk.get_pk());
+        let decrypted = ctx.decrypt_exp(&encrypted, sk);
+
+        assert_eq!(exp, decrypted.unwrap());
+    }
 
     pub(crate) fn test_elgamal_generic<C: Ctx>(ctx: &C, data: C::P) {
         let sk = PrivateKey::gen(ctx);
@@ -152,31 +162,23 @@ pub(crate) mod tests {
         assert_eq!(data, recovered);
     }
 
-    pub(crate) fn test_distributed_btserde_generic<C: Ctx>(ctx: &C, data: Vec<C::P>) {
+    pub(crate) fn test_distributed_serialization_generic<C: Ctx>(ctx: &C, data: Vec<C::P>) {
         let km1 = Keymaker::gen(ctx);
         let km2 = Keymaker::gen(ctx);
         let (pk1, proof1) = km1.share(&vec![]);
         let (pk2, proof2) = km2.share(&vec![]);
-        let sym1 = symmetric::gen_key();
-        let sym2 = symmetric::gen_key();
-        let esk1 = km1.get_encrypted_sk(sym1);
-        let esk2 = km2.get_encrypted_sk(sym2);
 
-        let share1_pk_b = pk1.ser();
-        let share1_proof_b = proof1.ser();
-        let sk1_b = esk1.ser();
+        let share1_pk_b = pk1.strand_serialize();
+        let share1_proof_b = proof1.strand_serialize();
 
-        let share2_pk_b = pk2.ser();
-        let share2_proof_b = proof2.ser();
-        let sk2_b = esk2.ser();
+        let share2_pk_b = pk2.strand_serialize();
+        let share2_proof_b = proof2.strand_serialize();
 
-        let share1_pk_d = PublicKey::<C>::deser(&share1_pk_b, ctx).unwrap();
-        let share1_proof_d = Schnorr::<C>::deser(&share1_proof_b, ctx).unwrap();
-        let _sk1_d = EncryptedPrivateKey::<C>::deser(&sk1_b, ctx).unwrap();
+        let share1_pk_d = PublicKey::<C>::strand_deserialize(&share1_pk_b).unwrap();
+        let share1_proof_d = Schnorr::<C>::strand_deserialize(&share1_proof_b).unwrap();
 
-        let share2_pk_d = PublicKey::<C>::deser(&share2_pk_b, ctx).unwrap();
-        let share2_proof_d = Schnorr::<C>::deser(&share2_proof_b, ctx).unwrap();
-        let _sk2_d = EncryptedPrivateKey::<C>::deser(&sk2_b, ctx).unwrap();
+        let share2_pk_d = PublicKey::<C>::strand_deserialize(&share2_pk_b).unwrap();
+        let share2_proof_d = Schnorr::<C>::strand_deserialize(&share2_proof_b).unwrap();
 
         let verified1 = Keymaker::verify_share(ctx, &share1_pk_d, &share1_proof_d, &vec![]);
         let verified2 = Keymaker::verify_share(ctx, &share2_pk_d, &share2_proof_d, &vec![]);
@@ -200,17 +202,17 @@ pub(crate) mod tests {
         let (decs1, proofs1) = km1.decryption_factor_many(&cs, &vec![]);
         let (decs2, proofs2) = km2.decryption_factor_many(&cs, &vec![]);
 
-        let decs1_b = decs1.ser();
-        let proofs1_b = proofs1.ser();
+        let decs1_b = decs1.strand_serialize();
+        let proofs1_b = proofs1.strand_serialize();
 
-        let decs2_b = decs2.ser();
-        let proofs2_b = proofs2.ser();
+        let decs2_b = decs2.strand_serialize();
+        let proofs2_b = proofs2.strand_serialize();
 
-        let decs1_d = Vec::<C::E>::deser(&decs1_b, ctx).unwrap();
-        let proofs1_d = Vec::<ChaumPedersen<C>>::deser(&proofs1_b, ctx).unwrap();
+        let decs1_d = Vec::<C::E>::strand_deserialize(&decs1_b).unwrap();
+        let proofs1_d = Vec::<ChaumPedersen<C>>::strand_deserialize(&proofs1_b).unwrap();
 
-        let decs2_d = Vec::<C::E>::deser(&decs2_b, ctx).unwrap();
-        let proofs2_d = Vec::<ChaumPedersen<C>>::deser(&proofs2_b, ctx).unwrap();
+        let decs2_d = Vec::<C::E>::strand_deserialize(&decs2_b).unwrap();
+        let proofs2_d = Vec::<ChaumPedersen<C>>::strand_deserialize(&proofs2_b).unwrap();
 
         let verified1 =
             Keymaker::verify_decryption_factors(ctx, pk1_value, &cs, &decs1_d, &proofs1_d, &vec![]);
@@ -234,7 +236,7 @@ pub(crate) mod tests {
 
         let es = util::random_ballots(10, ctx);
         let seed = vec![];
-        let hs = ctx.generators(es.len() + 1, 0, &seed);
+        let hs = ctx.generators(es.len() + 1, &seed);
         let shuffler = Shuffler {
             pk: &pk,
             generators: &hs,
@@ -249,13 +251,13 @@ pub(crate) mod tests {
         assert!(ok);
     }
 
-    pub(crate) fn test_shuffle_btserde_generic<C: Ctx>(ctx: &C) {
+    pub(crate) fn test_shuffle_serialization_generic<C: Ctx>(ctx: &C) {
         let sk = PrivateKey::gen(ctx);
         let pk = sk.get_pk();
 
         let es = util::random_ballots(10, ctx);
         let seed = vec![];
-        let hs = ctx.generators(es.len() + 1, 0, &seed);
+        let hs = ctx.generators(es.len() + 1, &seed);
         let shuffler = Shuffler {
             pk: &pk,
             generators: &hs,
@@ -267,15 +269,15 @@ pub(crate) mod tests {
         // let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
         // assert!(ok);
 
-        let pk_b = pk.ser();
-        let es_b = es.ser();
-        let eprimes_b = e_primes.ser();
-        let proof_b = proof.ser();
+        let pk_b = pk.strand_serialize();
+        let es_b = es.strand_serialize();
+        let eprimes_b = e_primes.strand_serialize();
+        let proof_b = proof.strand_serialize();
 
-        let pk_d = PublicKey::<C>::deser(&pk_b, ctx).unwrap();
-        let es_d = Vec::<Ciphertext<C>>::deser(&es_b, ctx).unwrap();
-        let eprimes_d = Vec::<Ciphertext<C>>::deser(&eprimes_b, ctx).unwrap();
-        let proof_d = ShuffleProof::<C>::deser(&proof_b, ctx).unwrap();
+        let pk_d = PublicKey::<C>::strand_deserialize(&pk_b).unwrap();
+        let es_d = Vec::<Ciphertext<C>>::strand_deserialize(&es_b).unwrap();
+        let eprimes_d = Vec::<Ciphertext<C>>::strand_deserialize(&eprimes_b).unwrap();
+        let proof_d = ShuffleProof::<C>::strand_deserialize(&proof_b).unwrap();
 
         let shuffler_d = Shuffler {
             pk: &pk_d,
@@ -286,23 +288,5 @@ pub(crate) mod tests {
         let ok_d = shuffler_d.check_proof(&proof_d, &es_d, &eprimes_d, &vec![]);
 
         assert!(ok_d);
-    }
-
-    pub(crate) fn test_encrypted_sk_generic<C: Ctx>(ctx: &C, data: C::P) {
-        let sk = PrivateKey::gen(ctx);
-        let pk: PublicKey<C> = sk.get_pk();
-        let plaintext = ctx.encode(&data).unwrap();
-        let c = pk.encrypt(&plaintext);
-        let sym_key = symmetric::gen_key();
-        let enc_sk = sk.to_encrypted(sym_key);
-
-        let enc_sk_b = enc_sk.ser();
-        let enc_sk_d = EncryptedPrivateKey::deser(&enc_sk_b, ctx).unwrap();
-
-        let sk_d = PrivateKey::from_encrypted(sym_key, enc_sk_d, ctx);
-        let d = sk_d.decrypt(&c);
-
-        let recovered = ctx.decode(&d);
-        assert_eq!(data, recovered);
     }
 }

@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 #![doc = include_str!("../README.md")]
+
 // #![warn(missing_docs)]
-#[macro_use]
-extern crate quick_error;
+
 extern crate cfg_if;
 
 /// Provides cryptographic backends, currently multiplicative groups and ristretto elliptic curve.
@@ -28,6 +28,8 @@ pub mod wasm;
 /// Schnorr and Chaum-Pedersen zero knowledge proofs.
 pub mod zkp;
 
-pub mod byte_tree;
-mod rnd;
-mod symmetric;
+pub mod rnd;
+pub mod serialization;
+pub mod signature;
+
+pub use sha3;

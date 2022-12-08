@@ -10,7 +10,7 @@
 //! use strand::elgamal::{PrivateKey, PublicKey};
 //! use strand::zkp::Zkp;
 //!
-//! let ctx = BigintCtx::<P2048>::new();
+//! let ctx: BigintCtx::<P2048> = Default::default();
 //! // generate an ElGamal keypair
 //! let sk1 = PrivateKey::gen(&ctx);
 //! let pk1 = sk1.get_pk();
@@ -39,11 +39,9 @@
 //! assert_eq!(plaintext, plaintext_);
 //! ```
 
-use std::marker::PhantomData;
+use borsh::{BorshDeserialize, BorshSerialize};
 
-use crate::byte_tree::{BTreeDeser, BTreeSer};
 use crate::context::{Ctx, Element};
-use crate::symmetric;
 use crate::zkp::{ChaumPedersen, Schnorr, Zkp};
 
 /// An ElGamal ciphertext.
@@ -53,10 +51,10 @@ use crate::zkp::{ChaumPedersen, Schnorr, Zkp};
 /// (m * h^r, g^r)
 ///
 /// where m = message, h = public key, g = generator, r = randomness.
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, BorshSerialize, BorshDeserialize)]
 pub struct Ciphertext<C: Ctx> {
-    pub(crate) mhr: C::E,
-    pub(crate) gr: C::E,
+    pub mhr: C::E,
+    pub gr: C::E,
 }
 impl<C: Ctx> Ciphertext<C> {
     /// Returns the ciphertext part computed as m * h^r.
@@ -70,26 +68,20 @@ impl<C: Ctx> Ciphertext<C> {
 }
 
 /// An ElGamal public key.
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, BorshSerialize, BorshDeserialize)]
 pub struct PublicKey<C: Ctx> {
     pub(crate) element: C::E,
+    #[borsh_skip]
     pub(crate) ctx: C,
 }
 
 /// An ElGamal private key.
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, BorshSerialize, BorshDeserialize)]
 pub struct PrivateKey<C: Ctx> {
     pub(crate) value: C::X,
     pub(crate) pk_element: C::E,
+    #[borsh_skip]
     pub(crate) ctx: C,
-}
-
-#[doc(hidden)]
-#[derive(Eq, PartialEq)]
-pub struct EncryptedPrivateKey<C: Ctx> {
-    pub(crate) bytes: Vec<u8>,
-    pub(crate) iv: [u8; 16],
-    pub(crate) phantom: PhantomData<C>,
 }
 
 impl<C: Ctx> PublicKey<C> {
@@ -170,33 +162,6 @@ impl<C: Ctx> PrivateKey<C> {
             ctx: (*ctx).clone(),
         }
     }
-    pub fn to_encrypted(&self, key: [u8; 32]) -> EncryptedPrivateKey<C> {
-        let key_bytes = self.value.ser();
-        let (b, iv) = symmetric::encrypt(key, &key_bytes);
-        let phantom = PhantomData;
-        EncryptedPrivateKey {
-            bytes: b,
-            iv,
-            phantom,
-        }
-    }
-    pub fn from_encrypted(
-        key: [u8; 32],
-        encrypted: EncryptedPrivateKey<C>,
-        ctx: &C,
-    ) -> PrivateKey<C> {
-        let key_bytes = symmetric::decrypt(key, encrypted.iv, &encrypted.bytes);
-        // FIXME handle this error
-        let value = C::X::deser(&key_bytes, ctx).unwrap();
-        let pk_element = ctx.gmod_pow(&value);
-
-        PrivateKey {
-            value,
-            pk_element,
-            ctx: (*ctx).clone(),
-        }
-    }
-
     pub fn pk_element(&self) -> &C::E {
         &self.pk_element
     }

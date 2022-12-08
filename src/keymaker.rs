@@ -6,7 +6,7 @@
 use rayon::prelude::*;
 
 use crate::context::{Ctx, Element};
-use crate::elgamal::{Ciphertext, EncryptedPrivateKey, PrivateKey, PublicKey};
+use crate::elgamal::{Ciphertext, PrivateKey, PublicKey};
 use crate::util::Par;
 use crate::zkp::{ChaumPedersen, Schnorr, Zkp};
 
@@ -44,10 +44,6 @@ impl<C: Ctx> Keymaker<C> {
         let proof = zkp.schnorr_prove(&self.sk.value, &pk.element, None, label);
 
         (pk, proof)
-    }
-
-    pub fn get_encrypted_sk(&self, symmetric: [u8; 32]) -> EncryptedPrivateKey<C> {
-        self.sk.to_encrypted(symmetric)
     }
 
     pub fn verify_share(ctx: &C, pk: &PublicKey<C>, proof: &Schnorr<C>, label: &[u8]) -> bool {
