@@ -42,7 +42,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
     permissions:
-      contents: write
+      contents: read
       pages: write      # to deploy to Pages
       id-token: write   # to verify the deployment originates from an appropriate source
 
@@ -85,6 +85,7 @@ jobs:
       uses: actions/upload-pages-artifact@v1
       with:
         path: ./src/wasm/test/
+        retention-days: 365
 
     - name: Deploy to GitHub Pages
       id: gh-deployment-action
