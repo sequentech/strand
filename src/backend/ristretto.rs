@@ -83,7 +83,7 @@ impl Ctx for RistrettoCtx {
     fn generator(&self) -> &Self::E {
         &RistrettoPointS(RISTRETTO_BASEPOINT_POINT)
     }
-   
+
     #[inline(always)]
     fn modulus(&self) -> &Self::E {
         // returning a dummy value as modulus does not apply to this backend
@@ -205,10 +205,10 @@ impl Ctx for RistrettoCtx {
         let bytes = exp.0.to_bytes();
         let mut blank = vec![0; 30];
         blank[0..16].copy_from_slice(&bytes[0..16]);
-        let first_array = to_ristretto_plaintext_array(&blank).unwrap(); 
+        let first_array = to_ristretto_plaintext_array(&blank).unwrap();
         let first = self.encode(&first_array);
         blank[0..16].copy_from_slice(&bytes[16..32]);
-        let second_array = to_ristretto_plaintext_array(&blank).unwrap(); 
+        let second_array = to_ristretto_plaintext_array(&blank).unwrap();
         let second = self.encode(&second_array);
         let first_c = pk.encrypt(&first.unwrap());
         let second_c = pk.encrypt(&second.unwrap());
@@ -234,7 +234,6 @@ impl Ctx for RistrettoCtx {
     fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E> {
         self.generators_shake(size, seed)
     }
-    
 }
 
 impl Default for RistrettoCtx {
@@ -360,7 +359,6 @@ impl std::fmt::Debug for RistrettoPointS {
     }
 }
 
-
 pub(crate) fn to_ristretto_point_array(input: &[u8]) -> Result<[u8; 32], &'static str> {
     util::to_u8_array(input)
 }
@@ -378,7 +376,7 @@ mod tests {
     fn to_plaintext_array(input: &[u8]) -> [u8; 30] {
         super::to_ristretto_plaintext_array(input).unwrap()
     }
-    
+
     #[test]
     fn test_elgamal() {
         let mut csprng = StrandRng;

@@ -38,7 +38,7 @@ cfg_if::cfg_if! {
     }
 }
 
-pub fn to_hash_array(input: &[u8]) -> Result<[u8; 64], &'static str>{
+pub fn to_hash_array(input: &[u8]) -> Result<[u8; 64], &'static str> {
     to_u8_array(input)
 }
 

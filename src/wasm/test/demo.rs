@@ -5,6 +5,7 @@ use rand::RngCore;
 use wasm_bindgen::prelude::*;
 
 use crate::backend::num_bigint::{BigintCtx, P2048};
+use crate::backend::ristretto;
 use crate::backend::ristretto::RistrettoCtx;
 use crate::backend::ristretto::RistrettoPointS;
 use crate::backend::tests::*;
@@ -13,7 +14,6 @@ use crate::elgamal::{PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::shuffler::Shuffler;
 use crate::threshold::tests::test_threshold_generic;
-use crate::backend::ristretto;
 use crate::util::Par;
 use crate::zkp::Zkp;
 use rayon::iter::ParallelIterator;
@@ -98,7 +98,8 @@ fn from_plaintext_s(plaintext: &PlaintextS) -> RistrettoPointS {
     let ctx = RistrettoCtx;
 
     let bytes = hex::decode(&plaintext.value).unwrap();
-    ctx.encode(&ristretto::to_ristretto_plaintext_array(&bytes).unwrap()).unwrap()
+    ctx.encode(&ristretto::to_ristretto_plaintext_array(&bytes).unwrap())
+        .unwrap()
 }
 
 fn secret_key() -> PrivateKey<RistrettoCtx> {
@@ -148,7 +149,6 @@ pub fn encrypt(nyes: u32, nno: u32) -> JsValue {
     message(&format!(
         "Encrypted {} values",
         pretty_print_int((nyes + nno) as isize)
-
     ));
 
     let _ = &ys.append(&mut ns);

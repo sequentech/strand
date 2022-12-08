@@ -129,7 +129,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn exp_modulus(&self) -> &Self::X {
         self.params.exp_modulus()
     }
-    
+
     #[inline(always)]
     fn gmod_pow(&self, other: &Self::X) -> Self::E {
         BigUintE::new(self.generator().0.modpow(&other.0, &self.modulus().0))
@@ -176,7 +176,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn rnd_plaintext(&self) -> Self::P {
         BigUintP(self.rnd_exp().0)
     }
-    
+
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
         let one: BigUint = One::one();
 
@@ -239,11 +239,10 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         let decrypted = sk.decrypt(&encrypted);
         Some(BigUintX(self.decode(&decrypted).0, PhantomData))
     }
-    
+
     fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E> {
         self.generators_fips(size, seed)
     }
-    
 }
 
 impl<P: BigintCtxParams> Default for BigintCtx<P> {

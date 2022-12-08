@@ -6,10 +6,10 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Samplin
 use rand::rngs::OsRng;
 use rand::RngCore;
 use strand::backend::num_bigint::{BigintCtx, P2048};
+use strand::backend::ristretto;
 use strand::backend::ristretto::RistrettoCtx;
 use strand::context::Ctx;
 use strand::elgamal::*;
-use strand::backend::ristretto;
 use strand::zkp::Zkp;
 
 fn encrypt<C: Ctx>(ctx: &C, pk: &PublicKey<C>, data: C::P, n: usize) {
