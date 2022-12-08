@@ -41,8 +41,8 @@ pkg.default().then(_ => {
     };
     wasmFeatureDetect.threads().then(threads => {
         if (threads && pkg.initThreadPool) {
-            log('Thread pool supported, initThreadPool with conc = ' + (2) + '..');
-            pkg.initThreadPool(2).then(_ => {
+            log('Thread pool supported, initThreadPool with conc = ' + (navigator.hardwareConcurrency) + '..');
+            pkg.initThreadPool(navigator.hardwareConcurrency).then(_ => {
                 log('Thread pool initialized');
                 postMessage({type: "ready"});
             })
