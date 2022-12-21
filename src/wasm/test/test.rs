@@ -4,6 +4,7 @@
 use rand::RngCore;
 use wasm_bindgen::prelude::*;
 
+use crate::backend::malachite::{MalachiteCtx, P2048 as MP2048};
 use crate::backend::num_bigint::{BigintCtx, P2048};
 use crate::backend::ristretto::RistrettoCtx;
 use crate::backend::tests::*;
@@ -51,6 +52,10 @@ pub fn test_shuffle_serialization() {
     message("* BigInt shuffle + serialization..");
     let ctx: BigintCtx<P2048> = Default::default();
     test_shuffle_serialization_generic(&ctx);
+
+    message("* Malachite shuffle + serialization..");
+    let ctx: MalachiteCtx<MP2048> = Default::default();
+    test_shuffle_serialization_generic(&ctx);
 }
 
 #[wasm_bindgen]
@@ -60,6 +65,9 @@ pub fn test_shuffle() {
     test_shuffle_generic(&ctx);
     message("* BigInt shuffle..");
     let ctx: BigintCtx<P2048> = Default::default();
+    test_shuffle_generic(&ctx);
+    message("* Malachite shuffle..");
+    let ctx: MalachiteCtx<MP2048> = Default::default();
     test_shuffle_generic(&ctx);
 }
 
@@ -72,21 +80,30 @@ pub fn test_chaumpedersen() {
     message("* BigInt chaumpedersen..");
     let ctx: BigintCtx<P2048> = Default::default();
     test_chaumpedersen_generic(&ctx);
+
+    message("* Malachite chaumpedersen..");
+    let ctx: MalachiteCtx<MP2048> = Default::default();
+    test_chaumpedersen_generic(&ctx);
 }
 
 #[wasm_bindgen]
 pub fn test_elgamal() {
-    message("* BigInt encrypt..");
-    let ctx: BigintCtx<P2048> = Default::default();
-    let plaintext = ctx.rnd_plaintext();
-    test_elgamal_generic(&ctx, plaintext);
-
     message("* Ristretto encrypt..");
     let ctx = RistrettoCtx;
     let mut csprng = StrandRng;
     let mut fill = [0u8; 30];
     csprng.fill_bytes(&mut fill);
     let plaintext = to_plaintext_array(&fill.to_vec());
+    test_elgamal_generic(&ctx, plaintext);
+
+    message("* BigInt encrypt..");
+    let ctx: BigintCtx<P2048> = Default::default();
+    let plaintext = ctx.rnd_plaintext();
+    test_elgamal_generic(&ctx, plaintext);
+
+    message("* Malachite encrypt..");
+    let ctx: MalachiteCtx<MP2048> = Default::default();
+    let plaintext = ctx.rnd_plaintext();
     test_elgamal_generic(&ctx, plaintext);
 }
 
@@ -98,6 +115,10 @@ pub fn test_schnorr() {
 
     message("* BigInt schnorr..");
     let ctx: BigintCtx<P2048> = Default::default();
+    test_schnorr_generic(&ctx);
+
+    message("* Malachite schnorr..");
+    let ctx: MalachiteCtx<MP2048> = Default::default();
     test_schnorr_generic(&ctx);
 }
 
@@ -115,6 +136,11 @@ pub fn test_vdecryption() {
     let ctx: BigintCtx<P2048> = Default::default();
     let plaintext = ctx.rnd_plaintext();
     test_vdecryption_generic(&ctx, plaintext);
+
+    message("* Malachite vdecryption..");
+    let ctx: MalachiteCtx<MP2048> = Default::default();
+    let plaintext = ctx.rnd_plaintext();
+    test_vdecryption_generic(&ctx, plaintext);
 }
 
 pub fn test_distributed() {
@@ -128,6 +154,11 @@ pub fn test_distributed() {
 
     message("* BigInt distributed..");
     let ctx: BigintCtx<P2048> = Default::default();
+    let plaintext = ctx.rnd_plaintext();
+    test_distributed_generic(&ctx, plaintext);
+
+    message("* Malachite distributed..");
+    let ctx: MalachiteCtx<MP2048> = Default::default();
     let plaintext = ctx.rnd_plaintext();
     test_distributed_generic(&ctx, plaintext);
 }
@@ -154,6 +185,15 @@ pub fn test_distributed_serialization() {
         ps.push(p);
     }
     test_distributed_serialization_generic(&ctx, ps);
+
+    message("* Malachite distributed + serialization..");
+    let ctx: MalachiteCtx<MP2048> = Default::default();
+    let mut ps = vec![];
+    for _ in 0..1 {
+        let p = ctx.rnd_plaintext();
+        ps.push(p);
+    }
+    test_distributed_serialization_generic(&ctx, ps);
 }
 
 pub fn test_threshold() {
@@ -171,6 +211,13 @@ pub fn test_threshold() {
     let trustees = 5usize;
     let threshold = 3usize;
     let ctx: BigintCtx<P2048> = Default::default();
+    let plaintext = ctx.rnd_plaintext();
+    test_threshold_generic(&ctx, trustees, threshold, plaintext);
+
+    message("* Malachite threshold..");
+    let trustees = 5usize;
+    let threshold = 3usize;
+    let ctx: MalachiteCtx<MP2048> = Default::default();
     let plaintext = ctx.rnd_plaintext();
     test_threshold_generic(&ctx, trustees, threshold, plaintext);
 }

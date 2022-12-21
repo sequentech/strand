@@ -60,9 +60,7 @@ impl<C: Ctx> BorshDeserialize for StrandVectorP<C> {
 
         let results: Vec<C::P> = vectors
             .par()
-            .map(|v| {
-                C::P::try_from_slice(&v).unwrap()
-            })
+            .map(|v| C::P::try_from_slice(&v).unwrap())
             .collect();
 
         Ok(StrandVectorP(results))
@@ -90,9 +88,7 @@ impl<C: Ctx> BorshDeserialize for StrandVectorE<C> {
 
         let results: Vec<C::E> = vectors
             .par()
-            .map(|v| {
-                C::E::try_from_slice(&v).unwrap()
-            })
+            .map(|v| C::E::try_from_slice(&v).unwrap())
             .collect();
 
         Ok(StrandVectorE(results))
@@ -120,9 +116,7 @@ impl<C: Ctx> BorshDeserialize for StrandVectorX<C> {
 
         let results: Vec<C::X> = vectors
             .par()
-            .map(|v| {
-                C::X::try_from_slice(&v).unwrap()
-            })
+            .map(|v| C::X::try_from_slice(&v).unwrap())
             .collect();
 
         Ok(StrandVectorX(results))
@@ -149,9 +143,7 @@ impl<C: Ctx> BorshDeserialize for StrandVectorC<C> {
         let vectors = <Vec<Vec<u8>>>::deserialize(buf)?;
         let results: Vec<Ciphertext<C>> = vectors
             .par()
-            .map(|v| {
-                Ciphertext::<C>::try_from_slice(&v).unwrap()
-            })
+            .map(|v| Ciphertext::<C>::try_from_slice(&v).unwrap())
             .collect();
 
         Ok(StrandVectorC(results))

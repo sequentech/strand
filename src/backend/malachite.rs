@@ -4,11 +4,11 @@
 //! # Examples
 //!
 //! ```
-//! // This example shows how to obtain a context to use the num_bigint backend.
+//! // This example shows how to obtain a context to use the malachite backend.
 //! use strand::context::{Ctx, Element};
-//! use strand::backend::num_bigint::{BigintCtx, P2048};
-//! use strand::backend::num_bigint::BigUintE;
-//! let ctx = BigintCtx::<P2048>::default();
+//! use strand::backend::num_bigint::{MalachiteCtx, P2048};
+//! use strand::backend::num_bigint::NaturalE;
+//! let ctx = MalachiteCtx::<P2048>::default();
 //! // do some stuff..
 //! let g = ctx.generator();
 //! let m = ctx.modulus();
@@ -21,14 +21,19 @@
 use std::fmt::Debug;
 use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
+use std::ops::Rem;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use num_bigint::BigUint;
-use num_bigint::RandBigInt;
-use num_integer::Integer;
-use num_modular::{ModularSymbols, ModularUnaryOps};
-use num_traits::Num;
-use num_traits::{One, Zero};
+use malachite::natural::random::uniform_random_natural_inclusive_range;
+use malachite::num::arithmetic::traits::LegendreSymbol;
+use malachite::num::arithmetic::traits::ModInverse;
+use malachite::num::arithmetic::traits::ModPow;
+use malachite::num::conversion::traits::Digits;
+use malachite::num::conversion::traits::{FromStringBase, ToStringBase};
+use malachite::random::Seed;
+use malachite::Natural;
+
+use rand::{Rng, RngCore};
 use sha2::Digest;
 
 use crate::backend::constants::*;
@@ -38,23 +43,23 @@ use crate::rnd::StrandRng;
 use crate::serialization::{StrandDeserialize, StrandSerialize};
 
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct BigUintE<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
+pub struct NaturalE<P: MalachiteCtxParams>(pub Natural, PhantomData<MalachiteCtx<P>>);
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct BigUintX<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
+pub struct NaturalX<P: MalachiteCtxParams>(pub Natural, PhantomData<MalachiteCtx<P>>);
 
 #[derive(PartialEq, Eq, Debug, Clone, Hash)]
-pub struct BigUintP(pub BigUint);
+pub struct NaturalP(pub Natural);
 
 #[derive(Eq, PartialEq, Clone, Debug)]
-pub struct BigintCtx<P: BigintCtxParams> {
+pub struct MalachiteCtx<P: MalachiteCtxParams> {
     params: P,
 }
 
-impl<P: BigintCtxParams> BigintCtx<P> {
+impl<P: MalachiteCtxParams> MalachiteCtx<P> {
     // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf A.2.3
-    fn generators_fips(&self, size: usize, seed: &[u8]) -> Vec<BigUintE<P>> {
+    fn generators_fips(&self, size: usize, seed: &[u8]) -> Vec<NaturalE<P>> {
         let mut ret = Vec::with_capacity(size);
-        let two = BigUint::from(2u32);
+        let two = Natural::from(2u32);
 
         let mut prefix = seed.to_vec();
         prefix.extend("ggen".to_string().into_bytes());
@@ -69,10 +74,10 @@ impl<P: BigintCtxParams> BigintCtx<P> {
                 assert!(count != 0);
                 next.extend(index.to_le_bytes());
                 next.extend(count.to_le_bytes());
-                let elem: BigUint = self.hash_to_element(&next);
-                let g = elem.modpow(self.params.co_factor(), &self.params.modulus().0);
+                let elem: Natural = self.hash_to_element(&next);
+                let g = elem.mod_pow(self.params.co_factor(), &self.params.modulus().0);
                 if g >= two {
-                    ret.push(BigUintE::new(g));
+                    ret.push(NaturalE::new(g));
                     break;
                 }
             }
@@ -81,41 +86,48 @@ impl<P: BigintCtxParams> BigintCtx<P> {
         ret
     }
 
-    fn hash_to_element(&self, bytes: &[u8]) -> BigUint {
+    fn hash_to_element(&self, bytes: &[u8]) -> Natural {
         let mut hasher = crate::util::hasher();
         hasher.update(bytes);
         let hashed = hasher.finalize();
-
-        let num = BigUint::from_bytes_le(&hashed);
-        num.mod_floor(&self.params.modulus().0)
+        let u16s: Vec<u16> = hashed.into_iter().map(|b| b as u16).collect();
+        let num = Natural::from_digits_desc(&256u16, u16s.into_iter()).expect("impossible");
+        num.rem(&self.params.modulus().0)
     }
 
-    pub fn element_from_biguint(&self, biguint: BigUint) -> Result<BigUintE<P>, &'static str> {
-        let one: BigUint = One::one();
-        if (biguint < one) || biguint >= self.modulus().0 {
+    pub fn element_from_natural(&self, natural: Natural) -> Result<NaturalE<P>, &'static str> {
+        let one: Natural = Natural::from(1u8);
+        if (natural < one) || natural >= self.params.modulus().0 {
             Err("Out of range")
-        } else if biguint.legendre(&self.modulus().0) != 1 {
+        } else if natural.clone().legendre_symbol(&self.params.modulus().0) != 1 {
             Err("Not a quadratic residue")
         } else {
-            Ok(BigUintE::new(biguint))
+            Ok(NaturalE::new(natural))
         }
     }
 
     pub fn element_from_string_radix(
         &self,
         string: &str,
-        radix: u32,
-    ) -> Result<BigUintE<P>, &'static str> {
-        let biguint = BigUint::from_str_radix(string, radix).map_err(|_| "Failed to parse")?;
+        radix: u8,
+    ) -> Result<NaturalE<P>, &'static str> {
+        let natural = Natural::from_string_base(radix, string).ok_or("Failed to parse")?;
 
-        self.element_from_biguint(biguint)
+        self.element_from_natural(natural)
+    }
+
+    pub fn get_seed() -> Seed {
+        let mut gen = StrandRng;
+        let mut seed_bytes = [0u8; 32];
+        gen.fill(&mut seed_bytes);
+        Seed::from_bytes(seed_bytes)
     }
 }
 
-impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
-    type E = BigUintE<P>;
-    type X = BigUintX<P>;
-    type P = BigUintP;
+impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
+    type E = NaturalE<P>;
+    type X = NaturalX<P>;
+    type P = NaturalP;
 
     #[inline(always)]
     fn generator(&self) -> &Self::E {
@@ -132,11 +144,16 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
 
     #[inline(always)]
     fn gmod_pow(&self, other: &Self::X) -> Self::E {
-        BigUintE::new(self.generator().0.modpow(&other.0, &self.modulus().0))
+        NaturalE::new(
+            self.generator()
+                .0
+                .clone()
+                .mod_pow(&other.0, &self.modulus().0),
+        )
     }
     #[inline(always)]
     fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
-        BigUintE::new(base.0.modpow(&exponent.0, &self.modulus().0))
+        NaturalE::new(base.0.clone().mod_pow(&exponent.0, &self.modulus().0))
     }
     #[inline(always)]
     fn modulo(&self, value: &Self::E) -> Self::E {
@@ -151,7 +168,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         if value.0 > other.0 {
             value.sub(other).modulo(self.params.exp_modulus())
         } else {
-            // BigUint cannot hold negative numbers, so we add exp_modulus first
+            // Natural cannot hold negative numbers, so we add exp_modulus first
             value
                 .add(self.params.exp_modulus())
                 .sub(other)
@@ -161,30 +178,48 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
 
     #[inline(always)]
     fn rnd(&self) -> Self::E {
-        let mut gen = StrandRng;
-        let one: BigUint = One::one();
-        let unencoded = BigUintP(gen.gen_biguint_below(&(&self.exp_modulus().0 - one)));
+        let seed = Self::get_seed();
+
+        let one: Natural = Natural::from(1u8);
+        let num = uniform_random_natural_inclusive_range(
+            seed,
+            Natural::from(0u8),
+            &self.exp_modulus().0 - one,
+        )
+        .next()
+        .unwrap();
+
+        let unencoded = NaturalP(num);
 
         self.encode(&unencoded)
             .expect("0..(q-1) should always be encodable")
     }
     #[inline(always)]
     fn rnd_exp(&self) -> Self::X {
-        let mut gen = StrandRng;
-        BigUintX::new(gen.gen_biguint_below(&self.exp_modulus().0))
+        let seed = Self::get_seed();
+
+        let num = uniform_random_natural_inclusive_range(
+            seed,
+            Natural::from(0u8),
+            self.exp_modulus().0.clone(),
+        )
+        .next()
+        .unwrap();
+
+        NaturalX::new(num)
     }
     fn rnd_plaintext(&self) -> Self::P {
-        BigUintP(self.rnd_exp().0)
+        NaturalP(self.rnd_exp().0)
     }
 
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
-        let one: BigUint = One::one();
+        let one: Natural = Natural::from(1u8);
 
         if plaintext.0 >= (&self.exp_modulus().0 - &one) {
             return Err("Failed to encode, out of range");
         }
-        let notzero: BigUint = plaintext.0.clone() + one;
-        let legendre = notzero.legendre(&self.modulus().0);
+        let notzero: Natural = plaintext.0.clone() + one;
+        let legendre = notzero.clone().legendre_symbol(&self.modulus().0);
         if legendre == 0 {
             return Err("Failed to encode, legendre = 0");
         }
@@ -193,51 +228,51 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         } else {
             &self.modulus().0 - notzero
         };
-        Ok(BigUintE::new(BigUint::mod_floor(
-            &result,
-            &self.modulus().0,
-        )))
+        Ok(NaturalE::new(Natural::rem(result, &self.modulus().0)))
     }
     fn decode(&self, element: &Self::E) -> Self::P {
-        let one: BigUint = One::one();
+        let one: Natural = Natural::from(1u8);
         if element.0 > self.exp_modulus().0 {
-            BigUintP((&self.modulus().0 - &element.0) - one)
+            NaturalP((&self.modulus().0 - &element.0) - one)
         } else {
-            BigUintP(&element.0 - one)
+            NaturalP(&element.0 - one)
         }
     }
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
-        let biguint = BigUint::from_bytes_le(bytes);
-        self.element_from_biguint(biguint)
+        let u16s: Vec<u16> = bytes.into_iter().map(|b| *b as u16).collect();
+        let num = Natural::from_digits_desc(&256, u16s.into_iter()).expect("impossible");
+        self.element_from_natural(num)
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
-        let ret = BigUint::from_bytes_le(bytes);
-        let zero: BigUint = Zero::zero();
+        let u16s: Vec<u16> = bytes.into_iter().map(|b| *b as u16).collect();
+        let ret = Natural::from_digits_desc(&256u16, u16s.into_iter()).expect("impossible");
+        let zero: Natural = Natural::from(0u8);
         if (ret < zero) || ret >= self.exp_modulus().0 {
             Err("Out of range")
         } else {
-            Ok(BigUintX::new(ret))
+            Ok(NaturalX::new(ret))
         }
     }
     fn exp_from_u64(&self, value: u64) -> Self::X {
-        BigUintX::new(BigUint::from(value))
+        NaturalX::new(Natural::from(value))
     }
     fn hash_to_exp(&self, bytes: &[u8]) -> Self::X {
         let mut hasher = crate::util::hasher();
         hasher.update(bytes);
         let hashed = hasher.finalize();
+        let u16s: Vec<u16> = hashed.into_iter().map(|b| b as u16).collect();
 
-        let num = BigUint::from_bytes_le(&hashed);
-        BigUintX::new(num.mod_floor(&self.exp_modulus().0))
+        let num = Natural::from_digits_desc(&256, u16s.into_iter()).expect("impossible");
+        NaturalX::new(num.rem(&self.exp_modulus().0))
     }
     fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
-        let encrypted = pk.encrypt(&self.encode(&BigUintP(exp.0.clone())).unwrap());
+        let encrypted = pk.encrypt(&self.encode(&NaturalP(exp.0.clone())).unwrap());
         encrypted.strand_serialize()
     }
     fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X> {
         let encrypted = Ciphertext::<Self>::strand_deserialize(bytes).ok()?;
         let decrypted = sk.decrypt(&encrypted);
-        Some(BigUintX(self.decode(&decrypted).0, PhantomData))
+        Some(NaturalX(self.decode(&decrypted).0, PhantomData))
     }
 
     fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E> {
@@ -245,125 +280,126 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     }
 }
 
-impl<P: BigintCtxParams> Default for BigintCtx<P> {
-    fn default() -> BigintCtx<P> {
+impl<P: MalachiteCtxParams> Default for MalachiteCtx<P> {
+    fn default() -> MalachiteCtx<P> {
         let params = P::new();
-        BigintCtx { params }
+        MalachiteCtx { params }
     }
 }
 
-impl<P: BigintCtxParams + Eq> Element<BigintCtx<P>> for BigUintE<P> {
+impl<P: MalachiteCtxParams + Eq> Element<MalachiteCtx<P>> for NaturalE<P> {
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
-        BigUintE::new(&self.0 * &other.0)
+        NaturalE::new(&self.0 * &other.0)
     }
     #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {
-        let inverse = Element::<BigintCtx<P>>::inv(other, modulus);
-        BigUintE::new(&self.0 * inverse.0)
+        let inverse = Element::<MalachiteCtx<P>>::inv(other, modulus);
+        NaturalE::new(&self.0 * inverse.0)
     }
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
-        let inverse = (&self.0).invm(&modulus.0);
-        BigUintE::new(inverse.expect("there is always an inverse for prime p"))
+        let inverse = (&self.0).mod_inverse(&modulus.0);
+        NaturalE::new(inverse.expect("there is always an inverse for prime p"))
     }
     #[inline(always)]
-    fn mod_pow(&self, other: &BigUintX<P>, modulus: &Self) -> Self {
-        BigUintE::new(self.0.modpow(&other.0, &modulus.0))
+    fn mod_pow(&self, other: &NaturalX<P>, modulus: &Self) -> Self {
+        NaturalE::new(self.0.clone().mod_pow(&other.0, &modulus.0))
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
-        BigUintE::new(self.0.mod_floor(&modulus.0))
+        NaturalE::new(self.0.clone().rem(&modulus.0))
     }
     fn mul_identity() -> Self {
-        BigUintE::new(One::one())
+        NaturalE::new(Natural::from(1u8))
     }
 }
 
-impl<P: BigintCtxParams + Eq> Exponent<BigintCtx<P>> for BigUintX<P> {
+impl<P: MalachiteCtxParams + Eq> Exponent<MalachiteCtx<P>> for NaturalX<P> {
     #[inline(always)]
     fn add(&self, other: &Self) -> Self {
-        BigUintX::new(&self.0 + &other.0)
+        NaturalX::new(&self.0 + &other.0)
     }
     #[inline(always)]
     fn sub(&self, other: &Self) -> Self {
-        BigUintX::new(&self.0 - &other.0)
+        NaturalX::new(&self.0 - &other.0)
     }
     #[inline(always)]
-    fn sub_mod(&self, other: &Self, ctx: &BigintCtx<P>) -> Self {
+    fn sub_mod(&self, other: &Self, ctx: &MalachiteCtx<P>) -> Self {
         ctx.xsub_mod(self, other)
     }
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
-        BigUintX::new(&self.0 * &other.0)
+        NaturalX::new(&self.0 * &other.0)
     }
     #[inline(always)]
     fn div(&self, other: &Self, modulus: &Self) -> Self {
-        let inverse = Exponent::<BigintCtx<P>>::inv(other, modulus);
-        BigUintX::new(&self.0 * inverse.0)
+        let inverse = Exponent::<MalachiteCtx<P>>::inv(other, modulus);
+        NaturalX::new(&self.0 * inverse.0)
     }
     #[inline(always)]
     fn inv(&self, modulus: &Self) -> Self {
-        let inverse = (&self.0).invm(&modulus.0);
-        BigUintX::new(inverse.expect("there is always an inverse for prime p"))
+        let inverse = (&self.0).mod_inverse(&modulus.0);
+        NaturalX::new(inverse.expect("there is always an inverse for prime p"))
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
-        BigUintX::new(self.0.div_rem(&modulus.0).1)
+        NaturalX::new(self.0.clone().rem(&modulus.0))
     }
     fn add_identity() -> Self {
-        BigUintX::new(Zero::zero())
+        NaturalX::new(Natural::from(0u8))
     }
     fn mul_identity() -> Self {
-        BigUintX::new(One::one())
+        NaturalX::new(Natural::from(1u8))
     }
 }
 
-impl Plaintext for BigUintP {}
+impl Plaintext for NaturalP {}
 
-pub trait BigintCtxParams: Clone + Eq + Send + Sync + Debug {
-    fn generator(&self) -> &BigUintE<Self>;
-    fn modulus(&self) -> &BigUintE<Self>;
-    fn exp_modulus(&self) -> &BigUintX<Self>;
-    fn co_factor(&self) -> &BigUint;
+pub trait MalachiteCtxParams: Clone + Eq + Send + Sync + Debug {
+    fn generator(&self) -> &NaturalE<Self>;
+    fn modulus(&self) -> &NaturalE<Self>;
+    fn exp_modulus(&self) -> &NaturalX<Self>;
+    fn co_factor(&self) -> &Natural;
     fn new() -> Self;
 }
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct P2048 {
-    generator: BigUintE<Self>,
-    modulus: BigUintE<Self>,
-    exp_modulus: BigUintX<Self>,
-    co_factor: BigUint,
+    generator: NaturalE<Self>,
+    modulus: NaturalE<Self>,
+    exp_modulus: NaturalX<Self>,
+    co_factor: Natural,
 }
-impl BigintCtxParams for P2048 {
+
+impl MalachiteCtxParams for P2048 {
     #[inline(always)]
-    fn generator(&self) -> &BigUintE<Self> {
+    fn generator(&self) -> &NaturalE<Self> {
         &self.generator
     }
     #[inline(always)]
-    fn modulus(&self) -> &BigUintE<Self> {
+    fn modulus(&self) -> &NaturalE<Self> {
         &self.modulus
     }
     #[inline(always)]
-    fn exp_modulus(&self) -> &BigUintX<Self> {
+    fn exp_modulus(&self) -> &NaturalX<Self> {
         &self.exp_modulus
     }
     #[inline(always)]
-    fn co_factor(&self) -> &BigUint {
+    fn co_factor(&self) -> &Natural {
         &self.co_factor
     }
     fn new() -> P2048 {
-        let p = BigUintE::new(BigUint::from_str_radix(P_VERIFICATUM_STR_2048, 10).unwrap());
-        let q = BigUintX::new(BigUint::from_str_radix(Q_VERIFICATUM_STR_2048, 10).unwrap());
-        let g = BigUintE::new(BigUint::from_str_radix(G_VERIFICATUM_STR_2048, 10).unwrap());
-        let co_factor = BigUint::from_str_radix(SAFEPRIME_COFACTOR, 16).unwrap();
+        let p = NaturalE::new(Natural::from_string_base(10, P_VERIFICATUM_STR_2048).unwrap());
+        let q = NaturalX::new(Natural::from_string_base(10, Q_VERIFICATUM_STR_2048).unwrap());
+        let g = NaturalE::new(Natural::from_string_base(10, G_VERIFICATUM_STR_2048).unwrap());
+        let co_factor = Natural::from_string_base(16, SAFEPRIME_COFACTOR).unwrap();
         /*
         FIXME revert to this once we stop using verificatum primes, seems slightly faster due to small generator
         let p = BigUint::from_str_radix(P_STR_2048, 16).unwrap();
         let q = BigUint::from_str_radix(Q_STR_2048, 16).unwrap();
         let g = BigUint::from_str_radix(G_STR_2048, 16).unwrap();*/
 
-        assert!(g.0.legendre(&p.0) == 1);
+        assert!(g.0.clone().legendre_symbol(&p.0) == 1);
 
         P2048 {
             generator: g,
@@ -374,38 +410,39 @@ impl BigintCtxParams for P2048 {
     }
 }
 
-impl<P: BigintCtxParams> BigUintE<P> {
-    fn new(value: BigUint) -> BigUintE<P> {
-        BigUintE(value, PhantomData)
+impl<P: MalachiteCtxParams> NaturalE<P> {
+    fn new(value: Natural) -> NaturalE<P> {
+        NaturalE(value, PhantomData)
     }
 
-    pub fn to_string_radix(&self, radix: u32) -> String {
-        self.0.to_str_radix(radix)
+    pub fn to_string_radix(&self, radix: u8) -> String {
+        self.0.to_string_base(radix)
     }
 }
-impl<P: BigintCtxParams> BigUintX<P> {
-    fn new(value: BigUint) -> BigUintX<P> {
-        BigUintX(value, PhantomData)
+impl<P: MalachiteCtxParams> NaturalX<P> {
+    fn new(value: Natural) -> NaturalX<P> {
+        NaturalX(value, PhantomData)
     }
 
-    pub fn to_string_radix(&self, radix: u32) -> String {
-        self.0.to_str_radix(radix)
+    pub fn to_string_radix(&self, radix: u8) -> String {
+        self.0.to_string_base(radix)
     }
 }
 
-impl<P: BigintCtxParams> BorshSerialize for BigUintE<P> {
+impl<P: MalachiteCtxParams> BorshSerialize for NaturalE<P> {
     #[inline]
     fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
-        let bytes = self.0.to_bytes_le();
-        bytes.serialize(writer)
+        let bytes = self.0.to_digits_desc(&256u16);
+        let u8s: Vec<u8> = bytes.into_iter().map(|b| b as u8).collect();
+        u8s.serialize(writer)
     }
 }
 
-impl<P: BigintCtxParams> BorshDeserialize for BigUintE<P> {
+impl<P: MalachiteCtxParams> BorshDeserialize for NaturalE<P> {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
         let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
-        let ctx: BigintCtx<P> = Default::default();
+        let ctx: MalachiteCtx<P> = Default::default();
 
         let value = ctx
             .element_from_bytes(&bytes)
@@ -414,19 +451,20 @@ impl<P: BigintCtxParams> BorshDeserialize for BigUintE<P> {
     }
 }
 
-impl<P: BigintCtxParams> BorshSerialize for BigUintX<P> {
+impl<P: MalachiteCtxParams> BorshSerialize for NaturalX<P> {
     #[inline]
     fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
-        let bytes = self.0.to_bytes_le();
-        bytes.serialize(writer)
+        let bytes = self.0.to_digits_desc(&256u16);
+        let u8s: Vec<u8> = bytes.into_iter().map(|b| b as u8).collect();
+        u8s.serialize(writer)
     }
 }
 
-impl<P: BigintCtxParams> BorshDeserialize for BigUintX<P> {
+impl<P: MalachiteCtxParams> BorshDeserialize for NaturalX<P> {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
         let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
-        let ctx = BigintCtx::<P>::default();
+        let ctx = MalachiteCtx::<P>::default();
 
         let value = ctx
             .exp_from_bytes(&bytes)
@@ -435,27 +473,28 @@ impl<P: BigintCtxParams> BorshDeserialize for BigUintX<P> {
     }
 }
 
-impl BorshSerialize for BigUintP {
+impl BorshSerialize for NaturalP {
     #[inline]
     fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
-        let bytes = self.0.to_bytes_le();
+        let bytes = self.0.to_digits_desc(&256u16);
         bytes.serialize(writer)
     }
 }
 
-impl BorshDeserialize for BigUintP {
+impl BorshDeserialize for NaturalP {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+        let bytes = <Vec<u16>>::deserialize(bytes).unwrap();
 
-        let biguint = BigUint::from_bytes_le(&bytes);
-        Ok(BigUintP(biguint))
+        let num =
+            Natural::from_digits_desc(&256u16, bytes.to_vec().into_iter()).expect("impossible");
+        Ok(NaturalP(num))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::backend::num_bigint::*;
+    use crate::backend::malachite::*;
     use crate::backend::tests::*;
     use crate::context::Ctx;
     use crate::serialization::tests::*;
@@ -463,53 +502,53 @@ mod tests {
 
     #[test]
     fn test_elgamal() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
         test_elgamal_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_elgamal_enc_pok() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
         test_elgamal_enc_pok_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_encrypt_exp() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         test_encrypt_exp_generic(&ctx);
     }
 
     #[test]
     fn test_schnorr() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         test_schnorr_generic(&ctx);
     }
 
     #[test]
     fn test_chaumpedersen() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         test_chaumpedersen_generic(&ctx);
     }
 
     #[test]
     fn test_vdecryption() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
         test_vdecryption_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_distributed() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
         test_distributed_generic(&ctx, plaintext);
     }
 
     #[test]
     fn test_distributed_serialization() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         let mut ps = vec![];
         for _ in 0..10 {
             let p = ctx.rnd_plaintext();
@@ -520,13 +559,13 @@ mod tests {
 
     #[test]
     fn test_shuffle() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         test_shuffle_generic(&ctx);
     }
 
     #[test]
     fn test_shuffle_serialization() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         test_shuffle_serialization_generic(&ctx);
     }
 
@@ -536,7 +575,7 @@ mod tests {
     fn test_threshold() {
         let trustees = rand::thread_rng().gen_range(2..11);
         let threshold = rand::thread_rng().gen_range(2..trustees + 1);
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         let plaintext = ctx.rnd_plaintext();
 
         test_threshold_generic(&ctx, trustees, threshold, plaintext);
@@ -544,51 +583,51 @@ mod tests {
 
     #[test]
     fn test_element_borsh() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         test_borsh_element(&ctx);
     }
 
     #[test]
     fn test_elements_borsh() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         test_borsh_elements(&ctx);
     }
 
     #[test]
     fn test_exponent_borsh() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         test_borsh_exponent(&ctx);
     }
 
     #[test]
     fn test_ciphertext_borsh() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         test_ciphertext_borsh_generic(&ctx);
     }
 
     #[test]
     fn test_key_borsh() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         test_key_borsh_generic(&ctx);
     }
 
     #[test]
     fn test_schnorr_borsh() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         test_schnorr_borsh_generic(&ctx);
     }
 
     #[test]
     fn test_cp_borsh() {
-        let ctx = BigintCtx::<P2048>::default();
+        let ctx = MalachiteCtx::<P2048>::default();
         test_cp_borsh_generic(&ctx);
     }
 
     #[test]
     fn test_encode_err() {
-        let ctx = BigintCtx::<P2048>::default();
-        let one: BigUint = One::one();
-        let result = ctx.encode(&BigUintP(&ctx.exp_modulus().0 - one));
+        let ctx = MalachiteCtx::<P2048>::default();
+        let one: Natural = Natural::from(1u8);
+        let result = ctx.encode(&NaturalP(&ctx.exp_modulus().0 - one));
         assert!(result.is_err())
     }
 }
