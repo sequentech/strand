@@ -6,8 +6,8 @@
 //! ```
 //! // This example shows how to obtain a context to use the malachite backend.
 //! use strand::context::{Ctx, Element};
-//! use strand::backend::num_bigint::{MalachiteCtx, P2048};
-//! use strand::backend::num_bigint::NaturalE;
+//! use strand::backend::malachite::{MalachiteCtx, P2048};
+//! use strand::backend::malachite::NaturalE;
 //! let ctx = MalachiteCtx::<P2048>::default();
 //! // do some stuff..
 //! let g = ctx.generator();
