@@ -33,7 +33,7 @@ use malachite::num::conversion::traits::{FromStringBase, ToStringBase};
 use malachite::random::Seed;
 use malachite::Natural;
 
-use rand::{Rng, RngCore};
+use rand::Rng;
 use sha2::Digest;
 
 use crate::backend::constants::*;
@@ -90,8 +90,8 @@ impl<P: MalachiteCtxParams> MalachiteCtx<P> {
         let mut hasher = crate::util::hasher();
         hasher.update(bytes);
         let hashed = hasher.finalize();
-        let u16s: Vec<u16> = hashed.into_iter().map(|b| b as u16).collect();
-        let num = Natural::from_digits_desc(&256u16, u16s.into_iter()).expect("impossible");
+        let u16s = hashed.into_iter().map(|b| b as u16);
+        let num = Natural::from_digits_desc(&256u16, u16s).expect("impossible");
         num.rem(&self.params.modulus().0)
     }
 
@@ -246,13 +246,13 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
         }
     }
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
-        let u16s: Vec<u16> = bytes.into_iter().map(|b| *b as u16).collect();
-        let num = Natural::from_digits_desc(&256, u16s.into_iter()).expect("impossible");
+        let u16s = bytes.iter().map(|b| *b as u16);
+        let num = Natural::from_digits_desc(&256, u16s).expect("impossible");
         self.element_from_natural(num)
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
-        let u16s: Vec<u16> = bytes.into_iter().map(|b| *b as u16).collect();
-        let ret = Natural::from_digits_desc(&256u16, u16s.into_iter()).expect("impossible");
+        let u16s = bytes.iter().map(|b| *b as u16);
+        let ret = Natural::from_digits_desc(&256u16, u16s).expect("impossible");
         let zero: Natural = Natural::from(0u8);
         if (ret < zero) || ret >= self.exp_modulus().0 {
             Err("Out of range")
@@ -267,9 +267,9 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
         let mut hasher = crate::util::hasher();
         hasher.update(bytes);
         let hashed = hasher.finalize();
-        let u16s: Vec<u16> = hashed.into_iter().map(|b| b as u16).collect();
+        let u16s = hashed.into_iter().map(|b| b as u16);
 
-        let num = Natural::from_digits_desc(&256, u16s.into_iter()).expect("impossible");
+        let num = Natural::from_digits_desc(&256, u16s).expect("impossible");
         NaturalX::new(num.rem(&self.exp_modulus().0))
     }
     fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
@@ -494,7 +494,7 @@ impl BorshDeserialize for NaturalP {
         let bytes = <Vec<u16>>::deserialize(bytes).unwrap();
 
         let num =
-            Natural::from_digits_desc(&256u16, bytes.to_vec().into_iter()).expect("impossible");
+            Natural::from_digits_desc(&256u16, bytes.into_iter()).expect("impossible");
         Ok(NaturalP(num))
     }
 }
