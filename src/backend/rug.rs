@@ -61,9 +61,9 @@ impl<P: RugCtxParams> RugCtx<P> {
                 next.extend(count.to_le_bytes());
                 let elem: Integer = self.hash_to_element(&next);
                 let g = elem
-                    .pow_mod(self.params.co_factor(), &self.modulus().0)
+                    .pow_mod(self.params.co_factor(), &self.params.modulus().0)
                     .unwrap();
-                // Element::<RugCtx<P>>::mod_pow(&elem, self.params.co_factor(), self.modulus());
+
                 if g >= two {
                     ret.push(IntegerE::new(g));
                     break;
@@ -104,11 +104,11 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     }
     #[inline(always)]
     fn gmod_pow(&self, other: &Self::X) -> Self::E {
-        Element::<RugCtx<P>>::mod_pow(self.generator(), other, self.modulus())
+        Element::<RugCtx<P>>::mod_pow(self.generator(), other, self.params.modulus())
     }
     #[inline(always)]
     fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
-        Element::<RugCtx<P>>::mod_pow(base, exponent, self.modulus())
+        Element::<RugCtx<P>>::mod_pow(base, exponent, self.params.modulus())
     }
     #[inline(always)]
     fn modulo(&self, value: &Self::E) -> Self::E {
@@ -129,7 +129,7 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         let mut state = RandState::new_custom(&mut gen);
 
         self.encode(&IntegerP(
-            self.exp_modulus().0.clone().random_below(&mut state),
+            self.params.exp_modulus().0.clone().random_below(&mut state),
         ))
         .expect("0..(q-1) should always be encodable")
     }
@@ -138,13 +138,13 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         let mut gen = StrandRandgen(StrandRng);
         let mut state = RandState::new_custom(&mut gen);
 
-        IntegerX::new(self.exp_modulus().0.clone().random_below(&mut state))
+        IntegerX::new(self.params.exp_modulus().0.clone().random_below(&mut state))
     }
     fn rnd_plaintext(&self) -> Self::P {
         IntegerP(self.rnd_exp().0)
     }
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
-        if plaintext.0 >= (self.exp_modulus().0.clone() - 1i32) {
+        if plaintext.0 >= (self.params.exp_modulus().0.clone() - 1i32) {
             return Err("Failed to encode, out of range");
         }
         if plaintext.0 < 0i32 {
@@ -152,21 +152,21 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         }
 
         let notzero: Integer = plaintext.0.clone() + 1i32;
-        let legendre = notzero.legendre(&self.modulus().0);
+        let legendre = notzero.legendre(&self.params.modulus().0);
         if legendre == 0 {
             return Err("Failed to encode, legendre = 0");
         }
         let result = if legendre == 1 {
             notzero
         } else {
-            self.modulus().0.clone() - notzero
+            self.params.modulus().0.clone() - notzero
         };
         let r = IntegerE::new(result);
-        Ok(Element::<RugCtx<P>>::modulo(&r, self.modulus()))
+        Ok(Element::<RugCtx<P>>::modulo(&r, self.params.modulus()))
     }
     fn decode(&self, element: &Self::E) -> Self::P {
-        if element.0 > self.exp_modulus().0 {
-            let sub: Integer = self.modulus().0.clone() - element.0.clone();
+        if element.0 > self.params.exp_modulus().0 {
+            let sub: Integer = self.params.modulus().0.clone() - element.0.clone();
             IntegerP(sub - 1i32)
         } else {
             IntegerP(element.0.clone() - 1i32)
@@ -174,9 +174,9 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     }
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
         let ret = Integer::from_digits(bytes, Order::MsfLe);
-        if (ret < 1) || ret >= self.modulus().0 {
+        if (ret < 1) || ret >= self.params.modulus().0 {
             Err("Out of range")
-        } else if ret.legendre(&self.modulus().0) != 1 {
+        } else if ret.legendre(&self.params.modulus().0) != 1 {
             Err("Not a quadratic residue")
         } else {
             Ok(IntegerE::new(ret))
@@ -184,7 +184,7 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
         let ret = Integer::from_digits(bytes, Order::MsfLe);
-        if (ret < 0) || ret >= self.exp_modulus().0 {
+        if (ret < 0) || ret >= self.params.exp_modulus().0 {
             Err("Out of range")
         } else {
             Ok(IntegerX::new(ret))
@@ -199,7 +199,7 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         let hashed = hasher.finalize();
 
         let (_, rem) =
-            Integer::from_digits(&hashed, Order::Lsf).div_rem(self.exp_modulus().0.clone());
+            Integer::from_digits(&hashed, Order::Lsf).div_rem(self.params.exp_modulus().0.clone());
 
         IntegerX::new(rem)
     }

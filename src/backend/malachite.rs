@@ -148,12 +148,16 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
             self.generator()
                 .0
                 .clone()
-                .mod_pow(&other.0, &self.modulus().0),
+                .mod_pow(&other.0, &self.params.modulus().0),
         )
     }
     #[inline(always)]
     fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
-        NaturalE::new(base.0.clone().mod_pow(&exponent.0, &self.modulus().0))
+        NaturalE::new(
+            base.0
+                .clone()
+                .mod_pow(&exponent.0, &self.params.modulus().0),
+        )
     }
     #[inline(always)]
     fn modulo(&self, value: &Self::E) -> Self::E {
@@ -184,7 +188,7 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
         let num = uniform_random_natural_inclusive_range(
             seed,
             Natural::from(0u8),
-            &self.exp_modulus().0 - one,
+            &self.params.exp_modulus().0 - one,
         )
         .next()
         .unwrap();
@@ -201,7 +205,7 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
         let num = uniform_random_natural_inclusive_range(
             seed,
             Natural::from(0u8),
-            self.exp_modulus().0.clone(),
+            self.params.exp_modulus().0.clone(),
         )
         .next()
         .unwrap();
@@ -215,25 +219,28 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
         let one: Natural = Natural::from(1u8);
 
-        if plaintext.0 >= (&self.exp_modulus().0 - &one) {
+        if plaintext.0 >= (&self.params.exp_modulus().0 - &one) {
             return Err("Failed to encode, out of range");
         }
         let notzero: Natural = plaintext.0.clone() + one;
-        let legendre = notzero.clone().legendre_symbol(&self.modulus().0);
+        let legendre = notzero.clone().legendre_symbol(&self.params.modulus().0);
         if legendre == 0 {
             return Err("Failed to encode, legendre = 0");
         }
         let result = if legendre == 1 {
             notzero
         } else {
-            &self.modulus().0 - notzero
+            &self.params.modulus().0 - notzero
         };
-        Ok(NaturalE::new(Natural::rem(result, &self.modulus().0)))
+        Ok(NaturalE::new(Natural::rem(
+            result,
+            &self.params.modulus().0,
+        )))
     }
     fn decode(&self, element: &Self::E) -> Self::P {
         let one: Natural = Natural::from(1u8);
-        if element.0 > self.exp_modulus().0 {
-            NaturalP((&self.modulus().0 - &element.0) - one)
+        if element.0 > self.params.exp_modulus().0 {
+            NaturalP((&self.params.modulus().0 - &element.0) - one)
         } else {
             NaturalP(&element.0 - one)
         }

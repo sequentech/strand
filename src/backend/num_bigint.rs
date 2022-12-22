@@ -92,9 +92,9 @@ impl<P: BigintCtxParams> BigintCtx<P> {
 
     pub fn element_from_biguint(&self, biguint: BigUint) -> Result<BigUintE<P>, &'static str> {
         let one: BigUint = One::one();
-        if (biguint < one) || biguint >= self.modulus().0 {
+        if (biguint < one) || biguint >= self.params.modulus().0 {
             Err("Out of range")
-        } else if biguint.legendre(&self.modulus().0) != 1 {
+        } else if biguint.legendre(&self.params.modulus().0) != 1 {
             Err("Not a quadratic residue")
         } else {
             Ok(BigUintE::new(biguint))
@@ -132,11 +132,15 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
 
     #[inline(always)]
     fn gmod_pow(&self, other: &Self::X) -> Self::E {
-        BigUintE::new(self.generator().0.modpow(&other.0, &self.modulus().0))
+        BigUintE::new(
+            self.generator()
+                .0
+                .modpow(&other.0, &self.params.modulus().0),
+        )
     }
     #[inline(always)]
     fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
-        BigUintE::new(base.0.modpow(&exponent.0, &self.modulus().0))
+        BigUintE::new(base.0.modpow(&exponent.0, &self.params.modulus().0))
     }
     #[inline(always)]
     fn modulo(&self, value: &Self::E) -> Self::E {
@@ -163,7 +167,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn rnd(&self) -> Self::E {
         let mut gen = StrandRng;
         let one: BigUint = One::one();
-        let unencoded = BigUintP(gen.gen_biguint_below(&(&self.exp_modulus().0 - one)));
+        let unencoded = BigUintP(gen.gen_biguint_below(&(&self.params.exp_modulus().0 - one)));
 
         self.encode(&unencoded)
             .expect("0..(q-1) should always be encodable")
@@ -171,7 +175,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     #[inline(always)]
     fn rnd_exp(&self) -> Self::X {
         let mut gen = StrandRng;
-        BigUintX::new(gen.gen_biguint_below(&self.exp_modulus().0))
+        BigUintX::new(gen.gen_biguint_below(&self.params.exp_modulus().0))
     }
     fn rnd_plaintext(&self) -> Self::P {
         BigUintP(self.rnd_exp().0)
@@ -180,28 +184,28 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
         let one: BigUint = One::one();
 
-        if plaintext.0 >= (&self.exp_modulus().0 - &one) {
+        if plaintext.0 >= (&self.params.exp_modulus().0 - &one) {
             return Err("Failed to encode, out of range");
         }
         let notzero: BigUint = plaintext.0.clone() + one;
-        let legendre = notzero.legendre(&self.modulus().0);
+        let legendre = notzero.legendre(&self.params.modulus().0);
         if legendre == 0 {
             return Err("Failed to encode, legendre = 0");
         }
         let result = if legendre == 1 {
             notzero
         } else {
-            &self.modulus().0 - notzero
+            &self.params.modulus().0 - notzero
         };
         Ok(BigUintE::new(BigUint::mod_floor(
             &result,
-            &self.modulus().0,
+            &self.params.modulus().0,
         )))
     }
     fn decode(&self, element: &Self::E) -> Self::P {
         let one: BigUint = One::one();
-        if element.0 > self.exp_modulus().0 {
-            BigUintP((&self.modulus().0 - &element.0) - one)
+        if element.0 > self.params.exp_modulus().0 {
+            BigUintP((&self.params.modulus().0 - &element.0) - one)
         } else {
             BigUintP(&element.0 - one)
         }
@@ -213,7 +217,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
         let ret = BigUint::from_bytes_le(bytes);
         let zero: BigUint = Zero::zero();
-        if (ret < zero) || ret >= self.exp_modulus().0 {
+        if (ret < zero) || ret >= self.params.exp_modulus().0 {
             Err("Out of range")
         } else {
             Ok(BigUintX::new(ret))
@@ -228,7 +232,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         let hashed = hasher.finalize();
 
         let num = BigUint::from_bytes_le(&hashed);
-        BigUintX::new(num.mod_floor(&self.exp_modulus().0))
+        BigUintX::new(num.mod_floor(&self.params.exp_modulus().0))
     }
     fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
         let encrypted = pk.encrypt(&self.encode(&BigUintP(exp.0.clone())).unwrap());

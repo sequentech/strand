@@ -67,9 +67,9 @@ hex = { version = "0.4.2" }
 cfg-if = "1.0"
 
 [dependencies.malachite]
-version = "0.3.0"
-# default-features = false
-# features = [ "naturals_and_integers" ]
+version = "0.3.1"
+default-features = false
+features = [ "naturals_and_integers" ]
 
 [dev-dependencies]
 criterion = {version = "0.3", features=["html_reports"]}
