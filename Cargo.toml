@@ -72,7 +72,7 @@ default-features = false
 features = [ "naturals_and_integers" ]
 
 [dev-dependencies]
-criterion = {version = "0.3", features=["html_reports"]}
+criterion = {version = "0.4", features=["html_reports"]}
 serde_json = "1.0"
 
 [build-dependencies]
