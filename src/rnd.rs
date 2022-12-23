@@ -7,6 +7,7 @@ use rand::CryptoRng;
 use rand::Error;
 use rand::RngCore;
 
+/// Random number generation frontend. Currently wraps OsRng.
 pub struct StrandRng;
 
 impl CryptoRng for StrandRng {}

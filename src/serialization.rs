@@ -7,10 +7,12 @@ use crate::util::Par;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
 
+/// Serialization frontend trait.
 pub trait StrandSerialize {
     fn strand_serialize(&self) -> Vec<u8>;
 }
 
+/// Deserialization frontend trait.
 pub trait StrandDeserialize {
     fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
     where
@@ -30,15 +32,13 @@ impl<T: BorshDeserialize> StrandDeserialize for T {
         Self: Sized,
     {
         let value = T::try_from_slice(bytes);
-        if value.is_err() {
-            // FIXME log on failure
-        }
         value.map_err(|_| "borsh deserialize failed")
     }
 }
 
 // Optimized (par) serialization vectors
 
+/// Parallelized serialization for plaintext vectors.
 #[derive(Clone, Debug)]
 pub struct StrandVectorP<C: Ctx>(pub Vec<C::P>);
 
@@ -58,15 +58,16 @@ impl<C: Ctx> BorshDeserialize for StrandVectorP<C> {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
         let vectors = <Vec<Vec<u8>>>::deserialize(buf)?;
 
-        let results: Vec<C::P> = vectors
+        let results: std::io::Result<Vec<C::P>> = vectors
             .par()
-            .map(|v| C::P::try_from_slice(&v).unwrap())
+            .map(|v| C::P::try_from_slice(&v))
             .collect();
 
-        Ok(StrandVectorP(results))
+        Ok(StrandVectorP(results?))
     }
 }
 
+/// Parallelized serialization for group element vectors.
 #[derive(Clone, Debug)]
 pub struct StrandVectorE<C: Ctx>(pub Vec<C::E>);
 
@@ -86,15 +87,16 @@ impl<C: Ctx> BorshDeserialize for StrandVectorE<C> {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
         let vectors = <Vec<Vec<u8>>>::deserialize(buf)?;
 
-        let results: Vec<C::E> = vectors
+        let results: std::io::Result<Vec<C::E>> = vectors
             .par()
-            .map(|v| C::E::try_from_slice(&v).unwrap())
+            .map(|v| C::E::try_from_slice(&v))
             .collect();
 
-        Ok(StrandVectorE(results))
+        Ok(StrandVectorE(results?))
     }
 }
 
+/// Parallelized serialization for "exponent" vectors.
 #[derive(Clone, Debug)]
 pub struct StrandVectorX<C: Ctx>(pub Vec<C::X>);
 
@@ -114,15 +116,16 @@ impl<C: Ctx> BorshDeserialize for StrandVectorX<C> {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
         let vectors = <Vec<Vec<u8>>>::deserialize(buf)?;
 
-        let results: Vec<C::X> = vectors
+        let results: std::io::Result<Vec<C::X>> = vectors
             .par()
-            .map(|v| C::X::try_from_slice(&v).unwrap())
+            .map(|v| C::X::try_from_slice(&v))
             .collect();
 
-        Ok(StrandVectorX(results))
+        Ok(StrandVectorX(results?))
     }
 }
 
+/// Parallelized serialization for ciphertext vectors.
 #[derive(Clone, Debug)]
 pub struct StrandVectorC<C: Ctx>(pub Vec<Ciphertext<C>>);
 
@@ -141,12 +144,12 @@ impl<C: Ctx> BorshSerialize for StrandVectorC<C> {
 impl<C: Ctx> BorshDeserialize for StrandVectorC<C> {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
         let vectors = <Vec<Vec<u8>>>::deserialize(buf)?;
-        let results: Vec<Ciphertext<C>> = vectors
+        let results: std::io::Result<Vec<Ciphertext<C>>> = vectors
             .par()
-            .map(|v| Ciphertext::<C>::try_from_slice(&v).unwrap())
+            .map(|v| Ciphertext::<C>::try_from_slice(&v))
             .collect();
 
-        Ok(StrandVectorC(results))
+        Ok(StrandVectorC(results?))
     }
 }
 

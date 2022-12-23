@@ -15,7 +15,7 @@ pub mod context;
 /// ElGamal encryption.
 pub mod elgamal;
 /// Support for distributed Elgamal.
-pub mod keymaker;
+mod keymaker;
 /// Wikstrom proof of shuffle.
 pub mod shuffler;
 /// Support for threshold ElGamal.
@@ -28,8 +28,11 @@ pub mod wasm;
 /// Schnorr and Chaum-Pedersen zero knowledge proofs.
 pub mod zkp;
 
+/// Random number generation frontend.
 pub mod rnd;
+/// Serialization frontend. StrandVectors for parallel serialization.
 pub mod serialization;
+/// Signature frontend.
 pub mod signature;
 
 pub use sha3;

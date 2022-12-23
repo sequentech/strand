@@ -126,6 +126,7 @@ pub trait Exponent<C: Ctx>:
     fn mul_identity() -> C::X;
 }
 
+/// The type of plaintext data. This type must be encoded into a group member before it can be encrypted.
 pub trait Plaintext:
     Send + Sync + Eq + Debug + BorshSerialize + BorshDeserialize + std::hash::Hash + Clone
 {
