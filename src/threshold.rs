@@ -5,6 +5,7 @@ use crate::zkp::{ChaumPedersen, Zkp};
 // A degree n polynomial is determined by n + 1 points.
 // A degree n polynomial has n + 1 coefficients.
 // Thus, the number of coefficients = threshold.
+/// Generates the coefficients of a polynomial with threshold number of coefficients.
 pub fn gen_coefficients<C: Ctx>(threshold: usize, ctx: &C) -> (Vec<C::X>, Vec<C::E>) {
     let mut coefficients = vec![];
     let mut commitments = vec![];
@@ -19,6 +20,7 @@ pub fn gen_coefficients<C: Ctx>(threshold: usize, ctx: &C) -> (Vec<C::X>, Vec<C:
     (coefficients, commitments)
 }
 
+/// Evaluates the polynomial at the given trustee position.
 pub fn eval_poly<C: Ctx>(trustee: usize, threshold: usize, coefficients: &[C::X], ctx: &C) -> C::X {
     let mut sum = coefficients[0].clone();
     let mut power = C::X::mul_identity();
@@ -31,6 +33,7 @@ pub fn eval_poly<C: Ctx>(trustee: usize, threshold: usize, coefficients: &[C::X]
     sum.modulo(ctx.exp_modulus())
 }
 
+/// Computes the share for the target trustee.
 pub fn compute_peer_share<C: Ctx>(
     target_trustee: usize,
     threshold: usize,
@@ -41,6 +44,7 @@ pub fn compute_peer_share<C: Ctx>(
     eval_poly(target_trustee + 1, threshold, coefficients, ctx)
 }
 
+/// Computes the factor of the verification key for the receiving trustee using the sender commitments.
 pub fn verification_key_factor<C: Ctx>(
     sender_commitments: &[C::E],
     threshold: usize,
@@ -62,6 +66,7 @@ pub fn verification_key_factor<C: Ctx>(
     accum
 }
 
+/// Computes the decryption factor and proof for the given ciphertext using the trustee's share of the secret.
 pub fn decryption_factor<C: Ctx>(
     c: &Ciphertext<C>,
     share: &C::X,
@@ -77,6 +82,7 @@ pub fn decryption_factor<C: Ctx>(
     (factor, proof)
 }
 
+/// Computes the Lagrange coefficient for the given trustee.
 pub fn lagrange<C: Ctx>(trustee: usize, present: &[usize], ctx: &C) -> C::X {
     let mut numerator = C::X::mul_identity();
     let mut denominator = C::X::mul_identity();

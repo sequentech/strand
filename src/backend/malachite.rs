@@ -493,8 +493,7 @@ impl BorshDeserialize for NaturalP {
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
         let bytes = <Vec<u16>>::deserialize(bytes).unwrap();
 
-        let num =
-            Natural::from_digits_desc(&256u16, bytes.into_iter()).expect("impossible");
+        let num = Natural::from_digits_desc(&256u16, bytes.into_iter()).expect("impossible");
         Ok(NaturalP(num))
     }
 }

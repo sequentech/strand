@@ -58,10 +58,8 @@ impl<C: Ctx> BorshDeserialize for StrandVectorP<C> {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
         let vectors = <Vec<Vec<u8>>>::deserialize(buf)?;
 
-        let results: std::io::Result<Vec<C::P>> = vectors
-            .par()
-            .map(|v| C::P::try_from_slice(&v))
-            .collect();
+        let results: std::io::Result<Vec<C::P>> =
+            vectors.par().map(|v| C::P::try_from_slice(&v)).collect();
 
         Ok(StrandVectorP(results?))
     }
@@ -87,10 +85,8 @@ impl<C: Ctx> BorshDeserialize for StrandVectorE<C> {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
         let vectors = <Vec<Vec<u8>>>::deserialize(buf)?;
 
-        let results: std::io::Result<Vec<C::E>> = vectors
-            .par()
-            .map(|v| C::E::try_from_slice(&v))
-            .collect();
+        let results: std::io::Result<Vec<C::E>> =
+            vectors.par().map(|v| C::E::try_from_slice(&v)).collect();
 
         Ok(StrandVectorE(results?))
     }
@@ -116,10 +112,8 @@ impl<C: Ctx> BorshDeserialize for StrandVectorX<C> {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
         let vectors = <Vec<Vec<u8>>>::deserialize(buf)?;
 
-        let results: std::io::Result<Vec<C::X>> = vectors
-            .par()
-            .map(|v| C::X::try_from_slice(&v))
-            .collect();
+        let results: std::io::Result<Vec<C::X>> =
+            vectors.par().map(|v| C::X::try_from_slice(&v)).collect();
 
         Ok(StrandVectorX(results?))
     }

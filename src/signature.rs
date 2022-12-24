@@ -8,9 +8,11 @@ use std::io::{Error, ErrorKind};
 
 use crate::rnd::StrandRng;
 
+/// An ed25519 backed signature.
 #[derive(Clone)]
 pub struct StrandSignature(Signature);
 
+/// An ed25519 backed signature verification key.
 // Clone: Allows Configuration to be Clonable in Braid
 #[derive(Clone)]
 pub struct StrandSignaturePk(VerificationKey);
@@ -41,6 +43,7 @@ impl std::fmt::Debug for StrandSignaturePk {
 }
 impl Eq for StrandSignaturePk {}
 
+/// An ed25519 backed signing key.
 #[derive(Clone)]
 pub struct StrandSignatureSk(SigningKey);
 impl StrandSignatureSk {

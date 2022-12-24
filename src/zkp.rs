@@ -45,6 +45,7 @@ impl<C: Ctx> Zkp<C> {
         Zkp { ctx: ctx.clone() }
     }
 
+    /// In the context of a ciphertext, prove knowledge of the plaintext.
     pub fn encryption_popk(
         &self,
         secret: &C::X,
@@ -58,6 +59,7 @@ impl<C: Ctx> Zkp<C> {
         self.schnorr_prove_private(secret, gr, None, context)
     }
 
+    /// In the context of a ciphertext, verify proof of knowledge of the plaintext.
     pub fn encryption_popk_verify(
         &self,
         mhr: &C::E,
@@ -71,6 +73,7 @@ impl<C: Ctx> Zkp<C> {
         self.schnorr_verify_private(gr, None, proof, context)
     }
 
+    /// Prove decryption of a ciphertext.
     pub fn decryption_proof(
         &self,
         secret: &C::X,
@@ -86,6 +89,7 @@ impl<C: Ctx> Zkp<C> {
         self.cp_prove_private(secret, pk, dec_factor, None, gr, context)
     }
 
+    /// Verify decryption proof of a ciphertext.
     pub fn verify_decryption(
         &self,
         pk: &C::E,
@@ -113,6 +117,7 @@ impl<C: Ctx> Zkp<C> {
         self.schnorr_prove_private(secret, public, g, context)
     }
 
+    /// Verify proof of knowledge of discrete logarithm.
     pub fn schnorr_verify(
         &self,
         public: &C::E,
@@ -138,6 +143,7 @@ impl<C: Ctx> Zkp<C> {
         self.cp_prove_private(secret, public1, public2, g1, g2, context)
     }
 
+    /// Verify proof of discrete logarithm equality with respect to two bases.
     pub fn cp_verify(
         &self,
         public1: &C::E,
