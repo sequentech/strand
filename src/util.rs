@@ -55,7 +55,7 @@ pub fn to_u8_array<const N: usize>(input: &[u8]) -> Result<[u8; N], &'static str
 }
 
 /// Fast generation of ciphertexts using random group elements.
-pub fn random_ballots<C: Ctx>(n: usize, ctx: &C) -> Vec<Ciphertext<C>> {
+pub fn random_ciphertexts<C: Ctx>(n: usize, ctx: &C) -> Vec<Ciphertext<C>> {
     (0..n)
         .par()
         .map(|_| Ciphertext {

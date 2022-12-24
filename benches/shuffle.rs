@@ -14,7 +14,7 @@ fn test_shuffle_generic<C: Ctx>(ctx: C, n: usize) {
     let sk = PrivateKey::gen(&ctx);
     let pk = sk.get_pk();
 
-    let es = util::random_ballots(n, &ctx);
+    let es = util::random_ciphertexts(n, &ctx);
     let seed = vec![];
     let hs = ctx.generators(es.len() + 1, &seed);
     let shuffler = Shuffler::new(&pk, &hs, &ctx);

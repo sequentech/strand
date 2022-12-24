@@ -236,7 +236,7 @@ pub(crate) mod tests {
         let sk = PrivateKey::gen(ctx);
         let pk = sk.get_pk();
 
-        let es = util::random_ballots(10, ctx);
+        let es = util::random_ciphertexts(10, ctx);
         let seed = vec![];
         let hs = ctx.generators(es.len() + 1, &seed);
         let shuffler = Shuffler {
@@ -257,7 +257,7 @@ pub(crate) mod tests {
         let sk = PrivateKey::gen(ctx);
         let pk = sk.get_pk();
 
-        let es = util::random_ballots(10, ctx);
+        let es = util::random_ciphertexts(10, ctx);
         let seed = vec![];
         let hs = ctx.generators(es.len() + 1, &seed);
         let shuffler = Shuffler {

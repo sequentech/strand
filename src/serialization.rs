@@ -181,7 +181,7 @@ pub(crate) mod tests {
     }
 
     pub(crate) fn test_ciphertext_borsh_generic<C: Ctx>(ctx: &C) {
-        let c = util::random_ballots(1, ctx).remove(0);
+        let c = util::random_ciphertexts(1, ctx).remove(0);
         let bytes = c.strand_serialize();
         let back = Ciphertext::<C>::strand_deserialize(&bytes).unwrap();
 

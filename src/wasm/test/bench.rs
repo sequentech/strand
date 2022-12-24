@@ -110,7 +110,7 @@ fn bench_shuffle_serialization_generic<C: Ctx>(ctx: C, n: usize) {
     let pk: PublicKey<C> = sk.get_pk();
 
     log("gen ballots..");
-    let es = util::random_ballots(n, &ctx);
+    let es = util::random_ciphertexts(n, &ctx);
     let seed = vec![];
 
     log("generators..");
