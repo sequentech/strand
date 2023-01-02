@@ -67,12 +67,19 @@ pub fn random_ciphertexts<C: Ctx>(n: usize, ctx: &C) -> Vec<Ciphertext<C>> {
 
 /// Size of all hashes.
 pub const STRAND_HASH_LENGTH_BYTES: usize = 64;
+pub type Hash=[u8; 64];
 
-/// Single entry point for all hashing.
+/// Single entry point for all hashing, vector version.
 pub fn hash(bytes: &[u8]) -> Vec<u8> {
     let mut hasher = hasher();
     hasher.update(bytes);
     hasher.finalize().to_vec()
+}
+/// Single entry point for all hashing, array version.
+pub fn hash_array(bytes: &[u8]) -> Hash {
+    let mut hasher = hasher();
+    hasher.update(bytes);
+    hasher.finalize().into()
 }
 /// Single access point for all hashing.
 pub fn hasher() -> Sha512 {
