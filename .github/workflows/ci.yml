@@ -41,10 +41,10 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-    #permissions:
-    #  contents: read
-    #  pages: write      # to deploy to Pages
-    #  id-token: write   # to verify the deployment originates from an appropriate source
+    permissions:
+      contents: read
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
 
     # Deploy to the github-pages environment
     #environment:
