@@ -67,7 +67,7 @@ pub fn random_ciphertexts<C: Ctx>(n: usize, ctx: &C) -> Vec<Ciphertext<C>> {
 
 /// Size of all hashes.
 pub const STRAND_HASH_LENGTH_BYTES: usize = 64;
-pub type Hash=[u8; 64];
+pub type Hash = [u8; 64];
 
 /// Single entry point for all hashing, vector version.
 pub fn hash(bytes: &[u8]) -> Vec<u8> {
