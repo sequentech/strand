@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2023 David Ruescas <david@sequentech.io>
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
 use crate::elgamal::Ciphertext;
 use borsh::{BorshDeserialize, BorshSerialize};
 
