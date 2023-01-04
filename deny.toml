@@ -81,7 +81,7 @@ allow = [
     # that no dependency is being detected to use it, but it's a license we are
     # legally compatible with:
     # "CC0-1.0",
-    # "LGPL-3.0", 
+    "LGPL-3.0",
     "BSD-3-Clause",
     "Unicode-DFS-2016"
 ]

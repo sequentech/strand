@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2023 David Ruescas <david@sequentech.io>
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
 use borsh::{BorshDeserialize, BorshSerialize};
 use ed25519_zebra::Signature;
 use ed25519_zebra::SigningKey;

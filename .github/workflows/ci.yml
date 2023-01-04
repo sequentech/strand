@@ -36,8 +36,13 @@ jobs:
           develop \
           --command bash -c "cargo test"
 
+  # based on https://github.com/actions/starter-workflows/blob/main/pages/static.yml
   gh_pages:
     name: Publish on Github Pages
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -46,10 +51,6 @@ jobs:
       pages: write      # to deploy to Pages
       id-token: write   # to verify the deployment originates from an appropriate source
 
-    # Deploy to the github-pages environment
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -88,7 +89,7 @@ jobs:
         retention-days: 365
 
     - name: Deploy to GitHub Pages
-      id: gh-deployment-action
+      id: deployment
       uses: actions/deploy-pages@v1
 
   check:
