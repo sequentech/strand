@@ -3,7 +3,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 // SPDX-FileCopyrightText: 2021 David Ruescas <david@sequentech.io>
 //
 // SPDX-License-Identifier: AGPL-3.0-only
-use rand::Rng;
+use rand::seq::SliceRandom;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
 // use sha3::{Digest, Sha3_512 as Sha512};
@@ -604,18 +604,10 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 }
 
 pub(crate) fn gen_permutation(size: usize) -> Vec<usize> {
-    let mut ret = Vec::with_capacity(size);
-
     let mut rng = StrandRng;
 
-    let mut ordered: Vec<usize> = (0..size).collect();
-
-    for i in 0..size {
-        let k = rng.gen_range(i..size);
-        let j = ordered[k];
-        ordered[k] = ordered[i];
-        ret.push(j);
-    }
+    let mut ret: Vec<usize> = (0..size).collect();
+    ret.shuffle(&mut rng);
 
     ret
 }

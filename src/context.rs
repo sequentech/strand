@@ -50,6 +50,7 @@ pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
     fn generator(&self) -> &Self::E;
     // FIXME this is wrong. Remove modulus and exp_modulus from trait,
     // implementors should use emod_pow, modulo(), exp_modulo()
+    //
     // We reuse the E and X types to prevent mixing moduli
     // Although the modulus is not an element of the group, we reuse the type here
     fn modulus(&self) -> &Self::E;
@@ -58,9 +59,10 @@ pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
 
     fn gmod_pow(&self, other: &Self::X) -> Self::E;
     fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E;
+    fn xsub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X;
     fn modulo(&self, value: &Self::E) -> Self::E;
     fn exp_modulo(&self, value: &Self::X) -> Self::X;
-    fn xsub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X;
+    
 
     fn rnd(&self) -> Self::E;
     fn rnd_exp(&self) -> Self::X;
