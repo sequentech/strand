@@ -137,7 +137,8 @@ pub fn encrypt(nyes: u32, nno: u32) -> JsValue {
         })
         .collect();
 
-    let per_sec = ((nyes + nno) as f64 / ((performance.now() - now) / 1000.0)) as isize;
+    let per_sec =
+        ((nyes + nno) as f64 / ((performance.now() - now) / 1000.0)) as isize;
     let per_hour = per_sec * 3_600;
 
     message(&format!(
@@ -161,9 +162,11 @@ pub fn shuffle(value: JsValue) -> JsValue {
     let sk = secret_key();
     let pk = sk.get_pk();
 
-    let values: Vec<CiphertextS> = serde_wasm_bindgen::from_value(value).unwrap();
+    let values: Vec<CiphertextS> =
+        serde_wasm_bindgen::from_value(value).unwrap();
 
-    let es: Vec<Ciphertext<RistrettoCtx>> = values.iter().map(|v| from_ciphertext_s(v)).collect();
+    let es: Vec<Ciphertext<RistrettoCtx>> =
+        values.iter().map(|v| from_ciphertext_s(v)).collect();
     let seed = vec![];
     let hs = ctx.generators(es.len() + 1, &seed);
     let shuffler = Shuffler {
@@ -182,7 +185,8 @@ pub fn shuffle(value: JsValue) -> JsValue {
     let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
     message(&format!("Proof ok: {}", ok));
 
-    let per_sec = (es.len() as f64 / ((performance.now() - now) / 1000.0)) as isize;
+    let per_sec =
+        (es.len() as f64 / ((performance.now() - now) / 1000.0)) as isize;
     let per_hour = per_sec * 3_600;
     message(&format!(
         "Prove + Verify: {} ciphertexts/second - {} ciphertexts/hour",
@@ -194,7 +198,8 @@ pub fn shuffle(value: JsValue) -> JsValue {
         pretty_print_int(es.len() as isize)
     ));
 
-    let cs: Vec<CiphertextS> = e_primes.iter().map(|e| to_ciphertext_s(e)).collect();
+    let cs: Vec<CiphertextS> =
+        e_primes.iter().map(|e| to_ciphertext_s(e)).collect();
 
     serde_wasm_bindgen::to_value(&cs).unwrap()
 }
@@ -204,7 +209,8 @@ pub fn decrypt(value: JsValue) -> JsValue {
     let ctx = RistrettoCtx;
     let sk = secret_key();
 
-    let values: Vec<CiphertextS> = serde_wasm_bindgen::from_value(value).unwrap();
+    let values: Vec<CiphertextS> =
+        serde_wasm_bindgen::from_value(value).unwrap();
 
     let now = performance.now();
     let ps: Vec<PlaintextS> = values
@@ -215,7 +221,8 @@ pub fn decrypt(value: JsValue) -> JsValue {
         })
         .collect();
 
-    let per_sec = (ps.len() as f64 / ((performance.now() - now) / 1000.0)) as isize;
+    let per_sec =
+        (ps.len() as f64 / ((performance.now() - now) / 1000.0)) as isize;
     let per_hour = per_sec * 3_600;
     message(&format!(
         "Decrypt: {} ciphertexts/second - {} ciphertexts/hour",

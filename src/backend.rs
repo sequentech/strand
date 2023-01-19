@@ -22,8 +22,11 @@ pub(crate) mod constants {
     pub(crate) const Q_VERIFICATUM_STR_2048: &str = "24792774508736884642868649594982829646677044143456685966902090450389126928108831401260556520412635107010557472033959413182721740344201744439332485685961403243832055703485006331622597516714353334475003356107214415133930521931501335636267863542365051534250347372371067531454567272385185891163945756520887249904654258635354225185183883072436706698802915430665330310171817147030511296815138402638418197652072758525915640803066679883309656829521003317945389314422254112846989412579196000319352105328237736727287933765675623872956765501985588170384171812463052893055840132089533980513123557770728491280124996262883108653723";
     pub(crate) const G_VERIFICATUM_STR_2048: &str = "27257469383433468307851821232336029008797963446516266868278476598991619799718416119050669032044861635977216445034054414149795443466616532657735624478207460577590891079795564114912418442396707864995938563067755479563850474870766067031326511471051504594777928264027177308453446787478587442663554203039337902473879502917292403539820877956251471612701203572143972352943753791062696757791667318486190154610777475721752749567975013100844032853600120195534259802017090281900264646220781224136443700521419393245058421718455034330177739612895494553069450438317893406027741045575821283411891535713793639123109933196544017309147";
 
-    // const P_STR_3072: &str = "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF324E7738926CFBE5F4BF8D8D8C31D763DA06C80ABB1185EB4F7C7B5757F5958490CFD47D7C19BB42158D9554F7B46BCED55C4D79FD5F24D6613C31C3839A2DDF8A9A276BCFBFA1C877C56284DAB79CD4C2B3293D20E9E5EAF02AC60ACC93ED874422A52ECB238FEEE5AB6ADD835FD1A0753D0A8F78E537D2B95BB79D8DCAEC642C1E9F23B829B5C2780BF38737DF8BB300D01334A0D0BD8645CBFA73A6160FFE393C48CBBBCA060F0FF8EC6D31BEB5CCEED7F2F0BB088017163BC60DF45A0ECB1BCD289B06CBBFEA21AD08E1847F3F7378D56CED94640D6EF0D3D37BE67008E186D1BF275B9B241DEB64749A47DFDFB96632C3EB061B6472BBF84C26144E49C2D04C324EF10DE513D3F5114B8B5D374D93CB8879C7D52FFD72BA0AAE7277DA7BA1B4AF1488D8E836AF14865E6C37AB6876FE690B571121382AF341AFE94F77BCF06C83B8FF5675F0979074AD9A787BC5B9BD4B0C5937D3EDE4C3A79396419CD7";
-    // const Q_STR_3072: &str = "5bf0a8b1457695355fb8ac404e7a79e3b1738b079c5a6d2b53c26c8228c867f799273b9c49367df2fa5fc6c6c618ebb1ed0364055d88c2f5a7be3dababfacac24867ea3ebe0cdda10ac6caaa7bda35e76aae26bcfeaf926b309e18e1c1cd16efc54d13b5e7dfd0e43be2b1426d5bce6a6159949e9074f2f5781563056649f6c3a21152976591c7f772d5b56ec1afe8d03a9e8547bc729be95caddbcec6e57632160f4f91dc14dae13c05f9c39befc5d98068099a50685ec322e5fd39d30b07ff1c9e2465dde5030787fc763698df5ae6776bf9785d84400b8b1de306fa2d07658de6944d8365dff510d68470c23f9fb9bc6ab676ca3206b77869e9bdf3380470c368df93adcd920ef5b23a4d23efefdcb31961f5830db2395dfc26130a2724e1682619277886f289e9fa88a5c5ae9ba6c9e5c43ce3ea97feb95d0557393bed3dd0da578a446c741b578a432f361bd5b43b7f3485ab88909c1579a0d7f4a7bbde783641dc7fab3af84bc83a56cd3c3de2dcdea5862c9be9f6f261d3c9cb20ce6b";
+    // const P_STR_3072: &str =
+    // "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF324E7738926CFBE5F4BF8D8D8C31D763DA06C80ABB1185EB4F7C7B5757F5958490CFD47D7C19BB42158D9554F7B46BCED55C4D79FD5F24D6613C31C3839A2DDF8A9A276BCFBFA1C877C56284DAB79CD4C2B3293D20E9E5EAF02AC60ACC93ED874422A52ECB238FEEE5AB6ADD835FD1A0753D0A8F78E537D2B95BB79D8DCAEC642C1E9F23B829B5C2780BF38737DF8BB300D01334A0D0BD8645CBFA73A6160FFE393C48CBBBCA060F0FF8EC6D31BEB5CCEED7F2F0BB088017163BC60DF45A0ECB1BCD289B06CBBFEA21AD08E1847F3F7378D56CED94640D6EF0D3D37BE67008E186D1BF275B9B241DEB64749A47DFDFB96632C3EB061B6472BBF84C26144E49C2D04C324EF10DE513D3F5114B8B5D374D93CB8879C7D52FFD72BA0AAE7277DA7BA1B4AF1488D8E836AF14865E6C37AB6876FE690B571121382AF341AFE94F77BCF06C83B8FF5675F0979074AD9A787BC5B9BD4B0C5937D3EDE4C3A79396419CD7"
+    // ; const Q_STR_3072: &str =
+    // "5bf0a8b1457695355fb8ac404e7a79e3b1738b079c5a6d2b53c26c8228c867f799273b9c49367df2fa5fc6c6c618ebb1ed0364055d88c2f5a7be3dababfacac24867ea3ebe0cdda10ac6caaa7bda35e76aae26bcfeaf926b309e18e1c1cd16efc54d13b5e7dfd0e43be2b1426d5bce6a6159949e9074f2f5781563056649f6c3a21152976591c7f772d5b56ec1afe8d03a9e8547bc729be95caddbcec6e57632160f4f91dc14dae13c05f9c39befc5d98068099a50685ec322e5fd39d30b07ff1c9e2465dde5030787fc763698df5ae6776bf9785d84400b8b1de306fa2d07658de6944d8365dff510d68470c23f9fb9bc6ab676ca3206b77869e9bdf3380470c368df93adcd920ef5b23a4d23efefdcb31961f5830db2395dfc26130a2724e1682619277886f289e9fa88a5c5ae9ba6c9e5c43ce3ea97feb95d0557393bed3dd0da578a446c741b578a432f361bd5b43b7f3485ab88909c1579a0d7f4a7bbde783641dc7fab3af84bc83a56cd3c3de2dcdea5862c9be9f6f261d3c9cb20ce6b"
+    // ;
 }
 
 #[cfg(any(test, feature = "wasmtest"))]
@@ -72,7 +75,8 @@ pub(crate) mod tests {
         let (c, proof) = pk.encrypt_and_pok(&plaintext, &label);
         let d = sk.decrypt(&c);
         let zkp = Zkp::new(ctx);
-        let proof_ok = zkp.encryption_popk_verify(&c.mhr, &c.gr, &proof, &label);
+        let proof_ok =
+            zkp.encryption_popk_verify(&c.mhr, &c.gr, &proof, &label);
         assert!(proof_ok);
 
         let recovered = ctx.decode(&d);
@@ -86,8 +90,10 @@ pub(crate) mod tests {
         let schnorr = zkp.schnorr_prove(&secret, &public, None, &vec![]);
         let verified = zkp.schnorr_verify(&public, None, &schnorr, &vec![]);
         assert!(verified);
-        let public_false = ctx.generator().mod_pow(&ctx.rnd_exp(), &ctx.modulus());
-        let verified_false = zkp.schnorr_verify(&public_false, None, &schnorr, &vec![]);
+        let public_false =
+            ctx.generator().mod_pow(&ctx.rnd_exp(), &ctx.modulus());
+        let verified_false =
+            zkp.schnorr_verify(&public_false, None, &schnorr, &vec![]);
         assert!(verified_false == false);
     }
 
@@ -100,12 +106,16 @@ pub(crate) mod tests {
         let secret = ctx.rnd_exp();
         let public1 = g1.mod_pow(&secret, &ctx.modulus());
         let public2 = g2.mod_pow(&secret, &ctx.modulus());
-        let proof = zkp.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
-        let verified = zkp.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
+        let proof =
+            zkp.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
+        let verified =
+            zkp.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
 
         assert!(verified);
-        let public_false = ctx.generator().mod_pow(&ctx.rnd_exp(), &ctx.modulus());
-        let verified_false = zkp.cp_verify(&public1, &public_false, None, &g2, &proof, &vec![]);
+        let public_false =
+            ctx.generator().mod_pow(&ctx.rnd_exp(), &ctx.modulus());
+        let verified_false =
+            zkp.cp_verify(&public1, &public_false, None, &g2, &proof, &vec![]);
         assert!(verified_false == false);
     }
 
@@ -121,9 +131,16 @@ pub(crate) mod tests {
 
         let dec_factor = c.mhr.div(&d, &ctx.modulus()).modulo(&ctx.modulus());
 
-        // let verified = zkp.cp_verify(&pk.element, &dec_factor, None, &c.gr, &proof, &vec![]);
-        let verified =
-            zkp.verify_decryption(&pk.element, &dec_factor, &c.mhr, &c.gr, &proof, &vec![]);
+        // let verified = zkp.cp_verify(&pk.element, &dec_factor, None, &c.gr,
+        // &proof, &vec![]);
+        let verified = zkp.verify_decryption(
+            &pk.element,
+            &dec_factor,
+            &c.mhr,
+            &c.gr,
+            &proof,
+            &vec![],
+        );
         let recovered = ctx.decode(&d);
         assert!(verified);
         assert_eq!(data, recovered);
@@ -136,8 +153,18 @@ pub(crate) mod tests {
         let (pk1, proof1) = km1.share(&vec![]);
         let (pk2, proof2) = km2.share(&vec![]);
 
-        let verified1 = zkp.schnorr_verify(&pk1.element, Some(&ctx.generator()), &proof1, &vec![]);
-        let verified2 = zkp.schnorr_verify(&pk2.element, Some(&ctx.generator()), &proof2, &vec![]);
+        let verified1 = zkp.schnorr_verify(
+            &pk1.element,
+            Some(&ctx.generator()),
+            &proof1,
+            &vec![],
+        );
+        let verified2 = zkp.schnorr_verify(
+            &pk2.element,
+            Some(&ctx.generator()),
+            &proof2,
+            &vec![],
+        );
         assert!(verified1);
         assert!(verified2);
 
@@ -153,8 +180,22 @@ pub(crate) mod tests {
         let (dec_f1, proof1) = km1.decryption_factor(&c, &vec![]);
         let (dec_f2, proof2) = km2.decryption_factor(&c, &vec![]);
 
-        let verified1 = zkp.verify_decryption(pk1_value, &dec_f1, &c.mhr, &c.gr, &proof1, &vec![]);
-        let verified2 = zkp.verify_decryption(pk2_value, &dec_f2, &c.mhr, &c.gr, &proof2, &vec![]);
+        let verified1 = zkp.verify_decryption(
+            pk1_value,
+            &dec_f1,
+            &c.mhr,
+            &c.gr,
+            &proof1,
+            &vec![],
+        );
+        let verified2 = zkp.verify_decryption(
+            pk2_value,
+            &dec_f2,
+            &c.mhr,
+            &c.gr,
+            &proof2,
+            &vec![],
+        );
         assert!(verified1);
         assert!(verified2);
 
@@ -164,7 +205,10 @@ pub(crate) mod tests {
         assert_eq!(data, recovered);
     }
 
-    pub(crate) fn test_distributed_serialization_generic<C: Ctx>(ctx: &C, data: Vec<C::P>) {
+    pub(crate) fn test_distributed_serialization_generic<C: Ctx>(
+        ctx: &C,
+        data: Vec<C::P>,
+    ) {
         let km1 = Keymaker::gen(ctx);
         let km2 = Keymaker::gen(ctx);
         let (pk1, proof1) = km1.share(&vec![]);
@@ -176,14 +220,20 @@ pub(crate) mod tests {
         let share2_pk_b = pk2.strand_serialize();
         let share2_proof_b = proof2.strand_serialize();
 
-        let share1_pk_d = PublicKey::<C>::strand_deserialize(&share1_pk_b).unwrap();
-        let share1_proof_d = Schnorr::<C>::strand_deserialize(&share1_proof_b).unwrap();
+        let share1_pk_d =
+            PublicKey::<C>::strand_deserialize(&share1_pk_b).unwrap();
+        let share1_proof_d =
+            Schnorr::<C>::strand_deserialize(&share1_proof_b).unwrap();
 
-        let share2_pk_d = PublicKey::<C>::strand_deserialize(&share2_pk_b).unwrap();
-        let share2_proof_d = Schnorr::<C>::strand_deserialize(&share2_proof_b).unwrap();
+        let share2_pk_d =
+            PublicKey::<C>::strand_deserialize(&share2_pk_b).unwrap();
+        let share2_proof_d =
+            Schnorr::<C>::strand_deserialize(&share2_proof_b).unwrap();
 
-        let verified1 = Keymaker::verify_share(ctx, &share1_pk_d, &share1_proof_d, &vec![]);
-        let verified2 = Keymaker::verify_share(ctx, &share2_pk_d, &share2_proof_d, &vec![]);
+        let verified1 =
+            Keymaker::verify_share(ctx, &share1_pk_d, &share1_proof_d, &vec![]);
+        let verified2 =
+            Keymaker::verify_share(ctx, &share2_pk_d, &share2_proof_d, &vec![]);
 
         assert!(verified1);
         assert!(verified2);
@@ -211,15 +261,29 @@ pub(crate) mod tests {
         let proofs2_b = proofs2.strand_serialize();
 
         let decs1_d = Vec::<C::E>::strand_deserialize(&decs1_b).unwrap();
-        let proofs1_d = Vec::<ChaumPedersen<C>>::strand_deserialize(&proofs1_b).unwrap();
+        let proofs1_d =
+            Vec::<ChaumPedersen<C>>::strand_deserialize(&proofs1_b).unwrap();
 
         let decs2_d = Vec::<C::E>::strand_deserialize(&decs2_b).unwrap();
-        let proofs2_d = Vec::<ChaumPedersen<C>>::strand_deserialize(&proofs2_b).unwrap();
+        let proofs2_d =
+            Vec::<ChaumPedersen<C>>::strand_deserialize(&proofs2_b).unwrap();
 
-        let verified1 =
-            Keymaker::verify_decryption_factors(ctx, pk1_value, &cs, &decs1_d, &proofs1_d, &vec![]);
-        let verified2 =
-            Keymaker::verify_decryption_factors(ctx, pk2_value, &cs, &decs2_d, &proofs2_d, &vec![]);
+        let verified1 = Keymaker::verify_decryption_factors(
+            ctx,
+            pk1_value,
+            &cs,
+            &decs1_d,
+            &proofs1_d,
+            &vec![],
+        );
+        let verified2 = Keymaker::verify_decryption_factors(
+            ctx,
+            pk2_value,
+            &cs,
+            &decs2_d,
+            &proofs2_d,
+            &vec![],
+        );
 
         assert!(verified1);
         assert!(verified2);
@@ -227,7 +291,8 @@ pub(crate) mod tests {
         let decs = vec![decs1_d, decs2_d];
         let ds = Keymaker::joint_dec_many(ctx, &decs, &cs);
 
-        let recovered: Vec<C::P> = ds.into_iter().map(|d| ctx.decode(&d)).collect();
+        let recovered: Vec<C::P> =
+            ds.into_iter().map(|d| ctx.decode(&d)).collect();
 
         assert_eq!(data, recovered);
     }
@@ -278,7 +343,8 @@ pub(crate) mod tests {
 
         let pk_d = PublicKey::<C>::strand_deserialize(&pk_b).unwrap();
         let es_d = Vec::<Ciphertext<C>>::strand_deserialize(&es_b).unwrap();
-        let eprimes_d = Vec::<Ciphertext<C>>::strand_deserialize(&eprimes_b).unwrap();
+        let eprimes_d =
+            Vec::<Ciphertext<C>>::strand_deserialize(&eprimes_b).unwrap();
         let proof_d = ShuffleProof::<C>::strand_deserialize(&proof_b).unwrap();
 
         let shuffler_d = Shuffler {

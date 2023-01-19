@@ -2,12 +2,18 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 //!
-//! The interface is composed of three abstractions on which other functionality is built:
-//! - [Ctx](crate::context::Ctx): a cryptographic context most closely corresponds to the underlying
-//! group in which modular arithmetic operations take place, and where discrete log assumptions hold.
-//! - [Element](crate::context::Element): An element of the underlying group whose main operations are multiplication and modular
-//! exponentiation. If the group is an elliptic curve, the corresponding terms are addition and multiplication.
-//! - [Exponent](crate::context::Exponent): A member of the "exponent ring", used in modular exponentiation (or scalar multiplication
+//! The interface is composed of three abstractions on which other functionality
+//! is built:
+//! - [Ctx](crate::context::Ctx): a cryptographic context most closely
+//!   corresponds to the underlying
+//! group in which modular arithmetic operations take place, and where discrete
+//! log assumptions hold.
+//! - [Element](crate::context::Element): An element of the underlying group
+//!   whose main operations are multiplication and modular
+//! exponentiation. If the group is an elliptic curve, the corresponding terms
+//! are addition and multiplication.
+//! - [Exponent](crate::context::Exponent): A member of the "exponent ring",
+//!   used in modular exponentiation (or scalar multiplication
 //! for elliptic curves).
 //!
 //! # Examples
@@ -41,7 +47,8 @@ use std::{
     marker::{Send, Sync},
 };
 
-/// A cryptographic context loosely corresponds to the underlying modular arithmetic groups.
+/// A cryptographic context loosely corresponds to the underlying modular
+/// arithmetic groups.
 pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
     type E: Element<Self>;
     type X: Exponent<Self>;
@@ -52,9 +59,11 @@ pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
     // implementors should use emod_pow, modulo(), exp_modulo()
     //
     // We reuse the E and X types to prevent mixing moduli
-    // Although the modulus is not an element of the group, we reuse the type here
+    // Although the modulus is not an element of the group, we reuse the type
+    // here
     fn modulus(&self) -> &Self::E;
-    // Although the modulus is not an element of the ring, we reuse the type here
+    // Although the modulus is not an element of the ring, we reuse the type
+    // here
     fn exp_modulus(&self) -> &Self::X;
 
     fn gmod_pow(&self, other: &Self::X) -> Self::E;
@@ -62,7 +71,6 @@ pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
     fn xsub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X;
     fn modulo(&self, value: &Self::E) -> Self::E;
     fn exp_modulo(&self, value: &Self::X) -> Self::X;
-    
 
     fn rnd(&self) -> Self::E;
     fn rnd_exp(&self) -> Self::X;
@@ -70,20 +78,26 @@ pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
 
     fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str>;
     fn decode(&self, element: &Self::E) -> Self::P;
-    fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str>;
+    fn element_from_bytes(&self, bytes: &[u8])
+        -> Result<Self::E, &'static str>;
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str>;
     fn exp_from_u64(&self, value: u64) -> Self::X;
     fn hash_to_exp(&self, bytes: &[u8]) -> Self::X;
 
     fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8>;
-    fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X>;
+    fn decrypt_exp(
+        &self,
+        bytes: &[u8],
+        sk: PrivateKey<Self>,
+    ) -> Option<Self::X>;
 
     fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E>;
 }
 
 /// An element of the underlying group.
 ///
-/// Operations depend on the backend and are given below for multiplicative groups / elliptic curves.
+/// Operations depend on the backend and are given below for multiplicative
+/// groups / elliptic curves.
 pub trait Element<C: Ctx>:
     Clone + Eq + Send + Sync + BorshSerialize + BorshDeserialize + Debug
 {
@@ -102,7 +116,8 @@ pub trait Element<C: Ctx>:
     fn mul_identity() -> C::E;
 }
 
-/// A member of the "exponent ring" associated to the element group, or scalar ring for elliptic curves.
+/// A member of the "exponent ring" associated to the element group, or scalar
+/// ring for elliptic curves.
 pub trait Exponent<C: Ctx>:
     Clone + Eq + Send + Sync + BorshSerialize + BorshDeserialize + Debug
 {
@@ -128,8 +143,16 @@ pub trait Exponent<C: Ctx>:
     fn mul_identity() -> C::X;
 }
 
-/// The type of plaintext data. This type must be encoded into a group member before it can be encrypted.
+/// The type of plaintext data. This type must be encoded into a group member
+/// before it can be encrypted.
 pub trait Plaintext:
-    Send + Sync + Eq + Debug + BorshSerialize + BorshDeserialize + std::hash::Hash + Clone
+    Send
+    + Sync
+    + Eq
+    + Debug
+    + BorshSerialize
+    + BorshDeserialize
+    + std::hash::Hash
+    + Clone
 {
 }

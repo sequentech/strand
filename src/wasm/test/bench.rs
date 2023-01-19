@@ -90,7 +90,8 @@ pub fn bench_enc_pok(n: u32) {
     let mut csprng = StrandRng;
     let mut fill = [0u8; 30];
     csprng.fill_bytes(&mut fill);
-    let plaintext = ristretto::to_ristretto_plaintext_array(&fill.to_vec()).unwrap();
+    let plaintext =
+        ristretto::to_ristretto_plaintext_array(&fill.to_vec()).unwrap();
     postMessage("> Ristretto enc_pok");
     bench_enc_pok_generic(ctx, plaintext, n);
 
@@ -197,7 +198,12 @@ fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P, n: u32) {
         log(&format!("{}", performance.now() - now));
         log("prove..");
         let now = performance.now();
-        let _proof = zkp.schnorr_prove(&randomness, &c.gr, Some(ctx.generator()), &vec![]);
+        let _proof = zkp.schnorr_prove(
+            &randomness,
+            &c.gr,
+            Some(ctx.generator()),
+            &vec![],
+        );
         log(&format!("{}", performance.now() - now));
     }
     postMessage(&format!(

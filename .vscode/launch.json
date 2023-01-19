@@ -15,6 +15,7 @@
                     "test",
                     //"--no-run",
                     "--lib",
+                    //"--all-features",
                     "--package=strand"
                 ],
                 "filter": {

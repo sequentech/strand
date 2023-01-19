@@ -59,7 +59,8 @@ impl<C: Ctx> Zkp<C> {
         self.schnorr_prove_private(secret, gr, None, context)
     }
 
-    /// In the context of a ciphertext, verify proof of knowledge of the plaintext.
+    /// In the context of a ciphertext, verify proof of knowledge of the
+    /// plaintext.
     pub fn encryption_popk_verify(
         &self,
         mhr: &C::E,
@@ -113,7 +114,8 @@ impl<C: Ctx> Zkp<C> {
         g: Option<&C::E>,
         label: &[u8],
     ) -> Schnorr<C> {
-        let context = ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
+        let context =
+            ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
         self.schnorr_prove_private(secret, public, g, context)
     }
 
@@ -125,11 +127,13 @@ impl<C: Ctx> Zkp<C> {
         proof: &Schnorr<C>,
         label: &[u8],
     ) -> bool {
-        let context = ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
+        let context =
+            ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
         self.schnorr_verify_private(public, g, proof, context)
     }
 
-    /// Prove equality (and knowledge) of discrete logarithms with respect to two bases.
+    /// Prove equality (and knowledge) of discrete logarithms with respect to
+    /// two bases.
     pub fn cp_prove(
         &self,
         secret: &C::X,
@@ -139,7 +143,8 @@ impl<C: Ctx> Zkp<C> {
         g2: &C::E,
         label: &[u8],
     ) -> ChaumPedersen<C> {
-        let context = ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
+        let context =
+            ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
         self.cp_prove_private(secret, public1, public2, g1, g2, context)
     }
 
@@ -153,7 +158,8 @@ impl<C: Ctx> Zkp<C> {
         proof: &ChaumPedersen<C>,
         label: &[u8],
     ) -> bool {
-        let context = ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
+        let context =
+            ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
         self.cp_verify_private(public1, public2, g1, g2, proof, context)
     }
 
@@ -176,7 +182,8 @@ impl<C: Ctx> Zkp<C> {
             &commitment,
             context,
         );
-        let response = r.add(&challenge.mul(secret)).modulo(self.ctx.exp_modulus());
+        let response =
+            r.add(&challenge.mul(secret)).modulo(self.ctx.exp_modulus());
 
         Schnorr {
             commitment,
@@ -237,7 +244,8 @@ impl<C: Ctx> Zkp<C> {
             &commitment2,
             context,
         );
-        let response = r.add(&challenge.mul(secret)).modulo(self.ctx.exp_modulus());
+        let response =
+            r.add(&challenge.mul(secret)).modulo(self.ctx.exp_modulus());
 
         ChaumPedersen {
             commitment1,
@@ -294,8 +302,11 @@ impl<C: Ctx> Zkp<C> {
         commitment: &C::E,
         context: ChallengeInput,
     ) -> C::X {
-        let mut values =
-            ChallengeInput::from(&[("g", g), ("public", public), ("commitment", commitment)]);
+        let mut values = ChallengeInput::from(&[
+            ("g", g),
+            ("public", public),
+            ("commitment", commitment),
+        ]);
         values.add("context", &context);
 
         let bytes = values.get_bytes();
@@ -347,7 +358,9 @@ pub struct ChaumPedersen<C: Ctx> {
 #[derive(BorshSerialize, BorshDeserialize)]
 pub(crate) struct ChallengeInput(HashMap<String, Vec<u8>>);
 impl ChallengeInput {
-    pub(crate) fn from<T: BorshSerialize>(values: &[(&'static str, &T)]) -> ChallengeInput {
+    pub(crate) fn from<T: BorshSerialize>(
+        values: &[(&'static str, &T)],
+    ) -> ChallengeInput {
         let serialized = values
             .iter()
             .map(|value| (value.0.to_string(), value.1.try_to_vec().unwrap()));
@@ -357,7 +370,9 @@ impl ChallengeInput {
         ChallengeInput(map)
     }
 
-    pub(crate) fn from_bytes(values: Vec<(&'static str, Vec<u8>)>) -> ChallengeInput {
+    pub(crate) fn from_bytes(
+        values: Vec<(&'static str, Vec<u8>)>,
+    ) -> ChallengeInput {
         let serialized = values
             .into_iter()
             .map(|(string, value)| (string.to_string(), value));
@@ -367,7 +382,11 @@ impl ChallengeInput {
         ChallengeInput(map)
     }
 
-    pub(crate) fn add<T: BorshSerialize>(&mut self, name: &'static str, value: &T) {
+    pub(crate) fn add<T: BorshSerialize>(
+        &mut self,
+        name: &'static str,
+        value: &T,
+    ) {
         let bytes = value.try_to_vec().unwrap();
         self.0.insert(name.to_string(), bytes);
     }

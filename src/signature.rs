@@ -24,7 +24,11 @@ impl StrandSignaturePk {
     pub fn from(sk: &StrandSignatureSk) -> StrandSignaturePk {
         StrandSignaturePk(VerificationKey::from(&sk.0))
     }
-    pub fn verify(&self, signature: &StrandSignature, msg: &[u8]) -> Result<(), &'static str> {
+    pub fn verify(
+        &self,
+        signature: &StrandSignature,
+        msg: &[u8],
+    ) -> Result<(), &'static str> {
         self.0
             .verify(&signature.0, msg)
             .map_err(|_| "Failed to verify signature")
@@ -66,7 +70,10 @@ impl std::fmt::Debug for StrandSignatureSk {
 }
 
 impl BorshSerialize for StrandSignatureSk {
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let bytes: [u8; 32] = self.0.into();
         bytes.serialize(writer)
     }
@@ -75,14 +82,18 @@ impl BorshSerialize for StrandSignatureSk {
 impl BorshDeserialize for StrandSignatureSk {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
         let bytes = <[u8; 32]>::deserialize(buf)?;
-        let pk = SigningKey::try_from(bytes).map_err(|e| Error::new(ErrorKind::Other, e))?;
+        let pk = SigningKey::try_from(bytes)
+            .map_err(|e| Error::new(ErrorKind::Other, e))?;
 
         Ok(StrandSignatureSk(pk))
     }
 }
 
 impl BorshSerialize for StrandSignaturePk {
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let bytes: [u8; 32] = self.0.into();
         bytes.serialize(writer)
     }
@@ -91,14 +102,18 @@ impl BorshSerialize for StrandSignaturePk {
 impl BorshDeserialize for StrandSignaturePk {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
         let bytes = <[u8; 32]>::deserialize(buf)?;
-        let pk = VerificationKey::try_from(bytes).map_err(|e| Error::new(ErrorKind::Other, e))?;
+        let pk = VerificationKey::try_from(bytes)
+            .map_err(|e| Error::new(ErrorKind::Other, e))?;
 
         Ok(StrandSignaturePk(pk))
     }
 }
 
 impl BorshSerialize for StrandSignature {
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let bytes: [u8; 64] = self.0.into();
         bytes.serialize(writer)
     }
@@ -107,7 +122,8 @@ impl BorshSerialize for StrandSignature {
 impl BorshDeserialize for StrandSignature {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
         let bytes = <[u8; 64]>::deserialize(buf)?;
-        let signature = Signature::try_from(bytes).map_err(|e| Error::new(ErrorKind::Other, e))?;
+        let signature = Signature::try_from(bytes)
+            .map_err(|e| Error::new(ErrorKind::Other, e))?;
 
         Ok(StrandSignature(signature))
     }

@@ -89,7 +89,11 @@ impl<C: Ctx> PublicKey<C> {
         let randomness = self.ctx.rnd_exp();
         self.encrypt_with_randomness(plaintext, &randomness)
     }
-    pub fn encrypt_and_pok(&self, plaintext: &C::E, label: &[u8]) -> (Ciphertext<C>, Schnorr<C>) {
+    pub fn encrypt_and_pok(
+        &self,
+        plaintext: &C::E,
+        label: &[u8],
+    ) -> (Ciphertext<C>, Schnorr<C>) {
         let zkp = Zkp::new(&self.ctx);
         let randomness = self.ctx.rnd_exp();
         let c = self.encrypt_with_randomness(plaintext, &randomness);
@@ -100,7 +104,11 @@ impl<C: Ctx> PublicKey<C> {
     pub fn encrypt_exponential(&self, plaintext: &C::X) -> Ciphertext<C> {
         self.encrypt(&self.ctx.gmod_pow(plaintext))
     }
-    pub fn encrypt_with_randomness(&self, plaintext: &C::E, randomness: &C::X) -> Ciphertext<C> {
+    pub fn encrypt_with_randomness(
+        &self,
+        plaintext: &C::E,
+        randomness: &C::X,
+    ) -> Ciphertext<C> {
         let ctx = &self.ctx;
         Ciphertext {
             mhr: plaintext
@@ -125,7 +133,11 @@ impl<C: Ctx> PrivateKey<C> {
             .div(&c.gr.mod_pow(&self.value, modulus), modulus)
             .modulo(modulus)
     }
-    pub fn decrypt_and_prove(&self, c: &Ciphertext<C>, label: &[u8]) -> (C::E, ChaumPedersen<C>) {
+    pub fn decrypt_and_prove(
+        &self,
+        c: &Ciphertext<C>,
+        label: &[u8],
+    ) -> (C::E, ChaumPedersen<C>) {
         let ctx = &self.ctx;
         let zkp = Zkp::new(ctx);
         let modulus = ctx.modulus();

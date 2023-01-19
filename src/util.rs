@@ -44,7 +44,9 @@ pub fn to_hash_array(input: &[u8]) -> Result<[u8; 64], &'static str> {
 }
 
 /// Converts a slice into a fixed size array.
-pub fn to_u8_array<const N: usize>(input: &[u8]) -> Result<[u8; N], &'static str> {
+pub fn to_u8_array<const N: usize>(
+    input: &[u8],
+) -> Result<[u8; N], &'static str> {
     if input.len() == N {
         let mut bytes = [0u8; N];
         bytes.copy_from_slice(input);

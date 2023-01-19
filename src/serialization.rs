@@ -47,7 +47,10 @@ impl<T: BorshDeserialize> StrandDeserialize for T {
 pub struct StrandVectorP<C: Ctx>(pub Vec<C::P>);
 
 impl<C: Ctx> BorshSerialize for StrandVectorP<C> {
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let vector = &self.0;
 
         let vecs: Result<Vec<Vec<u8>>, std::io::Error> =
@@ -74,7 +77,10 @@ impl<C: Ctx> BorshDeserialize for StrandVectorP<C> {
 pub struct StrandVectorE<C: Ctx>(pub Vec<C::E>);
 
 impl<C: Ctx> BorshSerialize for StrandVectorE<C> {
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let vector = &self.0;
 
         let vecs: Result<Vec<Vec<u8>>, std::io::Error> =
@@ -101,7 +107,10 @@ impl<C: Ctx> BorshDeserialize for StrandVectorE<C> {
 pub struct StrandVectorX<C: Ctx>(pub Vec<C::X>);
 
 impl<C: Ctx> BorshSerialize for StrandVectorX<C> {
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let vector = &self.0;
 
         let vecs: Result<Vec<Vec<u8>>, std::io::Error> =
@@ -128,7 +137,10 @@ impl<C: Ctx> BorshDeserialize for StrandVectorX<C> {
 pub struct StrandVectorC<C: Ctx>(pub Vec<Ciphertext<C>>);
 
 impl<C: Ctx> BorshSerialize for StrandVectorC<C> {
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let vector = &self.0;
 
         let vecs: Result<Vec<Vec<u8>>, std::io::Error> =
@@ -169,7 +181,8 @@ pub(crate) mod tests {
     }
 
     pub(crate) fn test_borsh_elements<C: Ctx>(ctx: &C) {
-        let elements: Vec<C::E> = (0..10).into_iter().map(|_| ctx.rnd()).collect();
+        let elements: Vec<C::E> =
+            (0..10).into_iter().map(|_| ctx.rnd()).collect();
 
         let encoded_e = elements.strand_serialize();
         let decoded_e = Vec::<C::E>::strand_deserialize(&encoded_e).unwrap();
@@ -231,15 +244,18 @@ pub(crate) mod tests {
         let secret = ctx.rnd_exp();
         let public1 = g1.mod_pow(&secret, &ctx.modulus());
         let public2 = g2.mod_pow(&secret, &ctx.modulus());
-        let proof = zkp.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
-        let verified = zkp.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
+        let proof =
+            zkp.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
+        let verified =
+            zkp.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
         assert!(verified);
 
         let bytes = proof.strand_serialize();
         let back = ChaumPedersen::<C>::strand_deserialize(&bytes).unwrap();
         assert!(proof == back);
 
-        let verified = zkp.cp_verify(&public1, &public2, None, &g2, &back, &vec![]);
+        let verified =
+            zkp.cp_verify(&public1, &public2, None, &g2, &back, &vec![]);
         assert!(verified);
     }
 }
