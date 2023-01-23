@@ -9,8 +9,12 @@ use crate::zkp::{ChaumPedersen, Zkp};
 // A degree n polynomial is determined by n + 1 points.
 // A degree n polynomial has n + 1 coefficients.
 // Thus, the number of coefficients = threshold.
-/// Generates the coefficients of a polynomial with threshold number of coefficients.
-pub fn gen_coefficients<C: Ctx>(threshold: usize, ctx: &C) -> (Vec<C::X>, Vec<C::E>) {
+/// Generates the coefficients of a polynomial with threshold number of
+/// coefficients.
+pub fn gen_coefficients<C: Ctx>(
+    threshold: usize,
+    ctx: &C,
+) -> (Vec<C::X>, Vec<C::E>) {
     let mut coefficients = vec![];
     let mut commitments = vec![];
 
@@ -25,7 +29,12 @@ pub fn gen_coefficients<C: Ctx>(threshold: usize, ctx: &C) -> (Vec<C::X>, Vec<C:
 }
 
 /// Evaluates the polynomial at the given trustee position.
-pub fn eval_poly<C: Ctx>(trustee: usize, threshold: usize, coefficients: &[C::X], ctx: &C) -> C::X {
+pub fn eval_poly<C: Ctx>(
+    trustee: usize,
+    threshold: usize,
+    coefficients: &[C::X],
+    ctx: &C,
+) -> C::X {
     let mut sum = coefficients[0].clone();
     let mut power = C::X::mul_identity();
     let trustee_exp = ctx.exp_from_u64(trustee as u64);
@@ -48,7 +57,8 @@ pub fn compute_peer_share<C: Ctx>(
     eval_poly(target_trustee + 1, threshold, coefficients, ctx)
 }
 
-/// Computes the factor of the verification key for the receiving trustee using the sender commitments.
+/// Computes the factor of the verification key for the receiving trustee using
+/// the sender commitments.
 pub fn verification_key_factor<C: Ctx>(
     sender_commitments: &[C::E],
     threshold: usize,
@@ -58,7 +68,8 @@ pub fn verification_key_factor<C: Ctx>(
     let mut accum = C::E::mul_identity();
     // Trustees start at 1
     let t = receiver_trustee + 1;
-    for (i, commitment) in sender_commitments.iter().enumerate().take(threshold) {
+    for (i, commitment) in sender_commitments.iter().enumerate().take(threshold)
+    {
         let power = t.pow(i as u32);
         let power_element = ctx.exp_from_u64(power as u64);
 
@@ -70,7 +81,8 @@ pub fn verification_key_factor<C: Ctx>(
     accum
 }
 
-/// Computes the decryption factor and proof for the given ciphertext using the trustee's share of the secret.
+/// Computes the decryption factor and proof for the given ciphertext using the
+/// trustee's share of the secret.
 pub fn decryption_factor<C: Ctx>(
     c: &Ciphertext<C>,
     share: &C::X,
@@ -80,9 +92,10 @@ pub fn decryption_factor<C: Ctx>(
 ) -> (C::E, ChaumPedersen<C>) {
     let zkp = Zkp::new(&ctx);
     let factor = c.gr.mod_pow(share, ctx.modulus());
-    let proof = zkp.decryption_proof(share, v_key, &factor, &c.mhr, &c.gr, label);
-    // let ok = zkp.decryption_verify(&v_key, &factor, None, &c.mhr, &c.gr, &proof, label);
-    // assert!(ok);
+    let proof =
+        zkp.decryption_proof(share, v_key, &factor, &c.mhr, &c.gr, label);
+    // let ok = zkp.decryption_verify(&v_key, &factor, None, &c.mhr, &c.gr,
+    // &proof, label); assert!(ok);
     (factor, proof)
 }
 
@@ -135,11 +148,13 @@ pub(crate) mod tests {
             let external_shares = vec![C::X::mul_identity(); num_trustees];
             let v_key_factors = vec![];
 
-            let (coefficients, commitments) = threshold::gen_coefficients(threshold, ctx);
+            let (coefficients, commitments) =
+                threshold::gen_coefficients(threshold, ctx);
 
             for i in 0..num_trustees {
                 // i + 1: trustees start at 1
-                let share = threshold::eval_poly(i + 1, threshold, &coefficients, ctx);
+                let share =
+                    threshold::eval_poly(i + 1, threshold, &coefficients, ctx);
                 shares.push(share);
             }
 
@@ -186,14 +201,20 @@ pub(crate) mod tests {
             sum.modulo(self.ctx.exp_modulus())
         }
 
-        fn decryption_factor(&self, c: &Ciphertext<C>, label: &[u8]) -> (C::E, ChaumPedersen<C>) {
+        fn decryption_factor(
+            &self,
+            c: &Ciphertext<C>,
+            label: &[u8],
+        ) -> (C::E, ChaumPedersen<C>) {
             let zkp = Zkp::new(&self.ctx);
             let share = self.secret_share();
             let v_key = self.verification_key();
             let factor = c.gr.mod_pow(&share, self.ctx.modulus());
-            let proof = zkp.decryption_proof(&share, &v_key, &factor, &c.mhr, &c.gr, label);
-            // let ok = zkp.decryption_verify(&v_key, &factor, None, &c.mhr, &c.gr, &proof, label);
-            // assert!(ok);
+            let proof = zkp.decryption_proof(
+                &share, &v_key, &factor, &c.mhr, &c.gr, label,
+            );
+            // let ok = zkp.decryption_verify(&v_key, &factor, None, &c.mhr,
+            // &c.gr, &proof, label); assert!(ok);
             (factor, proof)
         }
 
@@ -228,7 +249,8 @@ pub(crate) mod tests {
             for j in 0..num_trustees as usize {
                 let share = trustees[i].shares[j].clone();
                 let commitments = trustees[i].commitments.clone();
-                let ok = trustees[j].add_external_share(i, share, &commitments, j);
+                let ok =
+                    trustees[j].add_external_share(i, share, &commitments, j);
                 assert!(ok);
             }
         }
@@ -241,10 +263,13 @@ pub(crate) mod tests {
         let mut divider = C::E::mul_identity();
         for i in 0..num_trustees {
             divider = divider
-                .mul(&c.gr.mod_pow(&trustees[i].coefficients[0], &ctx.modulus()))
+                .mul(
+                    &c.gr.mod_pow(&trustees[i].coefficients[0], &ctx.modulus()),
+                )
                 .modulo(&ctx.modulus());
         }
-        let decrypted = c.mhr.div(&divider, &ctx.modulus()).modulo(&ctx.modulus());
+        let decrypted =
+            c.mhr.div(&divider, &ctx.modulus()).modulo(&ctx.modulus());
         let decoded = ctx.decode(&decrypted);
 
         assert_eq!(data, decoded);
@@ -255,8 +280,16 @@ pub(crate) mod tests {
 
         for i in 0..present.len() {
             let v_key = trustees[present[i] - 1].verification_key();
-            let (base, proof) = trustees[present[i] - 1].decryption_factor(&c, &[]);
-            let ok = zkp.verify_decryption(&v_key, &base, &c.mhr, &c.gr, &proof, &vec![]);
+            let (base, proof) =
+                trustees[present[i] - 1].decryption_factor(&c, &[]);
+            let ok = zkp.verify_decryption(
+                &v_key,
+                &base,
+                &c.mhr,
+                &c.gr,
+                &proof,
+                &vec![],
+            );
             assert!(ok);
 
             let lagrange = threshold::lagrange(present[i], &present, ctx);
@@ -265,7 +298,8 @@ pub(crate) mod tests {
             divider = divider.mul(&next).modulo(&ctx.modulus())
         }
 
-        let decrypted = c.mhr.div(&divider, &ctx.modulus()).modulo(&ctx.modulus());
+        let decrypted =
+            c.mhr.div(&divider, &ctx.modulus()).modulo(&ctx.modulus());
         let decoded = ctx.decode(&decrypted);
 
         assert_eq!(data, decoded);
@@ -275,8 +309,16 @@ pub(crate) mod tests {
 
         for i in 0..present.len() {
             let v_key = trustees[present[i] - 1].verification_key();
-            let (base, proof) = trustees[present[i] - 1].decryption_factor(&c, &[]);
-            let ok = zkp.verify_decryption(&v_key, &base, &c.mhr, &c.gr, &proof, &vec![]);
+            let (base, proof) =
+                trustees[present[i] - 1].decryption_factor(&c, &[]);
+            let ok = zkp.verify_decryption(
+                &v_key,
+                &base,
+                &c.mhr,
+                &c.gr,
+                &proof,
+                &vec![],
+            );
             assert!(ok);
 
             let lagrange = threshold::lagrange(present[i], &present, ctx);
@@ -285,7 +327,8 @@ pub(crate) mod tests {
             divider = divider.mul(&next).modulo(&ctx.modulus())
         }
 
-        let decrypted = c.mhr.div(&divider, &ctx.modulus()).modulo(&ctx.modulus());
+        let decrypted =
+            c.mhr.div(&divider, &ctx.modulus()).modulo(&ctx.modulus());
         let decoded = ctx.decode(&decrypted);
 
         assert_ne!(data, decoded);

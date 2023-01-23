@@ -71,7 +71,11 @@ pub struct Shuffler<'a, C: Ctx> {
 }
 
 impl<'a, C: Ctx> Shuffler<'a, C> {
-    pub fn new(pk: &'a PublicKey<C>, generators: &'a Vec<C::E>, ctx: &C) -> Shuffler<'a, C> {
+    pub fn new(
+        pk: &'a PublicKey<C>,
+        generators: &'a Vec<C::E>,
+        ctx: &C,
+    ) -> Shuffler<'a, C> {
         Shuffler {
             pk,
             generators,
@@ -150,7 +154,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         };
 
         // let now = Instant::now();
-        let (proof, _, _) = self.gen_proof_ext(es, e_primes, r_primes, &perm_data, label);
+        let (proof, _, _) =
+            self.gen_proof_ext(es, e_primes, r_primes, &perm_data, label);
         // println!("gen_proof_ext {}", now.elapsed().as_millis());
 
         proof
@@ -200,7 +205,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         // COST
         // let now = Instant::now();
 
-        let (c_hats, r_hats) = self.gen_commitment_chain(h_initial, &u_primes, ctx);
+        let (c_hats, r_hats) =
+            self.gen_commitment_chain(h_initial, &u_primes, ctx);
 
         // println!("gen commitment chain {}", now.elapsed().as_millis());
 
@@ -271,7 +277,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         let t_hats = (0..c_hats.len())
             .par()
             .map(|i| {
-                let previous_c = if i == 0 { h_initial } else { &c_hats[i - 1] };
+                let previous_c =
+                    if i == 0 { h_initial } else { &c_hats[i - 1] };
 
                 (ctx.gmod_pow(&omega_hats[i]))
                     .mul(&previous_c.mod_pow(&omega_primes[i], gmod))
@@ -313,7 +320,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         // 0 cost
         for i in 0..N {
             let next_s_hat = omega_hats[i].add(&c.mul(&r_hats[i])).modulo(xmod);
-            let next_s_prime = omega_primes[i].add(&c.mul(u_primes[i])).modulo(xmod);
+            let next_s_prime =
+                omega_primes[i].add(&c.mul(u_primes[i])).modulo(xmod);
 
             s_hats.push(next_s_hat);
             s_primes.push(next_s_prime);
@@ -363,7 +371,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         let gmod = ctx.modulus();
         let xmod = ctx.exp_modulus();
 
-        let us: Vec<C::X> = self.shuffle_proof_us(es, e_primes, &proof.cs.0, N, label);
+        let us: Vec<C::X> =
+            self.shuffle_proof_us(es, e_primes, &proof.cs.0, N, label);
 
         let mut c_bar_num: C::E = C::E::mul_identity();
         let mut c_bar_den: C::E = C::E::mul_identity();
@@ -476,7 +485,11 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         !checks.contains(&false)
     }
 
-    pub(crate) fn gen_commitments(&self, perm: &[usize], ctx: &C) -> (Vec<C::E>, Vec<C::X>) {
+    pub(crate) fn gen_commitments(
+        &self,
+        perm: &[usize],
+        ctx: &C,
+    ) -> (Vec<C::E>, Vec<C::X>) {
         let generators = &self.generators[1..];
 
         assert!(generators.len() == perm.len());
@@ -593,7 +606,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         challenge_input.add_bytes("e_primes", y.e_primes.strand_serialize());
         challenge_input.add_bytes("cs", y.cs.strand_serialize());
         challenge_input.add_bytes("c_hats", y.c_hats.strand_serialize());
-        challenge_input.add_bytes("pk.element", y.pk.element.strand_serialize());
+        challenge_input
+            .add_bytes("pk.element", y.pk.element.strand_serialize());
         challenge_input.add_bytes("t_hats", t.t_hats.strand_serialize());
         challenge_input.add_bytes("label", label.to_vec());
 

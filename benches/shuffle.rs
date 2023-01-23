@@ -2,7 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode};
+use criterion::{
+    criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode,
+};
 use strand::backend::num_bigint::{BigintCtx, P2048};
 use strand::backend::ristretto::RistrettoCtx;
 use strand::context::Ctx;

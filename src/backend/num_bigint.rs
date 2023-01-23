@@ -70,7 +70,8 @@ impl<P: BigintCtxParams> BigintCtx<P> {
                 next.extend(index.to_le_bytes());
                 next.extend(count.to_le_bytes());
                 let elem: BigUint = self.hash_to_element(&next);
-                let g = elem.modpow(self.params.co_factor(), &self.params.modulus().0);
+                let g = elem
+                    .modpow(self.params.co_factor(), &self.params.modulus().0);
                 if g >= two {
                     ret.push(BigUintE::new(g));
                     break;
@@ -90,7 +91,10 @@ impl<P: BigintCtxParams> BigintCtx<P> {
         num.mod_floor(&self.params.modulus().0)
     }
 
-    pub fn element_from_biguint(&self, biguint: BigUint) -> Result<BigUintE<P>, &'static str> {
+    pub fn element_from_biguint(
+        &self,
+        biguint: BigUint,
+    ) -> Result<BigUintE<P>, &'static str> {
         let one: BigUint = One::one();
         if (biguint < one) || biguint >= self.params.modulus().0 {
             Err("Out of range")
@@ -106,7 +110,8 @@ impl<P: BigintCtxParams> BigintCtx<P> {
         string: &str,
         radix: u32,
     ) -> Result<BigUintE<P>, &'static str> {
-        let biguint = BigUint::from_str_radix(string, radix).map_err(|_| "Failed to parse")?;
+        let biguint = BigUint::from_str_radix(string, radix)
+            .map_err(|_| "Failed to parse")?;
 
         self.element_from_biguint(biguint)
     }
@@ -167,7 +172,9 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn rnd(&self) -> Self::E {
         let mut gen = StrandRng;
         let one: BigUint = One::one();
-        let unencoded = BigUintP(gen.gen_biguint_below(&(&self.params.exp_modulus().0 - one)));
+        let unencoded = BigUintP(
+            gen.gen_biguint_below(&(&self.params.exp_modulus().0 - one)),
+        );
 
         self.encode(&unencoded)
             .expect("0..(q-1) should always be encodable")
@@ -210,7 +217,10 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
             BigUintP(&element.0 - one)
         }
     }
-    fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
+    fn element_from_bytes(
+        &self,
+        bytes: &[u8],
+    ) -> Result<Self::E, &'static str> {
         let biguint = BigUint::from_bytes_le(bytes);
         self.element_from_biguint(biguint)
     }
@@ -235,10 +245,15 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         BigUintX::new(num.mod_floor(&self.params.exp_modulus().0))
     }
     fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
-        let encrypted = pk.encrypt(&self.encode(&BigUintP(exp.0.clone())).unwrap());
+        let encrypted =
+            pk.encrypt(&self.encode(&BigUintP(exp.0.clone())).unwrap());
         encrypted.strand_serialize()
     }
-    fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X> {
+    fn decrypt_exp(
+        &self,
+        bytes: &[u8],
+        sk: PrivateKey<Self>,
+    ) -> Option<Self::X> {
         let encrypted = Ciphertext::<Self>::strand_deserialize(bytes).ok()?;
         let decrypted = sk.decrypt(&encrypted);
         Some(BigUintX(self.decode(&decrypted).0, PhantomData))
@@ -357,10 +372,17 @@ impl BigintCtxParams for P2048 {
         &self.co_factor
     }
     fn new() -> P2048 {
-        let p = BigUintE::new(BigUint::from_str_radix(P_VERIFICATUM_STR_2048, 10).unwrap());
-        let q = BigUintX::new(BigUint::from_str_radix(Q_VERIFICATUM_STR_2048, 10).unwrap());
-        let g = BigUintE::new(BigUint::from_str_radix(G_VERIFICATUM_STR_2048, 10).unwrap());
-        let co_factor = BigUint::from_str_radix(SAFEPRIME_COFACTOR, 16).unwrap();
+        let p = BigUintE::new(
+            BigUint::from_str_radix(P_VERIFICATUM_STR_2048, 10).unwrap(),
+        );
+        let q = BigUintX::new(
+            BigUint::from_str_radix(Q_VERIFICATUM_STR_2048, 10).unwrap(),
+        );
+        let g = BigUintE::new(
+            BigUint::from_str_radix(G_VERIFICATUM_STR_2048, 10).unwrap(),
+        );
+        let co_factor =
+            BigUint::from_str_radix(SAFEPRIME_COFACTOR, 16).unwrap();
         /*
         FIXME revert to this once we stop using verificatum primes, seems slightly faster due to small generator
         let p = BigUint::from_str_radix(P_STR_2048, 16).unwrap();
@@ -399,7 +421,10 @@ impl<P: BigintCtxParams> BigUintX<P> {
 
 impl<P: BigintCtxParams> BorshSerialize for BigUintE<P> {
     #[inline]
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let bytes = self.0.to_bytes_le();
         bytes.serialize(writer)
     }
@@ -420,7 +445,10 @@ impl<P: BigintCtxParams> BorshDeserialize for BigUintE<P> {
 
 impl<P: BigintCtxParams> BorshSerialize for BigUintX<P> {
     #[inline]
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let bytes = self.0.to_bytes_le();
         bytes.serialize(writer)
     }
@@ -441,7 +469,10 @@ impl<P: BigintCtxParams> BorshDeserialize for BigUintX<P> {
 
 impl BorshSerialize for BigUintP {
     #[inline]
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let bytes = self.0.to_bytes_le();
         bytes.serialize(writer)
     }

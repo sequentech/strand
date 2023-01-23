@@ -79,7 +79,8 @@ impl<P: RugCtxParams> RugCtx<P> {
         hasher.update(bytes);
         let hashed = hasher.finalize();
 
-        let (_, rem) = Integer::from_digits(&hashed, Order::Lsf).div_rem(self.modulus().0.clone());
+        let (_, rem) = Integer::from_digits(&hashed, Order::Lsf)
+            .div_rem(self.modulus().0.clone());
 
         rem
     }
@@ -104,7 +105,11 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     }
     #[inline(always)]
     fn gmod_pow(&self, other: &Self::X) -> Self::E {
-        Element::<RugCtx<P>>::mod_pow(self.generator(), other, self.params.modulus())
+        Element::<RugCtx<P>>::mod_pow(
+            self.generator(),
+            other,
+            self.params.modulus(),
+        )
     }
     #[inline(always)]
     fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
@@ -138,7 +143,9 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         let mut gen = StrandRandgen(StrandRng);
         let mut state = RandState::new_custom(&mut gen);
 
-        IntegerX::new(self.params.exp_modulus().0.clone().random_below(&mut state))
+        IntegerX::new(
+            self.params.exp_modulus().0.clone().random_below(&mut state),
+        )
     }
     fn rnd_plaintext(&self) -> Self::P {
         IntegerP(self.rnd_exp().0)
@@ -166,13 +173,17 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     }
     fn decode(&self, element: &Self::E) -> Self::P {
         if element.0 > self.params.exp_modulus().0 {
-            let sub: Integer = self.params.modulus().0.clone() - element.0.clone();
+            let sub: Integer =
+                self.params.modulus().0.clone() - element.0.clone();
             IntegerP(sub - 1i32)
         } else {
             IntegerP(element.0.clone() - 1i32)
         }
     }
-    fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
+    fn element_from_bytes(
+        &self,
+        bytes: &[u8],
+    ) -> Result<Self::E, &'static str> {
         let ret = Integer::from_digits(bytes, Order::MsfLe);
         if (ret < 1) || ret >= self.params.modulus().0 {
             Err("Out of range")
@@ -198,17 +209,22 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         hasher.update(bytes);
         let hashed = hasher.finalize();
 
-        let (_, rem) =
-            Integer::from_digits(&hashed, Order::Lsf).div_rem(self.params.exp_modulus().0.clone());
+        let (_, rem) = Integer::from_digits(&hashed, Order::Lsf)
+            .div_rem(self.params.exp_modulus().0.clone());
 
         IntegerX::new(rem)
     }
 
     fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
-        let encrypted = pk.encrypt(&self.encode(&IntegerP(exp.0.clone())).unwrap());
+        let encrypted =
+            pk.encrypt(&self.encode(&IntegerP(exp.0.clone())).unwrap());
         encrypted.strand_serialize()
     }
-    fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X> {
+    fn decrypt_exp(
+        &self,
+        bytes: &[u8],
+        sk: PrivateKey<Self>,
+    ) -> Option<Self::X> {
         let encrypted = Ciphertext::<Self>::strand_deserialize(bytes).ok()?;
         let decrypted = sk.decrypt(&encrypted);
         Some(IntegerX(self.decode(&decrypted).0, PhantomData))
@@ -248,8 +264,9 @@ impl<P: RugCtxParams> Element<RugCtx<P>> for IntegerE<P> {
     fn mod_pow(&self, other: &IntegerX<P>, modulus: &Self) -> Self {
         let ret = self.0.clone().pow_mod(&other.0, &modulus.0);
         // From https://docs.rs/rug/latest/rug/struct.Integer.html#method.pow_mod
-        // "If the exponent is negative, then the number must have an inverse for an answer to exist.
-        // When the exponent is positive and the modulo is not zero, an answer always exists."
+        // "If the exponent is negative, then the number must have an inverse
+        // for an answer to exist. When the exponent is positive and the
+        // modulo is not zero, an answer always exists."
         IntegerE::new(ret.expect("an answer always exists for prime p"))
     }
     #[inline(always)]
@@ -357,10 +374,17 @@ impl RugCtxParams for P2048 {
         &self.co_factor
     }
     fn new() -> P2048 {
-        let p = IntegerE::new(Integer::from_str_radix(P_VERIFICATUM_STR_2048, 10).unwrap());
-        let q = IntegerX::new(Integer::from_str_radix(Q_VERIFICATUM_STR_2048, 10).unwrap());
-        let g = IntegerE::new(Integer::from_str_radix(G_VERIFICATUM_STR_2048, 10).unwrap());
-        let co_factor = Integer::from_str_radix(SAFEPRIME_COFACTOR, 16).unwrap();
+        let p = IntegerE::new(
+            Integer::from_str_radix(P_VERIFICATUM_STR_2048, 10).unwrap(),
+        );
+        let q = IntegerX::new(
+            Integer::from_str_radix(Q_VERIFICATUM_STR_2048, 10).unwrap(),
+        );
+        let g = IntegerE::new(
+            Integer::from_str_radix(G_VERIFICATUM_STR_2048, 10).unwrap(),
+        );
+        let co_factor =
+            Integer::from_str_radix(SAFEPRIME_COFACTOR, 16).unwrap();
         assert!(g.0.legendre(&p.0) == 1);
 
         P2048 {
@@ -392,7 +416,10 @@ impl<P: RugCtxParams> IntegerX<P> {
 
 impl<P: RugCtxParams> BorshSerialize for IntegerE<P> {
     #[inline]
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let bytes = self.0.to_digits::<u8>(Order::MsfLe);
         bytes.serialize(writer)
     }
@@ -413,7 +440,10 @@ impl<P: RugCtxParams> BorshDeserialize for IntegerE<P> {
 
 impl<P: RugCtxParams> BorshSerialize for IntegerX<P> {
     #[inline]
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let bytes = self.0.to_digits::<u8>(Order::MsfLe);
         bytes.serialize(writer)
     }
@@ -434,7 +464,10 @@ impl<P: RugCtxParams> BorshDeserialize for IntegerX<P> {
 
 impl BorshSerialize for IntegerP {
     #[inline]
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let bytes = self.0.to_digits::<u8>(Order::MsfLe);
         bytes.serialize(writer)
     }
@@ -631,7 +664,8 @@ mod tests {
             commitments_c: &cs,
             commitments_r: &c_rs,
         };
-        let (proof, us, c) = shuffler.gen_proof_ext(&es, &e_primes, &rs, &perm_data, &vec![]);
+        let (proof, us, c) =
+            shuffler.gen_proof_ext(&es, &e_primes, &rs, &perm_data, &vec![]);
         let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
 
         assert!(ok);
@@ -641,11 +675,13 @@ mod tests {
             pk.element.0.to_string_radix(16),
         ];
 
-        let hs_list: Vec<String> = hs.iter().map(|h| h.0.to_string_radix(16)).collect();
+        let hs_list: Vec<String> =
+            hs.iter().map(|h| h.0.to_string_radix(16)).collect();
         let h_list = vec![vec![hs_list[0].clone()], hs_list[1..].to_vec()];
 
         let cs = proof.cs;
-        let cs_list: Vec<String> = cs.0.iter().map(|c| c.0.to_string_radix(16)).collect();
+        let cs_list: Vec<String> =
+            cs.0.iter().map(|c| c.0.to_string_radix(16)).collect();
 
         let c_hats: Vec<String> = proof
             .c_hats
@@ -675,8 +711,10 @@ mod tests {
             vec![t4_1, t4_2],
         ];
 
-        let ciphers_in_a: Vec<String> = es.iter().map(|c| c.mhr.0.to_string_radix(16)).collect();
-        let ciphers_in_b: Vec<String> = es.iter().map(|c| c.gr.0.to_string_radix(16)).collect();
+        let ciphers_in_a: Vec<String> =
+            es.iter().map(|c| c.mhr.0.to_string_radix(16)).collect();
+        let ciphers_in_b: Vec<String> =
+            es.iter().map(|c| c.gr.0.to_string_radix(16)).collect();
 
         let ciphers_out_a: Vec<String> = e_primes
             .iter()
@@ -709,9 +747,11 @@ mod tests {
             .map(|c| c.0.to_string_radix(16))
             .collect();
 
-        let s_list = vec![vec![s3], s_hats, vec![s1], vec![s2], s_primes, vec![s4]];
+        let s_list =
+            vec![vec![s3], s_hats, vec![s1], vec![s2], s_primes, vec![s4]];
 
-        let us_list: Vec<String> = us.iter().map(|u| u.0.to_string_radix(16)).collect();
+        let us_list: Vec<String> =
+            us.iter().map(|u| u.0.to_string_radix(16)).collect();
         let challenge: Vec<String> = vec![c.0.to_string_radix(16)];
 
         let group = vec![

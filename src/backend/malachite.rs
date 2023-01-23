@@ -43,9 +43,15 @@ use crate::rnd::StrandRng;
 use crate::serialization::{StrandDeserialize, StrandSerialize};
 
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct NaturalE<P: MalachiteCtxParams>(pub Natural, PhantomData<MalachiteCtx<P>>);
+pub struct NaturalE<P: MalachiteCtxParams>(
+    pub Natural,
+    PhantomData<MalachiteCtx<P>>,
+);
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct NaturalX<P: MalachiteCtxParams>(pub Natural, PhantomData<MalachiteCtx<P>>);
+pub struct NaturalX<P: MalachiteCtxParams>(
+    pub Natural,
+    PhantomData<MalachiteCtx<P>>,
+);
 
 #[derive(PartialEq, Eq, Debug, Clone, Hash)]
 pub struct NaturalP(pub Natural);
@@ -75,7 +81,8 @@ impl<P: MalachiteCtxParams> MalachiteCtx<P> {
                 next.extend(index.to_le_bytes());
                 next.extend(count.to_le_bytes());
                 let elem: Natural = self.hash_to_element(&next);
-                let g = elem.mod_pow(self.params.co_factor(), &self.params.modulus().0);
+                let g = elem
+                    .mod_pow(self.params.co_factor(), &self.params.modulus().0);
                 if g >= two {
                     ret.push(NaturalE::new(g));
                     break;
@@ -95,11 +102,15 @@ impl<P: MalachiteCtxParams> MalachiteCtx<P> {
         num.rem(&self.params.modulus().0)
     }
 
-    pub fn element_from_natural(&self, natural: Natural) -> Result<NaturalE<P>, &'static str> {
+    pub fn element_from_natural(
+        &self,
+        natural: Natural,
+    ) -> Result<NaturalE<P>, &'static str> {
         let one: Natural = Natural::from(1u8);
         if (natural < one) || natural >= self.params.modulus().0 {
             Err("Out of range")
-        } else if natural.clone().legendre_symbol(&self.params.modulus().0) != 1 {
+        } else if natural.clone().legendre_symbol(&self.params.modulus().0) != 1
+        {
             Err("Not a quadratic residue")
         } else {
             Ok(NaturalE::new(natural))
@@ -111,7 +122,8 @@ impl<P: MalachiteCtxParams> MalachiteCtx<P> {
         string: &str,
         radix: u8,
     ) -> Result<NaturalE<P>, &'static str> {
-        let natural = Natural::from_string_base(radix, string).ok_or("Failed to parse")?;
+        let natural = Natural::from_string_base(radix, string)
+            .ok_or("Failed to parse")?;
 
         self.element_from_natural(natural)
     }
@@ -223,7 +235,8 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
             return Err("Failed to encode, out of range");
         }
         let notzero: Natural = plaintext.0.clone() + one;
-        let legendre = notzero.clone().legendre_symbol(&self.params.modulus().0);
+        let legendre =
+            notzero.clone().legendre_symbol(&self.params.modulus().0);
         if legendre == 0 {
             return Err("Failed to encode, legendre = 0");
         }
@@ -245,7 +258,10 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
             NaturalP(&element.0 - one)
         }
     }
-    fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
+    fn element_from_bytes(
+        &self,
+        bytes: &[u8],
+    ) -> Result<Self::E, &'static str> {
         let u16s = bytes.iter().map(|b| *b as u16);
         let num = Natural::from_digits_desc(&256, u16s).expect("impossible");
         self.element_from_natural(num)
@@ -273,10 +289,15 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
         NaturalX::new(num.rem(&self.exp_modulus().0))
     }
     fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
-        let encrypted = pk.encrypt(&self.encode(&NaturalP(exp.0.clone())).unwrap());
+        let encrypted =
+            pk.encrypt(&self.encode(&NaturalP(exp.0.clone())).unwrap());
         encrypted.strand_serialize()
     }
-    fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X> {
+    fn decrypt_exp(
+        &self,
+        bytes: &[u8],
+        sk: PrivateKey<Self>,
+    ) -> Option<Self::X> {
         let encrypted = Ciphertext::<Self>::strand_deserialize(bytes).ok()?;
         let decrypted = sk.decrypt(&encrypted);
         Some(NaturalX(self.decode(&decrypted).0, PhantomData))
@@ -396,10 +417,17 @@ impl MalachiteCtxParams for P2048 {
         &self.co_factor
     }
     fn new() -> P2048 {
-        let p = NaturalE::new(Natural::from_string_base(10, P_VERIFICATUM_STR_2048).unwrap());
-        let q = NaturalX::new(Natural::from_string_base(10, Q_VERIFICATUM_STR_2048).unwrap());
-        let g = NaturalE::new(Natural::from_string_base(10, G_VERIFICATUM_STR_2048).unwrap());
-        let co_factor = Natural::from_string_base(16, SAFEPRIME_COFACTOR).unwrap();
+        let p = NaturalE::new(
+            Natural::from_string_base(10, P_VERIFICATUM_STR_2048).unwrap(),
+        );
+        let q = NaturalX::new(
+            Natural::from_string_base(10, Q_VERIFICATUM_STR_2048).unwrap(),
+        );
+        let g = NaturalE::new(
+            Natural::from_string_base(10, G_VERIFICATUM_STR_2048).unwrap(),
+        );
+        let co_factor =
+            Natural::from_string_base(16, SAFEPRIME_COFACTOR).unwrap();
         /*
         FIXME revert to this once we stop using verificatum primes, seems slightly faster due to small generator
         let p = BigUint::from_str_radix(P_STR_2048, 16).unwrap();
@@ -438,7 +466,10 @@ impl<P: MalachiteCtxParams> NaturalX<P> {
 
 impl<P: MalachiteCtxParams> BorshSerialize for NaturalE<P> {
     #[inline]
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let bytes = self.0.to_digits_desc(&256u16);
         let u8s: Vec<u8> = bytes.into_iter().map(|b| b as u8).collect();
         u8s.serialize(writer)
@@ -460,7 +491,10 @@ impl<P: MalachiteCtxParams> BorshDeserialize for NaturalE<P> {
 
 impl<P: MalachiteCtxParams> BorshSerialize for NaturalX<P> {
     #[inline]
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let bytes = self.0.to_digits_desc(&256u16);
         let u8s: Vec<u8> = bytes.into_iter().map(|b| b as u8).collect();
         u8s.serialize(writer)
@@ -482,7 +516,10 @@ impl<P: MalachiteCtxParams> BorshDeserialize for NaturalX<P> {
 
 impl BorshSerialize for NaturalP {
     #[inline]
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let bytes = self.0.to_digits_desc(&256u16);
         bytes.serialize(writer)
     }
@@ -493,7 +530,8 @@ impl BorshDeserialize for NaturalP {
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
         let bytes = <Vec<u16>>::deserialize(bytes).unwrap();
 
-        let num = Natural::from_digits_desc(&256u16, bytes.into_iter()).expect("impossible");
+        let num = Natural::from_digits_desc(&256u16, bytes.into_iter())
+            .expect("impossible");
         Ok(NaturalP(num))
     }
 }

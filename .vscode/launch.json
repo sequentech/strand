@@ -8,11 +8,14 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug unit tests in library 'strand'",
+            "sourceLanguages": ["rust"],
+            "initCommands":["settings set target.disable-aslr false"],
             "cargo": {
                 "args": [
                     "test",
-                    "--no-run",
+                    //"--no-run",
                     "--lib",
+                    //"--all-features",
                     "--package=strand"
                 ],
                 "filter": {
@@ -21,7 +24,10 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "TRACING_LEVEL": "debug",
+            },
         },
         {
             "type": "lldb",

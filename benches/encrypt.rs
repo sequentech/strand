@@ -2,7 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode};
+use criterion::{
+    criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode,
+};
 use rand::rngs::OsRng;
 use rand::RngCore;
 use strand::backend::num_bigint::{BigintCtx, P2048};
@@ -19,19 +21,33 @@ fn encrypt<C: Ctx>(ctx: &C, pk: &PublicKey<C>, data: C::P, n: usize) {
         let randomness = ctx.rnd_exp();
         let c = pk.encrypt_with_randomness(&plaintext, &randomness);
 
-        let _proof = zkp.schnorr_prove(&randomness, &c.gr(), Some(ctx.generator()), &vec![]);
+        let _proof = zkp.schnorr_prove(
+            &randomness,
+            &c.gr(),
+            Some(ctx.generator()),
+            &vec![],
+        );
     }
 }
 
-fn encrypt_ristretto(ctx: &RistrettoCtx, pk: &PublicKey<RistrettoCtx>, n: usize) {
+fn encrypt_ristretto(
+    ctx: &RistrettoCtx,
+    pk: &PublicKey<RistrettoCtx>,
+    n: usize,
+) {
     let mut csprng = OsRng;
     let mut fill = [0u8; 30];
     csprng.fill_bytes(&mut fill);
-    let plaintext = ristretto::to_ristretto_plaintext_array(&fill.to_vec()).unwrap();
+    let plaintext =
+        ristretto::to_ristretto_plaintext_array(&fill.to_vec()).unwrap();
     encrypt(ctx, pk, plaintext, n);
 }
 
-fn encrypt_bigint(ctx: &BigintCtx<P2048>, pk: &PublicKey<BigintCtx<P2048>>, n: usize) {
+fn encrypt_bigint(
+    ctx: &BigintCtx<P2048>,
+    pk: &PublicKey<BigintCtx<P2048>>,
+    n: usize,
+) {
     let plaintext = ctx.rnd_plaintext();
     encrypt(ctx, pk, plaintext, n);
 }

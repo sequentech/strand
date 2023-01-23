@@ -55,7 +55,11 @@ pub struct ScalarS(pub Scalar);
 
 impl RistrettoCtx {
     // https://docs.rs/bulletproofs/4.0.0/src/bulletproofs/generators.rs.html
-    fn generators_shake(&self, size: usize, seed: &[u8]) -> Vec<RistrettoPointS> {
+    fn generators_shake(
+        &self,
+        size: usize,
+        seed: &[u8],
+    ) -> Vec<RistrettoPointS> {
         let seed_ = seed.to_vec();
 
         let mut ret: Vec<RistrettoPointS> = Vec::with_capacity(size);
@@ -168,7 +172,10 @@ impl Ctx for RistrettoCtx {
         let slice = &compressed.as_bytes()[1..31];
         to_ristretto_plaintext_array(slice).unwrap()
     }
-    fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, &'static str> {
+    fn element_from_bytes(
+        &self,
+        bytes: &[u8],
+    ) -> Result<Self::E, &'static str> {
         let b32 = to_ristretto_point_array(bytes)?;
         CompressedRistretto(b32)
             .decompress()
@@ -215,7 +222,11 @@ impl Ctx for RistrettoCtx {
 
         vec![first_c, second_c].strand_serialize()
     }
-    fn decrypt_exp(&self, bytes: &[u8], sk: PrivateKey<Self>) -> Option<Self::X> {
+    fn decrypt_exp(
+        &self,
+        bytes: &[u8],
+        sk: PrivateKey<Self>,
+    ) -> Option<Self::X> {
         let vector = Vec::<Ciphertext<Self>>::strand_deserialize(bytes).ok()?;
         if vector.len() == 2 {
             let first = self.decode(&sk.decrypt(&vector[0]));
@@ -309,7 +320,10 @@ impl Plaintext for [u8; 30] {}
 
 impl BorshSerialize for RistrettoPointS {
     #[inline]
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let bytes = self.0.compress().to_bytes();
         bytes.serialize(writer)
     }
@@ -330,7 +344,10 @@ impl BorshDeserialize for RistrettoPointS {
 
 impl BorshSerialize for ScalarS {
     #[inline]
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
         let bytes = self.0.to_bytes();
         bytes.serialize(writer)
     }
@@ -359,10 +376,14 @@ impl std::fmt::Debug for RistrettoPointS {
     }
 }
 
-pub(crate) fn to_ristretto_point_array(input: &[u8]) -> Result<[u8; 32], &'static str> {
+pub(crate) fn to_ristretto_point_array(
+    input: &[u8],
+) -> Result<[u8; 32], &'static str> {
     util::to_u8_array(input)
 }
-pub fn to_ristretto_plaintext_array(input: &[u8]) -> Result<[u8; 30], &'static str> {
+pub fn to_ristretto_plaintext_array(
+    input: &[u8],
+) -> Result<[u8; 30], &'static str> {
     util::to_u8_array(input)
 }
 

@@ -46,7 +46,12 @@ impl<C: Ctx> Keymaker<C> {
         (pk, proof)
     }
 
-    pub fn verify_share(ctx: &C, pk: &PublicKey<C>, proof: &Schnorr<C>, label: &[u8]) -> bool {
+    pub fn verify_share(
+        ctx: &C,
+        pk: &PublicKey<C>,
+        proof: &Schnorr<C>,
+        label: &[u8],
+    ) -> bool {
         let zkp = Zkp::new(ctx);
         zkp.schnorr_verify(&pk.element, None, proof, label)
     }
@@ -61,7 +66,11 @@ impl<C: Ctx> Keymaker<C> {
         PublicKey::from_element(&acc, ctx)
     }
 
-    pub fn decryption_factor(&self, c: &Ciphertext<C>, label: &[u8]) -> (C::E, ChaumPedersen<C>) {
+    pub fn decryption_factor(
+        &self,
+        c: &Ciphertext<C>,
+        label: &[u8],
+    ) -> (C::E, ChaumPedersen<C>) {
         let dec_factor = self.sk.decryption_factor(c);
         let zkp = Zkp::new(&self.ctx);
         let proof = zkp.decryption_proof(
@@ -96,7 +105,11 @@ impl<C: Ctx> Keymaker<C> {
         c.mhr.div(&acc, ctx.modulus()).modulo(ctx.modulus())
     }
 
-    pub fn joint_dec_many(ctx: &C, decs: &[Vec<C::E>], cs: &[Ciphertext<C>]) -> Vec<C::E> {
+    pub fn joint_dec_many(
+        ctx: &C,
+        decs: &[Vec<C::E>],
+        cs: &[Ciphertext<C>],
+    ) -> Vec<C::E> {
         let modulus = ctx.modulus();
         let decrypted: Vec<C::E> = cs
             .par()

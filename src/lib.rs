@@ -8,7 +8,8 @@
 
 extern crate cfg_if;
 
-/// Provides cryptographic backends, currently multiplicative groups and ristretto elliptic curve.
+/// Provides cryptographic backends, currently multiplicative groups and
+/// ristretto elliptic curve.
 pub mod backend;
 /// Defines a generic interface to concrete backends.
 pub mod context;
