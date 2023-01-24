@@ -14,7 +14,7 @@ use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::{Ciphertext, PublicKey};
 use crate::rnd::StrandRng;
 use crate::serialization::StrandSerialize;
-use crate::serialization::{StrandVectorE, StrandVectorX};
+use crate::serialization::{StrandVectorE, StrandVectorX, StrandVectorC};
 use crate::util::Par;
 use crate::zkp::ChallengeInput;
 
@@ -548,8 +548,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         label: &[u8],
     ) -> Vec<C::X> {
         let mut prefix_challenge_input =
-            ChallengeInput::from(&[("es", &es), ("e_primes", &e_primes)]);
-        prefix_challenge_input.add("cs", &cs);
+            ChallengeInput::from(&[("es", &StrandVectorC(es.to_vec())), ("e_primes", &StrandVectorC(e_primes.to_vec()))]);
+        prefix_challenge_input.add("cs", &StrandVectorE::<C>(cs.to_vec()));
         prefix_challenge_input.add("label", &label.to_vec());
 
         let prefix_bytes = prefix_challenge_input.strand_serialize();
@@ -587,12 +587,12 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             ("t4_1", &t.t4_1),
             ("t4_2", &t.t4_2),
         ]);
-        challenge_input.add_bytes("es", y.es.strand_serialize());
-        challenge_input.add_bytes("e_primes", y.e_primes.strand_serialize());
-        challenge_input.add_bytes("cs", y.cs.strand_serialize());
-        challenge_input.add_bytes("c_hats", y.c_hats.strand_serialize());
-        challenge_input
-            .add_bytes("pk.element", y.pk.element.strand_serialize());
+
+        challenge_input.add_bytes("es", StrandVectorC(y.es.to_vec()).strand_serialize());
+        challenge_input.add_bytes("e_primes", StrandVectorC(y.e_primes.to_vec()).strand_serialize());
+        challenge_input.add_bytes("cs", StrandVectorE::<C>(y.cs.to_vec()).strand_serialize());
+        challenge_input.add_bytes("c_hats", StrandVectorE::<C>(y.c_hats.to_vec()).strand_serialize());
+        challenge_input.add_bytes("pk.element", y.pk.element.strand_serialize());
         challenge_input.add_bytes("t_hats", t.t_hats.strand_serialize());
         challenge_input.add_bytes("label", label.to_vec());
 

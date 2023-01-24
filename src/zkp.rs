@@ -32,6 +32,7 @@ use std::collections::HashMap;
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
+use crate::util::Par;
 
 use crate::context::{Ctx, Element, Exponent};
 
@@ -359,6 +360,7 @@ pub struct ChaumPedersen<C: Ctx> {
 pub(crate) struct ChallengeInput(HashMap<String, Vec<u8>>);
 impl ChallengeInput {
     pub(crate) fn from<T: BorshSerialize>(values: &[(&'static str, &T)]) -> ChallengeInput {
+        
         let serialized = values
             .iter()
             .map(|value| (value.0.to_string(), value.1.try_to_vec().unwrap()));
