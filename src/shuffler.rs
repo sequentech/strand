@@ -100,16 +100,11 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
     ) -> (Vec<Ciphertext<C>>, Vec<C::X>) {
         assert!(perm.len() == ciphertexts.len());
 
-        let rs_temp: Vec<Option<C::X>> = vec![None; ciphertexts.len()];
-        let rs_mutex = Mutex::new(rs_temp);
         let ctx = &self.ctx;
-        let length = perm.len();
 
-        let e_primes = perm
+        let (e_primes, rs): (Vec<Ciphertext<C>>, Vec<C::X>) = ciphertexts
             .par()
-            .map(|p| {
-                let c = &ciphertexts[*p];
-
+            .map(|c| {
                 let r = ctx.rnd_exp();
 
                 let a = c
@@ -119,20 +114,16 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
                 let b = c.gr.mul(&ctx.gmod_pow(&r)).modulo(ctx.modulus());
 
                 let c_ = Ciphertext { mhr: a, gr: b };
-                rs_mutex.lock().unwrap()[*p] = Some(r);
-                c_
+                (c_, r) 
             })
-            .collect();
+            .unzip();
 
-        let mut rs = Vec::with_capacity(ciphertexts.len());
-
-        let mut rs_ = rs_mutex.lock().unwrap();
-        for _ in 0..length {
-            let r = rs_.remove(0);
-            rs.push(r.unwrap());
+        let mut e_primes_permuted: Vec<Ciphertext<C>> = vec![];
+        for p in perm {
+            e_primes_permuted.push(e_primes[*p].clone());
         }
 
-        (e_primes, rs)
+        (e_primes_permuted, rs)
     }
 
     pub fn gen_proof(
@@ -494,30 +485,24 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         assert!(generators.len() == perm.len());
 
-        let rs: Vec<Option<C::X>> = vec![None; perm.len()];
-        let cs: Vec<Option<C::E>> = vec![None; perm.len()];
-        let rs_mutex = Mutex::new(rs);
-        let cs_mutex = Mutex::new(cs);
-
-        perm.par().enumerate().for_each(|(i, p)| {
+        let (cs, rs): (Vec<C::E>, Vec<C::X>) = generators.par().map(|h| {
             let r = ctx.rnd_exp();
-            let c = generators[i].mul(&ctx.gmod_pow(&r)).modulo(ctx.modulus());
+            let c = h.mul(&ctx.gmod_pow(&r)).modulo(ctx.modulus());
 
-            rs_mutex.lock().unwrap()[*p] = Some(r);
-            cs_mutex.lock().unwrap()[*p] = Some(c);
-        });
+            (c, r)
+        })
+        .unzip();
 
-        let mut ret1: Vec<C::E> = Vec::with_capacity(perm.len());
-        let mut ret2: Vec<C::X> = Vec::with_capacity(perm.len());
-        for _ in 0..perm.len() {
-            let c = cs_mutex.lock().unwrap().remove(0);
-            let r = rs_mutex.lock().unwrap().remove(0);
+        let mut cs_permuted = vec![C::E::mul_identity(); perm.len()];
+        let mut rs_permuted = vec![C::X::mul_identity(); perm.len()];
 
-            ret1.push(c.unwrap());
-            ret2.push(r.unwrap());
+        for i in 0..perm.len() {
+            cs_permuted[perm[i]] = cs[i].clone();
+            rs_permuted[perm[i]] = rs[i].clone();
         }
 
-        (ret1, ret2)
+        (cs_permuted, rs_permuted)
+
     }
 
     fn gen_commitment_chain(
