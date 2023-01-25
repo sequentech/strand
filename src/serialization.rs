@@ -6,6 +6,7 @@ use crate::elgamal::Ciphertext;
 use borsh::{BorshDeserialize, BorshSerialize};
 
 use crate::context::Ctx;
+use crate::zkp::ChaumPedersen;
 
 use crate::util::Par;
 #[cfg(feature = "rayon")]
@@ -160,6 +161,35 @@ impl<C: Ctx> BorshDeserialize for StrandVectorC<C> {
             .collect();
 
         Ok(StrandVectorC(results?))
+    }
+}
+
+#[derive(Debug)]
+pub struct StrandVectorCP<C: Ctx>(pub Vec<ChaumPedersen<C>>);
+
+impl<C: Ctx> BorshSerialize for StrandVectorCP<C> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
+        let vector = &self.0;
+
+        let vecs: Result<Vec<Vec<u8>>, std::io::Error> =
+            vector.par().map(|t| t.try_to_vec()).collect();
+        let inside = vecs?;
+
+        inside.serialize(writer)
+    }
+}
+
+impl<C: Ctx> BorshDeserialize for StrandVectorCP<C> {
+    fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
+        let vectors = <Vec<Vec<u8>>>::deserialize(buf)?;
+
+        let results: std::io::Result<Vec<ChaumPedersen<C>>> =
+            vectors.par().map(|v| ChaumPedersen::<C>::try_from_slice(&v)).collect();
+
+        Ok(StrandVectorCP(results?))
     }
 }
 
