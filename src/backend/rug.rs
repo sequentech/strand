@@ -428,7 +428,7 @@ impl<P: RugCtxParams> BorshSerialize for IntegerE<P> {
 impl<P: RugCtxParams> BorshDeserialize for IntegerE<P> {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+        let bytes = <Vec<u8>>::deserialize(bytes)?;
         let ctx = RugCtx::<P>::default();
 
         let value = ctx
@@ -452,7 +452,7 @@ impl<P: RugCtxParams> BorshSerialize for IntegerX<P> {
 impl<P: RugCtxParams> BorshDeserialize for IntegerX<P> {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+        let bytes = <Vec<u8>>::deserialize(bytes)?;
         let ctx = RugCtx::<P>::default();
 
         let value = ctx
@@ -476,7 +476,7 @@ impl BorshSerialize for IntegerP {
 impl BorshDeserialize for IntegerP {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+        let bytes = <Vec<u8>>::deserialize(bytes)?;
 
         let i = Integer::from_digits(&bytes, Order::MsfLe);
         Ok(IntegerP(i))

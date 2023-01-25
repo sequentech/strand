@@ -332,7 +332,7 @@ impl BorshSerialize for RistrettoPointS {
 impl BorshDeserialize for RistrettoPointS {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let bytes = <[u8; 32]>::deserialize(bytes).unwrap();
+        let bytes = <[u8; 32]>::deserialize(bytes)?;
         let ctx = RistrettoCtx::default();
 
         let value = ctx
@@ -356,7 +356,7 @@ impl BorshSerialize for ScalarS {
 impl BorshDeserialize for ScalarS {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let bytes = <[u8; 32]>::deserialize(bytes).unwrap();
+        let bytes = <[u8; 32]>::deserialize(bytes)?;
         let ctx = RistrettoCtx::default();
 
         let value = ctx

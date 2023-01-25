@@ -479,7 +479,7 @@ impl<P: MalachiteCtxParams> BorshSerialize for NaturalE<P> {
 impl<P: MalachiteCtxParams> BorshDeserialize for NaturalE<P> {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+        let bytes = <Vec<u8>>::deserialize(bytes)?;
         let ctx: MalachiteCtx<P> = Default::default();
 
         let value = ctx
@@ -504,7 +504,7 @@ impl<P: MalachiteCtxParams> BorshSerialize for NaturalX<P> {
 impl<P: MalachiteCtxParams> BorshDeserialize for NaturalX<P> {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+        let bytes = <Vec<u8>>::deserialize(bytes)?;
         let ctx = MalachiteCtx::<P>::default();
 
         let value = ctx
@@ -528,7 +528,7 @@ impl BorshSerialize for NaturalP {
 impl BorshDeserialize for NaturalP {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let bytes = <Vec<u16>>::deserialize(bytes).unwrap();
+        let bytes = <Vec<u16>>::deserialize(bytes)?;
 
         let num = Natural::from_digits_desc(&256u16, bytes.into_iter())
             .expect("impossible");

@@ -433,7 +433,7 @@ impl<P: BigintCtxParams> BorshSerialize for BigUintE<P> {
 impl<P: BigintCtxParams> BorshDeserialize for BigUintE<P> {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+        let bytes = <Vec<u8>>::deserialize(bytes)?;
         let ctx: BigintCtx<P> = Default::default();
 
         let value = ctx
@@ -457,7 +457,7 @@ impl<P: BigintCtxParams> BorshSerialize for BigUintX<P> {
 impl<P: BigintCtxParams> BorshDeserialize for BigUintX<P> {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+        let bytes = <Vec<u8>>::deserialize(bytes)?;
         let ctx = BigintCtx::<P>::default();
 
         let value = ctx
@@ -481,7 +481,7 @@ impl BorshSerialize for BigUintP {
 impl BorshDeserialize for BigUintP {
     #[inline]
     fn deserialize(bytes: &mut &[u8]) -> std::io::Result<Self> {
-        let bytes = <Vec<u8>>::deserialize(bytes).unwrap();
+        let bytes = <Vec<u8>>::deserialize(bytes)?;
 
         let biguint = BigUint::from_bytes_le(&bytes);
         Ok(BigUintP(biguint))
