@@ -164,6 +164,7 @@ impl<C: Ctx> BorshDeserialize for StrandVectorC<C> {
     }
 }
 
+/// Parallelized serialization for ChaumPedersen proof vectors.
 #[derive(Debug)]
 pub struct StrandVectorCP<C: Ctx>(pub Vec<ChaumPedersen<C>>);
 

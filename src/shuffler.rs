@@ -8,7 +8,6 @@ use rand::seq::SliceRandom;
 use rayon::prelude::*;
 // use sha3::{Digest, Sha3_512 as Sha512};
 use sha2::Digest;
-use std::sync::Mutex;
 
 use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::{Ciphertext, PublicKey};
