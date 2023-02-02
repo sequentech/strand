@@ -156,7 +156,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         value.modulo(self.params.exp_modulus())
     }
     #[inline(always)]
-    fn xsub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X {
+    fn exp_sub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X {
         if value.0 > other.0 {
             value.sub(other).modulo(self.params.exp_modulus())
         } else {
@@ -310,7 +310,7 @@ impl<P: BigintCtxParams + Eq> Exponent<BigintCtx<P>> for BigUintX<P> {
     }
     #[inline(always)]
     fn sub_mod(&self, other: &Self, ctx: &BigintCtx<P>) -> Self {
-        ctx.xsub_mod(self, other)
+        ctx.exp_sub_mod(self, other)
     }
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
@@ -623,7 +623,7 @@ mod tests {
     fn test_encode_err() {
         let ctx = BigintCtx::<P2048>::default();
         let one: BigUint = One::one();
-        let result = ctx.encode(&BigUintP(&ctx.exp_modulus().0 - one));
+        let result = ctx.encode(&BigUintP(&ctx.params.exp_modulus().0 - one));
         assert!(result.is_err())
     }
 }

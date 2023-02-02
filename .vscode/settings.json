@@ -1,6 +1,6 @@
 {
     "nixEnvSelector.nixFile": "/workspace/shell.nix",
-    "rust-analyzer.cargo.features": "all",
+    // "rust-analyzer.cargo.features": "all",
     "lldb.showDisassembly": "never",
     "lldb.launch.sourceLanguages": ["rust"],
     "editor.inlayHints.enabled": "offUnlessPressed",

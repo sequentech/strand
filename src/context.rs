@@ -68,7 +68,7 @@ pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
 
     fn gmod_pow(&self, other: &Self::X) -> Self::E;
     fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E;
-    fn xsub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X;
+    fn exp_sub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X;
     fn modulo(&self, value: &Self::E) -> Self::E;
     fn exp_modulo(&self, value: &Self::X) -> Self::X;
 

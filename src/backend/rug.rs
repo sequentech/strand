@@ -124,7 +124,7 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
         value.modulo(self.params.exp_modulus())
     }
     #[inline(always)]
-    fn xsub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X {
+    fn exp_sub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X {
         value.sub(other).modulo(self.params.exp_modulus())
     }
 
@@ -296,7 +296,7 @@ impl<P: RugCtxParams> Exponent<RugCtx<P>> for IntegerX<P> {
     }
     #[inline(always)]
     fn sub_mod(&self, other: &Self, ctx: &RugCtx<P>) -> Self {
-        ctx.xsub_mod(self, other)
+        ctx.exp_sub_mod(self, other)
     }
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
@@ -611,7 +611,7 @@ mod tests {
     #[test]
     fn test_encode_err() {
         let ctx = RugCtx::<P2048>::default();
-        let result = ctx.encode(&IntegerP(ctx.exp_modulus().0.clone() - 1i32));
+        let result = ctx.encode(&IntegerP(ctx.params.exp_modulus().0.clone() - 1i32));
         assert!(result.is_err())
     }
 

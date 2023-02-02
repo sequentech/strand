@@ -180,7 +180,7 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
         value.modulo(self.params.exp_modulus())
     }
     #[inline(always)]
-    fn xsub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X {
+    fn exp_sub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X {
         if value.0 > other.0 {
             value.sub(other).modulo(self.params.exp_modulus())
         } else {
@@ -354,7 +354,7 @@ impl<P: MalachiteCtxParams + Eq> Exponent<MalachiteCtx<P>> for NaturalX<P> {
     }
     #[inline(always)]
     fn sub_mod(&self, other: &Self, ctx: &MalachiteCtx<P>) -> Self {
-        ctx.xsub_mod(self, other)
+        ctx.exp_sub_mod(self, other)
     }
     #[inline(always)]
     fn mul(&self, other: &Self) -> Self {
@@ -671,7 +671,7 @@ mod tests {
     fn test_encode_err() {
         let ctx = MalachiteCtx::<P2048>::default();
         let one: Natural = Natural::from(1u8);
-        let result = ctx.encode(&NaturalP(&ctx.exp_modulus().0 - one));
+        let result = ctx.encode(&NaturalP(&ctx.params.exp_modulus().0 - one));
         assert!(result.is_err())
     }
 }
