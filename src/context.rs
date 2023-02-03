@@ -111,6 +111,12 @@ pub trait Element<C: Ctx>:
     fn mod_pow(&self, exp: &C::X, modulus: &C::E) -> C::E;
     /// Modulo operation / not necessary, applied automatically.
     fn modulo(&self, modulus: &C::E) -> C::E;
+    /// Modulo operation using group order / not necessary, applied automatically.
+    fn modp(&self, ctx: &C) -> C::E;
+    /// Division (a div b = a * b^1) using group order / point subtraction.
+    fn divp(&self, other: &C::E, ctx: &C) -> C::E;
+    /// Modular inverse using group order / point negation.
+    fn invp(&self, ctx: &C) -> C::E;
 
     /// Multiplicative identity / point at infinity.
     fn mul_identity() -> C::E;
@@ -133,6 +139,12 @@ pub trait Exponent<C: Ctx>:
     fn inv(&self, modulus: &C::X) -> C::X;
     /// Modulo operation (NOOP for elliptic curves)
     fn modulo(&self, modulus: &C::X) -> C::X;
+    /// Modulo operation using subgroup order q (NOOP for elliptic curves)
+    fn modq(&self, ctx: &C) -> C::X;
+    // Division using group suborder (a div b = a * b^-1).
+    fn divq(&self, other: &C::X, ctx: &C) -> C::X;
+    /// Modular inverse using subgroup order
+    fn invq(&self, ctx: &C) -> C::X;
 
     // Modular subtraction.
     fn sub_mod(&self, other: &C::X, ctx: &C) -> C::X;

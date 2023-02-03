@@ -527,7 +527,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         for i in 0..us.len() {
             let c_temp = if i == 0 { initial } else { &cs[i - 1] };
 
-            let second = c_temp.mod_pow(us[i], ctx.modulus());
+            let second = ctx.emod_pow(c_temp, us[i]);
             let c = firsts[i].mul(&second).modulo(ctx.modulus());
 
             cs.push(c);

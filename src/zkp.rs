@@ -21,7 +21,7 @@
 //! assert!(verified);
 //! // prove equality of discrete logarithms, using default generator (None)
 //! let g2 = ctx.rnd();
-//! let power2 = g2.mod_pow(&exponent, &ctx.modulus());
+//! let power2 = ctx.emod_pow(&g2, &exponent);
 //! let proof = zkp.cp_prove(&exponent, &power, &power2, None, &g2, &vec![]);
 //! let verified = zkp.cp_verify(&power, &power2, None, &g2, &proof, &vec![]);
 //! assert!(verified);
@@ -172,7 +172,7 @@ impl<C: Ctx> Zkp<C> {
     ) -> Schnorr<C> {
         let r = self.ctx.rnd_exp();
         let commitment = if let Some(g) = g {
-            g.mod_pow(&r, self.ctx.modulus())
+            self.ctx.emod_pow(g, &r)
         } else {
             self.ctx.gmod_pow(&r)
         };
@@ -183,7 +183,7 @@ impl<C: Ctx> Zkp<C> {
             context,
         );
         let response =
-            r.add(&challenge.mul(secret)).modulo(self.ctx.exp_modulus());
+            r.add(&challenge.mul(secret)).modq(&self.ctx);
 
         Schnorr {
             commitment,
@@ -207,14 +207,14 @@ impl<C: Ctx> Zkp<C> {
         );
         let ok1 = challenge_.eq(&proof.challenge);
         let lhs = if let Some(g) = g {
-            g.mod_pow(&proof.response, self.ctx.modulus())
+            self.ctx.emod_pow(g, &proof.response)
         } else {
             self.ctx.gmod_pow(&proof.response)
         };
         let rhs = proof
             .commitment
-            .mul(&public.mod_pow(&proof.challenge, self.ctx.modulus()))
-            .modulo(self.ctx.modulus());
+            .mul(&self.ctx.emod_pow(public, &proof.challenge))
+            .modp(&self.ctx);
         let ok2 = lhs.eq(&rhs);
         ok1 && ok2
     }
@@ -230,11 +230,11 @@ impl<C: Ctx> Zkp<C> {
     ) -> ChaumPedersen<C> {
         let r = self.ctx.rnd_exp();
         let commitment1 = if let Some(g1) = g1 {
-            g1.mod_pow(&r, self.ctx.modulus())
+            self.ctx.emod_pow(g1, &r)
         } else {
             self.ctx.gmod_pow(&r)
         };
-        let commitment2 = g2.mod_pow(&r, self.ctx.modulus());
+        let commitment2 = self.ctx.emod_pow(g2, &r);
         let challenge: C::X = self.cp_proof_challenge(
             g1.unwrap_or_else(|| self.ctx.generator()),
             g2,
@@ -245,7 +245,7 @@ impl<C: Ctx> Zkp<C> {
             context,
         );
         let response =
-            r.add(&challenge.mul(secret)).modulo(self.ctx.exp_modulus());
+            r.add(&challenge.mul(secret)).modq(&self.ctx);
 
         ChaumPedersen {
             commitment1,
@@ -276,19 +276,19 @@ impl<C: Ctx> Zkp<C> {
         let ok1 = challenge_.eq(&proof.challenge);
 
         let lhs1 = if let Some(g1) = g1 {
-            g1.mod_pow(&proof.response, self.ctx.modulus())
+            self.ctx.emod_pow(g1, &proof.response)
         } else {
             self.ctx.gmod_pow(&proof.response)
         };
         let rhs1 = proof
             .commitment1
-            .mul(&public1.mod_pow(&proof.challenge, self.ctx.modulus()))
-            .modulo(self.ctx.modulus());
-        let lhs2 = g2.mod_pow(&proof.response, self.ctx.modulus());
+            .mul(&self.ctx.emod_pow(public1, &proof.challenge))
+            .modp(&self.ctx);
+        let lhs2 = self.ctx.emod_pow(g2, &proof.response);
         let rhs2 = proof
             .commitment2
-            .mul(&public2.mod_pow(&proof.challenge, self.ctx.modulus()))
-            .modulo(self.ctx.modulus());
+            .mul(&self.ctx.emod_pow(public2, &proof.challenge))
+            .modp(&self.ctx);
         let ok2 = lhs1.eq(&rhs1);
         let ok3 = lhs2.eq(&rhs2);
 

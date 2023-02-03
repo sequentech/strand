@@ -91,7 +91,7 @@ pub(crate) mod tests {
         let verified = zkp.schnorr_verify(&public, None, &schnorr, &vec![]);
         assert!(verified);
         let public_false =
-            ctx.generator().mod_pow(&ctx.rnd_exp(), &ctx.modulus());
+            ctx.gmod_pow(&ctx.rnd_exp());
         let verified_false =
             zkp.schnorr_verify(&public_false, None, &schnorr, &vec![]);
         assert!(verified_false == false);
@@ -104,8 +104,8 @@ pub(crate) mod tests {
         let g1 = ctx.generator();
         let g2 = ctx.rnd();
         let secret = ctx.rnd_exp();
-        let public1 = g1.mod_pow(&secret, &ctx.modulus());
-        let public2 = g2.mod_pow(&secret, &ctx.modulus());
+        let public1 = ctx.emod_pow(g1, &secret);
+        let public2 = ctx.emod_pow(&g2, &secret);
         let proof =
             zkp.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
         let verified =
@@ -113,7 +113,7 @@ pub(crate) mod tests {
 
         assert!(verified);
         let public_false =
-            ctx.generator().mod_pow(&ctx.rnd_exp(), &ctx.modulus());
+            ctx.gmod_pow(&ctx.rnd_exp());
         let verified_false =
             zkp.cp_verify(&public1, &public_false, None, &g2, &proof, &vec![]);
         assert!(verified_false == false);
@@ -129,10 +129,8 @@ pub(crate) mod tests {
         let c = pk.encrypt(&plaintext);
         let (d, proof) = sk.decrypt_and_prove(&c, &vec![]);
 
-        let dec_factor = c.mhr.div(&d, &ctx.modulus()).modulo(&ctx.modulus());
+        let dec_factor = c.mhr.divp(&d, &ctx).modp(&ctx);
 
-        // let verified = zkp.cp_verify(&pk.element, &dec_factor, None, &c.gr,
-        // &proof, &vec![]);
         let verified = zkp.verify_decryption(
             &pk.element,
             &dec_factor,

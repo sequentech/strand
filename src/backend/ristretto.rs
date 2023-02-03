@@ -117,6 +117,7 @@ impl Ctx for RistrettoCtx {
     fn exp_modulo(&self, value: &Self::X) -> Self::X {
         value.clone()
     }
+    #[inline(always)]
     fn exp_sub_mod(&self, value: &Self::X, other: &Self::X) -> Self::X {
         value.sub(other)
     }
@@ -274,6 +275,18 @@ impl Element<RistrettoCtx> for RistrettoPointS {
     fn modulo(&self, _modulus: &Self) -> Self {
         self.clone()
     }
+    #[inline(always)]
+    fn modp(&self, _ctx: &RistrettoCtx) -> Self {
+        self.clone()
+    }
+    #[inline(always)]
+    fn divp(&self, other: &Self, ctx: &RistrettoCtx) -> Self {
+        RistrettoPointS(self.0 + other.inv(ctx.modulus()).0)
+    }
+    #[inline(always)]
+    fn invp(&self, _ctx: &RistrettoCtx) -> Self {
+        RistrettoPointS(-self.0)
+    }
     fn mul_identity() -> Self {
         RistrettoPointS(RistrettoPoint::identity())
     }
@@ -298,7 +311,7 @@ impl Exponent<RistrettoCtx> for ScalarS {
     }
     #[inline(always)]
     fn div(&self, other: &ScalarS, _modulus: &ScalarS) -> ScalarS {
-        ScalarS(self.0 * other.inv(_modulus).0)
+        ScalarS(self.0 * other.0.invert())
     }
     #[inline(always)]
     fn inv(&self, _modulus: &Self) -> Self {
@@ -307,6 +320,18 @@ impl Exponent<RistrettoCtx> for ScalarS {
     #[inline(always)]
     fn modulo(&self, _modulus: &Self) -> Self {
         self.clone()
+    }
+    #[inline(always)]
+    fn modq(&self, _ctx: &RistrettoCtx) -> Self {
+        self.clone()
+    }
+    #[inline(always)]
+    fn divq(&self, other: &ScalarS, _ctx: &RistrettoCtx) -> ScalarS {
+        ScalarS(self.0 * other.0.invert())
+    }
+    #[inline(always)]
+    fn invq(&self, _ctx: &RistrettoCtx) -> Self {
+        ScalarS(self.0.invert())
     }
     fn add_identity() -> Self {
         ScalarS(Scalar::zero())

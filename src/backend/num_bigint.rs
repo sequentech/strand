@@ -294,6 +294,18 @@ impl<P: BigintCtxParams + Eq> Element<BigintCtx<P>> for BigUintE<P> {
     fn modulo(&self, modulus: &Self) -> Self {
         BigUintE::new(self.0.mod_floor(&modulus.0))
     }
+    #[inline(always)]
+    fn modp(&self, ctx: &BigintCtx<P>) -> Self {
+        BigUintE::new(ctx.modulo(self).0)
+    }
+    #[inline(always)]
+    fn divp(&self, other: &Self, ctx: &BigintCtx<P>) -> Self {
+        self.div(other, ctx.params.modulus())
+    }
+    #[inline(always)]
+    fn invp(&self, ctx: &BigintCtx<P>) -> Self {
+        self.inv(ctx.params.modulus())
+    }
     fn mul_identity() -> Self {
         BigUintE::new(One::one())
     }
@@ -329,6 +341,18 @@ impl<P: BigintCtxParams + Eq> Exponent<BigintCtx<P>> for BigUintX<P> {
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
         BigUintX::new(self.0.div_rem(&modulus.0).1)
+    }
+    #[inline(always)]
+    fn modq(&self, ctx: &BigintCtx<P>) -> Self {
+        BigUintX::new(ctx.exp_modulo(self).0)
+    }
+    #[inline(always)]
+    fn divq(&self, other: &Self, ctx: &BigintCtx<P>) -> Self {
+        self.div(other, ctx.params.exp_modulus())
+    }
+    #[inline(always)]
+    fn invq(&self, ctx: &BigintCtx<P>) -> Self {
+        self.inv(ctx.params.exp_modulus())
     }
     fn add_identity() -> Self {
         BigUintX::new(Zero::zero())

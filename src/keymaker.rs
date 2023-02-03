@@ -60,7 +60,7 @@ impl<C: Ctx> Keymaker<C> {
         let mut acc: C::E = pks[0].element.clone();
 
         for pk in pks.iter().skip(1) {
-            acc = acc.mul(&pk.element).modulo(ctx.modulus());
+            acc = acc.mul(&pk.element).modp(ctx);
         }
 
         PublicKey::from_element(&acc, ctx)
@@ -99,10 +99,10 @@ impl<C: Ctx> Keymaker<C> {
     pub fn joint_dec(ctx: &C, decs: Vec<C::E>, c: &Ciphertext<C>) -> C::E {
         let mut acc: C::E = decs[0].clone();
         for dec in decs.iter().skip(1) {
-            acc = acc.mul(dec).modulo(ctx.modulus());
+            acc = acc.mul(dec).modp(ctx);
         }
 
-        c.mhr.div(&acc, ctx.modulus()).modulo(ctx.modulus())
+        c.mhr.divp(&acc, ctx).modp(ctx)
     }
 
     pub fn joint_dec_many(
@@ -110,7 +110,6 @@ impl<C: Ctx> Keymaker<C> {
         decs: &[Vec<C::E>],
         cs: &[Ciphertext<C>],
     ) -> Vec<C::E> {
-        let modulus = ctx.modulus();
         let decrypted: Vec<C::E> = cs
             .par()
             .enumerate()
@@ -118,9 +117,9 @@ impl<C: Ctx> Keymaker<C> {
                 let mut acc: C::E = decs[0][i].clone();
 
                 for dec in decs.iter().skip(1) {
-                    acc = acc.mul(&dec[i]).modulo(modulus);
+                    acc = acc.mul(&dec[i]).modp(ctx);
                 }
-                c.mhr.div(&acc, modulus).modulo(modulus)
+                c.mhr.divp(&acc, ctx).modp(ctx)
             })
             .collect();
 

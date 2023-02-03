@@ -338,6 +338,18 @@ impl<P: MalachiteCtxParams + Eq> Element<MalachiteCtx<P>> for NaturalE<P> {
     fn modulo(&self, modulus: &Self) -> Self {
         NaturalE::new(self.0.clone().rem(&modulus.0))
     }
+    #[inline(always)]
+    fn modp(&self, ctx: &MalachiteCtx<P>) -> Self {
+        NaturalE::new(ctx.modulo(self).0)
+    }
+    #[inline(always)]
+    fn divp(&self, other: &Self, ctx: &MalachiteCtx<P>) -> Self {
+        self.div(other, ctx.params.modulus())
+    }
+    #[inline(always)]
+    fn invp(&self, ctx: &MalachiteCtx<P>) -> Self {
+        self.inv(ctx.params.modulus())
+    }
     fn mul_identity() -> Self {
         NaturalE::new(Natural::from(1u8))
     }
@@ -373,6 +385,18 @@ impl<P: MalachiteCtxParams + Eq> Exponent<MalachiteCtx<P>> for NaturalX<P> {
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
         NaturalX::new(self.0.clone().rem(&modulus.0))
+    }
+    #[inline(always)]
+    fn modq(&self, ctx: &MalachiteCtx<P>) -> Self {
+        NaturalX::new(ctx.exp_modulo(self).0)
+    }
+    #[inline(always)]
+    fn divq(&self, other: &Self, ctx: &MalachiteCtx<P>) -> Self {
+        self.div(other, ctx.params.exp_modulus())
+    }
+    #[inline(always)]
+    fn invq(&self, ctx: &MalachiteCtx<P>) -> Self {
+        self.inv(ctx.params.exp_modulus())
     }
     fn add_identity() -> Self {
         NaturalX::new(Natural::from(0u8))

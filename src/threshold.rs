@@ -40,10 +40,10 @@ pub fn eval_poly<C: Ctx>(
     let trustee_exp = ctx.exp_from_u64(trustee as u64);
 
     for coefficient in coefficients.iter().take(threshold).skip(1) {
-        power = power.mul(&trustee_exp).modulo(ctx.exp_modulus());
-        sum = sum.add(&coefficient.mul(&power).modulo(ctx.exp_modulus()));
+        power = power.mul(&trustee_exp).modq(ctx);
+        sum = sum.add(&coefficient.mul(&power).modq(ctx));
     }
-    sum.modulo(ctx.exp_modulus())
+    sum.modq(ctx)
 }
 
 /// Computes the share for the target trustee.
@@ -74,8 +74,8 @@ pub fn verification_key_factor<C: Ctx>(
         let power_element = ctx.exp_from_u64(power as u64);
 
         accum = accum
-            .mul(&commitment.mod_pow(&power_element, ctx.modulus()))
-            .modulo(ctx.modulus());
+            .mul(&ctx.emod_pow(commitment, &power_element))
+            .modp(ctx);
     }
 
     accum
@@ -91,7 +91,7 @@ pub fn decryption_factor<C: Ctx>(
     ctx: C,
 ) -> (C::E, ChaumPedersen<C>) {
     let zkp = Zkp::new(&ctx);
-    let factor = c.gr.mod_pow(share, ctx.modulus());
+    let factor = ctx.emod_pow(&c.gr, share);
     let proof =
         zkp.decryption_proof(share, v_key, &factor, &c.mhr, &c.gr, label);
     // let ok = zkp.decryption_verify(&v_key, &factor, None, &c.mhr, &c.gr,
@@ -114,13 +114,13 @@ pub fn lagrange<C: Ctx>(trustee: usize, present: &[usize], ctx: &C) -> C::X {
         let diff_exp = present_exp
             // We use sub_mod in case the result is negative
             .sub_mod(&trustee_exp, ctx)
-            .modulo(ctx.exp_modulus());
+            .modq(ctx);
 
-        numerator = numerator.mul(&present_exp).modulo(ctx.exp_modulus());
-        denominator = denominator.mul(&diff_exp).modulo(ctx.exp_modulus());
+        numerator = numerator.mul(&present_exp).modq(ctx);
+        denominator = denominator.mul(&diff_exp).modq(ctx);
     }
 
-    numerator.div(&denominator, ctx.exp_modulus())
+    numerator.divq(&denominator, ctx)
 }
 
 #[cfg(any(test, feature = "wasmtest"))]
@@ -198,7 +198,7 @@ pub(crate) mod tests {
                 sum = sum.add(&self.external_shares[i]);
             }
 
-            sum.modulo(self.ctx.exp_modulus())
+            sum.modq(&self.ctx)
         }
 
         fn decryption_factor(
@@ -209,7 +209,7 @@ pub(crate) mod tests {
             let zkp = Zkp::new(&self.ctx);
             let share = self.secret_share();
             let v_key = self.verification_key();
-            let factor = c.gr.mod_pow(&share, self.ctx.modulus());
+            let factor = self.ctx.emod_pow(&c.gr, &share);
             let proof = zkp.decryption_proof(
                 &share, &v_key, &factor, &c.mhr, &c.gr, label,
             );
@@ -222,7 +222,7 @@ pub(crate) mod tests {
             assert_eq!(self.v_key_factors.len(), self.num_trustees);
             let mut key = C::E::mul_identity();
             for next in &self.v_key_factors {
-                key = key.mul(next).modulo(self.ctx.modulus());
+                key = key.mul(next).modp(&self.ctx);
             }
 
             key
@@ -240,7 +240,7 @@ pub(crate) mod tests {
         let mut trustees = Vec::new();
         for _ in 0..num_trustees {
             let trustee = KeymakerT::gen(num_trustees, threshold, ctx);
-            pk = pk.mul(&trustee.commitments[0]).modulo(&ctx.modulus());
+            pk = pk.mul(&trustee.commitments[0]).modp(ctx);
             trustees.push(trustee);
         }
 
@@ -264,12 +264,12 @@ pub(crate) mod tests {
         for i in 0..num_trustees {
             divider = divider
                 .mul(
-                    &c.gr.mod_pow(&trustees[i].coefficients[0], &ctx.modulus()),
+                    &ctx.emod_pow(&c.gr, &trustees[i].coefficients[0]),
                 )
-                .modulo(&ctx.modulus());
+                .modp(ctx);
         }
         let decrypted =
-            c.mhr.div(&divider, &ctx.modulus()).modulo(&ctx.modulus());
+            c.mhr.divp(&divider, ctx).modp(ctx);
         let decoded = ctx.decode(&decrypted);
 
         assert_eq!(data, decoded);
@@ -294,12 +294,12 @@ pub(crate) mod tests {
 
             let lagrange = threshold::lagrange(present[i], &present, ctx);
 
-            let next = base.mod_pow(&lagrange, &ctx.modulus());
-            divider = divider.mul(&next).modulo(&ctx.modulus())
+            let next = ctx.emod_pow(&base, &lagrange);
+            divider = divider.mul(&next).modp(ctx)
         }
 
         let decrypted =
-            c.mhr.div(&divider, &ctx.modulus()).modulo(&ctx.modulus());
+            c.mhr.divp(&divider, ctx).modp(ctx);
         let decoded = ctx.decode(&decrypted);
 
         assert_eq!(data, decoded);
@@ -323,12 +323,12 @@ pub(crate) mod tests {
 
             let lagrange = threshold::lagrange(present[i], &present, ctx);
 
-            let next = base.mod_pow(&lagrange, &ctx.modulus());
-            divider = divider.mul(&next).modulo(&ctx.modulus())
+            let next = ctx.emod_pow(&base, &lagrange);
+            divider = divider.mul(&next).modp(&ctx)
         }
 
         let decrypted =
-            c.mhr.div(&divider, &ctx.modulus()).modulo(&ctx.modulus());
+            c.mhr.divp(&divider, &ctx).modp(&ctx);
         let decoded = ctx.decode(&decrypted);
 
         assert_ne!(data, decoded);

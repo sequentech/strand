@@ -280,6 +280,18 @@ impl<P: RugCtxParams> Element<RugCtx<P>> for IntegerE<P> {
 
         IntegerE::new(rem)
     }
+    #[inline(always)]
+    fn modp(&self, ctx: &RugCtx<P>) -> Self {
+        IntegerE::new(ctx.modulo(self).0)
+    }
+    #[inline(always)]
+    fn divp(&self, other: &Self, ctx: &RugCtx<P>) -> Self {
+        self.div(other, ctx.params.modulus())
+    }
+    #[inline(always)]
+    fn invp(&self, ctx: &RugCtx<P>) -> Self {
+        self.inv(ctx.params.modulus())
+    }
     fn mul_identity() -> Self {
         IntegerE::new(Integer::from(1))
     }
@@ -322,7 +334,18 @@ impl<P: RugCtxParams> Exponent<RugCtx<P>> for IntegerX<P> {
 
         IntegerX::new(rem)
     }
-
+    #[inline(always)]
+    fn modq(&self, ctx: &RugCtx<P>) -> Self {
+        IntegerX::new(ctx.exp_modulo(self).0)
+    }
+    #[inline(always)]
+    fn divq(&self, other: &Self, ctx: &RugCtx<P>) -> Self {
+        self.div(other, ctx.params.exp_modulus())
+    }
+    #[inline(always)]
+    fn invq(&self, ctx: &RugCtx<P>) -> Self {
+        self.inv(ctx.params.exp_modulus())
+    }
     fn add_identity() -> Self {
         IntegerX::new(Integer::from(0i32))
     }

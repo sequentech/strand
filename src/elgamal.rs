@@ -113,7 +113,7 @@ impl<C: Ctx> PublicKey<C> {
         Ciphertext {
             mhr: plaintext
                 .mul(&ctx.emod_pow(&self.element, randomness))
-                .modulo(ctx.modulus()),
+                .modp(ctx),
             gr: ctx.gmod_pow(randomness),
         }
     }
@@ -127,11 +127,10 @@ impl<C: Ctx> PublicKey<C> {
 
 impl<C: Ctx> PrivateKey<C> {
     pub fn decrypt(&self, c: &Ciphertext<C>) -> C::E {
-        let modulus = self.ctx.modulus();
-
+        let ctx = &self.ctx;
         c.mhr
-            .div(&c.gr.mod_pow(&self.value, modulus), modulus)
-            .modulo(modulus)
+            .divp(&ctx.emod_pow(&c.gr, &self.value), ctx)
+            .modp(ctx)
     }
     pub fn decrypt_and_prove(
         &self,
@@ -140,9 +139,8 @@ impl<C: Ctx> PrivateKey<C> {
     ) -> (C::E, ChaumPedersen<C>) {
         let ctx = &self.ctx;
         let zkp = Zkp::new(ctx);
-        let modulus = ctx.modulus();
 
-        let dec_factor = &c.gr.mod_pow(&self.value, modulus);
+        let dec_factor = &ctx.emod_pow(&c.gr, &self.value);
 
         let proof = zkp.decryption_proof(
             &self.value,
@@ -153,14 +151,12 @@ impl<C: Ctx> PrivateKey<C> {
             label,
         );
 
-        let decrypted = c.mhr.div(dec_factor, modulus).modulo(modulus);
+        let decrypted = c.mhr.divp(dec_factor, ctx).modp(ctx);
 
         (decrypted, proof)
     }
     pub fn decryption_factor(&self, c: &Ciphertext<C>) -> C::E {
-        let modulus = self.ctx.modulus();
-
-        c.gr.mod_pow(&self.value, modulus)
+        self.ctx.emod_pow(&c.gr, &self.value)
     }
     pub fn gen(ctx: &C) -> PrivateKey<C> {
         let secret = ctx.rnd_exp();
