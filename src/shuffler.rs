@@ -108,9 +108,9 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
                 let a = c
                     .mhr
-                    .mul(&self.pk.element.mod_pow(&r, ctx.modulus()))
-                    .modulo(ctx.modulus());
-                let b = c.gr.mul(&ctx.gmod_pow(&r)).modulo(ctx.modulus());
+                    .mul(&ctx.emod_pow(&self.pk.element, &r))
+                    .modp(ctx);
+                let b = c.gr.mul(&ctx.gmod_pow(&r)).modp(ctx);
 
                 let c_ = Ciphertext { mhr: a, gr: b };
                 (c_, r) 
@@ -176,8 +176,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         assert!(N == h_generators.len());
         assert!(N > 0, "cannot shuffle 0 ciphertexts");
 
-        let gmod = ctx.modulus();
-        let xmod = ctx.exp_modulus();
+        // let gmod = ctx.modulus();
 
         let (cs, rs) = (perm_data.commitments_c, perm_data.commitments_r);
         let perm = perm_data.permutation;
@@ -203,7 +202,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         // 0 cost *
         let mut vs = vec![C::X::mul_identity(); N];
         for i in (0..N - 1).rev() {
-            vs[i] = u_primes[i + 1].mul(&vs[i + 1]).modulo(xmod);
+            vs[i] = u_primes[i + 1].mul(&vs[i + 1]).modq(ctx);
         }
 
         let mut r_bar = C::X::add_identity();
@@ -222,10 +221,10 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         // println!("v4 {}", now.elapsed().as_millis());
 
-        r_bar = r_bar.modulo(xmod);
-        r_hat = r_hat.modulo(xmod);
-        r_tilde = r_tilde.modulo(xmod);
-        r_prime = r_prime.modulo(xmod);
+        r_bar = r_bar.modq(ctx);
+        r_hat = r_hat.modq(ctx);
+        r_tilde = r_tilde.modq(ctx);
+        r_prime = r_prime.modq(ctx);
 
         let omegas: Vec<C::X> = (0..4).map(|_| ctx.rnd_exp()).collect();
         let omega_hats: Vec<C::X> = (0..N).map(|_| ctx.rnd_exp()).collect();
@@ -242,27 +241,27 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             .par()
             .map(|i| {
                 (
-                    h_generators[i].mod_pow(&omega_primes[i], gmod),
-                    e_primes[i].mhr.mod_pow(&omega_primes[i], gmod),
-                    e_primes[i].gr.mod_pow(&omega_primes[i], gmod),
+                    ctx.emod_pow(&h_generators[i], &omega_primes[i]),
+                    ctx.emod_pow(&e_primes[i].mhr, &omega_primes[i]),
+                    ctx.emod_pow(&e_primes[i].gr, &omega_primes[i]),
                 )
             })
             .collect();
 
         // ~0 cost *
         for value in values.iter().take(N) {
-            t3_temp = t3_temp.mul(&value.0).modulo(gmod);
-            t4_1_temp = t4_1_temp.mul(&value.1).modulo(gmod);
-            t4_2_temp = t4_2_temp.mul(&value.2).modulo(gmod);
+            t3_temp = t3_temp.mul(&value.0).modp(ctx);
+            t4_1_temp = t4_1_temp.mul(&value.1).modp(ctx);
+            t4_2_temp = t4_2_temp.mul(&value.2).modp(ctx);
         }
 
-        let t3 = (ctx.gmod_pow(&omegas[2])).mul(&t3_temp).modulo(gmod);
-        let t4_1 = (self.pk.element.inv(gmod).mod_pow(&omegas[3], gmod))
+        let t3 = (ctx.gmod_pow(&omegas[2])).mul(&t3_temp).modp(ctx);
+        let t4_1 = (ctx.emod_pow(&self.pk.element.invp(ctx), &omegas[3]))
             .mul(&t4_1_temp)
-            .modulo(gmod);
-        let t4_2 = (ctx.generator().inv(gmod).mod_pow(&omegas[3], gmod))
+            .modp(ctx);
+        let t4_2 = (ctx.emod_pow(&ctx.generator().invp(ctx), &omegas[3]))
             .mul(&t4_2_temp)
-            .modulo(gmod);
+            .modp(ctx);
 
         let t_hats = (0..c_hats.len())
             .par()
@@ -271,8 +270,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
                     if i == 0 { h_initial } else { &c_hats[i - 1] };
 
                 (ctx.gmod_pow(&omega_hats[i]))
-                    .mul(&previous_c.mod_pow(&omega_primes[i], gmod))
-                    .modulo(gmod)
+                    .mul(&ctx.emod_pow(previous_c, &omega_primes[i]))
+                    .modp(ctx)
             })
             .collect();
 
@@ -299,19 +298,19 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         // println!("shuffle proof challenge {}", now.elapsed().as_millis());
 
-        let s1 = omegas[0].add(&c.mul(&r_bar)).modulo(xmod);
-        let s2 = omegas[1].add(&c.mul(&r_hat)).modulo(xmod);
-        let s3 = omegas[2].add(&c.mul(&r_tilde)).modulo(xmod);
-        let s4 = omegas[3].add(&c.mul(&r_prime)).modulo(xmod);
+        let s1 = omegas[0].add(&c.mul(&r_bar)).modq(ctx);
+        let s2 = omegas[1].add(&c.mul(&r_hat)).modq(ctx);
+        let s3 = omegas[2].add(&c.mul(&r_tilde)).modq(ctx);
+        let s4 = omegas[3].add(&c.mul(&r_prime)).modq(ctx);
 
         let mut s_hats: Vec<C::X> = Vec::with_capacity(N);
         let mut s_primes: Vec<C::X> = Vec::with_capacity(N);
 
         // 0 cost
         for i in 0..N {
-            let next_s_hat = omega_hats[i].add(&c.mul(&r_hats[i])).modulo(xmod);
+            let next_s_hat = omega_hats[i].add(&c.mul(&r_hats[i])).modq(ctx);
             let next_s_prime =
-                omega_primes[i].add(&c.mul(u_primes[i])).modulo(xmod);
+                omega_primes[i].add(&c.mul(u_primes[i])).modq(ctx);
 
             s_hats.push(next_s_hat);
             s_primes.push(next_s_prime);
@@ -358,8 +357,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         assert!(N == e_primes.len());
         assert!(N == h_generators.len());
 
-        let gmod = ctx.modulus();
-        let xmod = ctx.exp_modulus();
+        // let gmod = ctx.modulus();
 
         let us: Vec<C::X> =
             self.shuffle_proof_us(es, e_primes, &proof.cs.0, N, label);
@@ -379,12 +377,12 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             .par()
             .map(|i| {
                 (
-                    proof.cs.0[i].mod_pow(&us[i], gmod),
-                    es[i].mhr.mod_pow(&us[i], gmod),
-                    es[i].gr.mod_pow(&us[i], gmod),
-                    h_generators[i].mod_pow(&proof.s.s_primes.0[i], gmod),
-                    e_primes[i].mhr.mod_pow(&proof.s.s_primes.0[i], gmod),
-                    e_primes[i].gr.mod_pow(&proof.s.s_primes.0[i], gmod),
+                    ctx.emod_pow(&proof.cs.0[i], &us[i]),
+                    ctx.emod_pow(&es[i].mhr, &us[i]),
+                    ctx.emod_pow(&es[i].gr, &us[i]),
+                    ctx.emod_pow(&h_generators[i], &proof.s.s_primes.0[i]),
+                    ctx.emod_pow(&e_primes[i].mhr, &proof.s.s_primes.0[i]),
+                    ctx.emod_pow(&e_primes[i].gr, &proof.s.s_primes.0[i]),
                 )
             })
             .collect();
@@ -392,25 +390,25 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         // let now = Instant::now();
 
         for i in 0..N {
-            c_bar_num = c_bar_num.mul(&proof.cs.0[i]).modulo(gmod);
-            c_bar_den = c_bar_den.mul(&h_generators[i]).modulo(gmod);
-            u = u.mul(&us[i]).modulo(xmod);
+            c_bar_num = c_bar_num.mul(&proof.cs.0[i]).modp(ctx);
+            c_bar_den = c_bar_den.mul(&h_generators[i]).modp(ctx);
+            u = u.mul(&us[i]).modq(ctx);
 
-            c_tilde = c_tilde.mul(&values[i].0).modulo(gmod);
-            a_prime = a_prime.mul(&values[i].1).modulo(gmod);
-            b_prime = b_prime.mul(&values[i].2).modulo(gmod);
-            t_tilde3_temp = t_tilde3_temp.mul(&values[i].3).modulo(gmod);
-            t_tilde41_temp = t_tilde41_temp.mul(&values[i].4).modulo(gmod);
-            t_tilde42_temp = t_tilde42_temp.mul(&values[i].5).modulo(gmod);
+            c_tilde = c_tilde.mul(&values[i].0).modp(ctx);
+            a_prime = a_prime.mul(&values[i].1).modp(ctx);
+            b_prime = b_prime.mul(&values[i].2).modp(ctx);
+            t_tilde3_temp = t_tilde3_temp.mul(&values[i].3).modp(ctx);
+            t_tilde41_temp = t_tilde41_temp.mul(&values[i].4).modp(ctx);
+            t_tilde42_temp = t_tilde42_temp.mul(&values[i].5).modp(ctx);
         }
 
         // println!("v1 {}", now.elapsed().as_millis());
 
-        let c_bar = c_bar_num.div(&c_bar_den, gmod).modulo(gmod);
+        let c_bar = c_bar_num.divp(&c_bar_den, ctx).modp(ctx);
 
         let c_hat = proof.c_hats.0[N - 1]
-            .div(&h_initial.mod_pow(&u, gmod), gmod)
-            .modulo(gmod);
+            .divp(&ctx.emod_pow(h_initial, &u), ctx)
+            .modp(ctx);
 
         let y = YChallengeInput {
             es,
@@ -422,28 +420,28 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         let c = self.shuffle_proof_challenge(&y, &proof.t, label);
 
-        let t_prime1 = (c_bar.inv(gmod).mod_pow(&c, gmod))
+        let t_prime1 = (ctx.emod_pow(&c_bar.invp(ctx), &c))
             .mul(&ctx.gmod_pow(&proof.s.s1))
-            .modulo(gmod);
+            .modp(ctx);
 
-        let t_prime2 = (c_hat.inv(gmod).mod_pow(&c, gmod))
+        let t_prime2 = (ctx.emod_pow(&c_hat.invp(ctx), &c))
             .mul(&ctx.gmod_pow(&proof.s.s2))
-            .modulo(gmod);
+            .modp(ctx);
 
-        let t_prime3 = (c_tilde.inv(gmod).mod_pow(&c, gmod))
+        let t_prime3 = (ctx.emod_pow(&c_tilde.invp(ctx), &c))
             .mul(&ctx.gmod_pow(&proof.s.s3))
             .mul(&t_tilde3_temp)
-            .modulo(gmod);
+            .modp(ctx);
 
-        let t_prime41 = (a_prime.inv(gmod).mod_pow(&c, gmod))
-            .mul(&self.pk.element.inv(gmod).mod_pow(&proof.s.s4, gmod))
+        let t_prime41 = (ctx.emod_pow(&a_prime.invp(ctx), &c))
+            .mul(&ctx.emod_pow(&self.pk.element.invp(ctx), &proof.s.s4))
             .mul(&t_tilde41_temp)
-            .modulo(gmod);
+            .modp(ctx);
 
-        let t_prime42 = (b_prime.inv(gmod).mod_pow(&c, gmod))
-            .mul(&ctx.generator().inv(gmod).mod_pow(&proof.s.s4, gmod))
+        let t_prime42 = (ctx.emod_pow(&b_prime.invp(ctx), &c))
+            .mul(&ctx.emod_pow(&ctx.generator().invp(ctx), &proof.s.s4))
             .mul(&t_tilde42_temp)
-            .modulo(gmod);
+            .modp(ctx);
 
         let t_hat_primes: Vec<C::E> = (0..N)
             .par()
@@ -454,11 +452,11 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
                     &proof.c_hats.0[i - 1]
                 };
 
-                let inverse = proof.c_hats.0[i].inv(gmod);
-                (inverse.mod_pow(&c, gmod))
+                let inverse = proof.c_hats.0[i].invp(ctx);
+                (ctx.emod_pow(&inverse, &c))
                     .mul(&ctx.gmod_pow(&proof.s.s_hats.0[i]))
-                    .mul(&c_term.mod_pow(&proof.s.s_primes.0[i], gmod))
-                    .modulo(gmod)
+                    .mul(&ctx.emod_pow(c_term, &proof.s.s_primes.0[i]))
+                    .modp(ctx)
             })
             .collect();
 
@@ -486,7 +484,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         let (cs, rs): (Vec<C::E>, Vec<C::X>) = generators.par().map(|h| {
             let r = ctx.rnd_exp();
-            let c = h.mul(&ctx.gmod_pow(&r)).modulo(ctx.modulus());
+            let c = h.mul(&ctx.gmod_pow(&r)).modp(ctx);
 
             (c, r)
         })
@@ -516,7 +514,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             .par()
             .map(|_| {
                 let r = ctx.rnd_exp();
-                let first = ctx.gmod_pow(&r).modulo(ctx.modulus());
+                // let first = ctx.gmod_pow(&r).modulo(ctx.modulus());
+                let first = ctx.gmod_pow(&r);
 
                 (first, r)
             })
@@ -528,7 +527,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             let c_temp = if i == 0 { initial } else { &cs[i - 1] };
 
             let second = ctx.emod_pow(c_temp, us[i]);
-            let c = firsts[i].mul(&second).modulo(ctx.modulus());
+            let c = firsts[i].mul(&second).modp(ctx);
 
             cs.push(c);
         }
