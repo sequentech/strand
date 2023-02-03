@@ -13,7 +13,7 @@ use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::{Ciphertext, PublicKey};
 use crate::rnd::StrandRng;
 use crate::serialization::StrandSerialize;
-use crate::serialization::{StrandVectorE, StrandVectorX, StrandVectorC};
+use crate::serialization::{StrandVectorC, StrandVectorE, StrandVectorX};
 use crate::util::Par;
 use crate::zkp::ChallengeInput;
 
@@ -106,14 +106,12 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             .map(|c| {
                 let r = ctx.rnd_exp();
 
-                let a = c
-                    .mhr
-                    .mul(&ctx.emod_pow(&self.pk.element, &r))
-                    .modp(ctx);
+                let a =
+                    c.mhr.mul(&ctx.emod_pow(&self.pk.element, &r)).modp(ctx);
                 let b = c.gr.mul(&ctx.gmod_pow(&r)).modp(ctx);
 
                 let c_ = Ciphertext { mhr: a, gr: b };
-                (c_, r) 
+                (c_, r)
             })
             .unzip();
 
@@ -482,13 +480,15 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         assert!(generators.len() == perm.len());
 
-        let (cs, rs): (Vec<C::E>, Vec<C::X>) = generators.par().map(|h| {
-            let r = ctx.rnd_exp();
-            let c = h.mul(&ctx.gmod_pow(&r)).modp(ctx);
+        let (cs, rs): (Vec<C::E>, Vec<C::X>) = generators
+            .par()
+            .map(|h| {
+                let r = ctx.rnd_exp();
+                let c = h.mul(&ctx.gmod_pow(&r)).modp(ctx);
 
-            (c, r)
-        })
-        .unzip();
+                (c, r)
+            })
+            .unzip();
 
         let mut cs_permuted = vec![C::E::mul_identity(); perm.len()];
         let mut rs_permuted = vec![C::X::mul_identity(); perm.len()];
@@ -499,7 +499,6 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         }
 
         (cs_permuted, rs_permuted)
-
     }
 
     fn gen_commitment_chain(
@@ -545,8 +544,10 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         n: usize,
         label: &[u8],
     ) -> Vec<C::X> {
-        let mut prefix_challenge_input =
-            ChallengeInput::from(&[("es", &StrandVectorC(es.to_vec())), ("e_primes", &StrandVectorC(e_primes.to_vec()))]);
+        let mut prefix_challenge_input = ChallengeInput::from(&[
+            ("es", &StrandVectorC(es.to_vec())),
+            ("e_primes", &StrandVectorC(e_primes.to_vec())),
+        ]);
         prefix_challenge_input.add("cs", &StrandVectorE::<C>(cs.to_vec()));
         prefix_challenge_input.add("label", &label.to_vec());
 
@@ -586,11 +587,22 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             ("t4_2", &t.t4_2),
         ]);
 
-        challenge_input.add_bytes("es", StrandVectorC(y.es.to_vec()).strand_serialize());
-        challenge_input.add_bytes("e_primes", StrandVectorC(y.e_primes.to_vec()).strand_serialize());
-        challenge_input.add_bytes("cs", StrandVectorE::<C>(y.cs.to_vec()).strand_serialize());
-        challenge_input.add_bytes("c_hats", StrandVectorE::<C>(y.c_hats.to_vec()).strand_serialize());
-        challenge_input.add_bytes("pk.element", y.pk.element.strand_serialize());
+        challenge_input
+            .add_bytes("es", StrandVectorC(y.es.to_vec()).strand_serialize());
+        challenge_input.add_bytes(
+            "e_primes",
+            StrandVectorC(y.e_primes.to_vec()).strand_serialize(),
+        );
+        challenge_input.add_bytes(
+            "cs",
+            StrandVectorE::<C>(y.cs.to_vec()).strand_serialize(),
+        );
+        challenge_input.add_bytes(
+            "c_hats",
+            StrandVectorE::<C>(y.c_hats.to_vec()).strand_serialize(),
+        );
+        challenge_input
+            .add_bytes("pk.element", y.pk.element.strand_serialize());
         challenge_input.add_bytes("t_hats", t.t_hats.strand_serialize());
         challenge_input.add_bytes("label", label.to_vec());
 

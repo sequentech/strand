@@ -90,8 +90,7 @@ pub(crate) mod tests {
         let schnorr = zkp.schnorr_prove(&secret, &public, None, &vec![]);
         let verified = zkp.schnorr_verify(&public, None, &schnorr, &vec![]);
         assert!(verified);
-        let public_false =
-            ctx.gmod_pow(&ctx.rnd_exp());
+        let public_false = ctx.gmod_pow(&ctx.rnd_exp());
         let verified_false =
             zkp.schnorr_verify(&public_false, None, &schnorr, &vec![]);
         assert!(verified_false == false);
@@ -112,8 +111,7 @@ pub(crate) mod tests {
             zkp.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
 
         assert!(verified);
-        let public_false =
-            ctx.gmod_pow(&ctx.rnd_exp());
+        let public_false = ctx.gmod_pow(&ctx.rnd_exp());
         let verified_false =
             zkp.cp_verify(&public1, &public_false, None, &g2, &proof, &vec![]);
         assert!(verified_false == false);

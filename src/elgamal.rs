@@ -128,9 +128,7 @@ impl<C: Ctx> PublicKey<C> {
 impl<C: Ctx> PrivateKey<C> {
     pub fn decrypt(&self, c: &Ciphertext<C>) -> C::E {
         let ctx = &self.ctx;
-        c.mhr
-            .divp(&ctx.emod_pow(&c.gr, &self.value), ctx)
-            .modp(ctx)
+        c.mhr.divp(&ctx.emod_pow(&c.gr, &self.value), ctx).modp(ctx)
     }
     pub fn decrypt_and_prove(
         &self,

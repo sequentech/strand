@@ -16,6 +16,7 @@ pub mod context;
 /// ElGamal encryption.
 pub mod elgamal;
 /// Support for distributed Elgamal.
+#[allow(dead_code)]
 mod keymaker;
 /// Wikstrom proof of shuffle.
 pub mod shuffler;

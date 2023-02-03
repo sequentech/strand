@@ -397,7 +397,7 @@ impl BigintCtxParams for P2048 {
         );
         let co_factor =
             BigUint::from_str_radix(SAFEPRIME_COFACTOR, 16).unwrap();
-            
+
         assert!(g.0.legendre(&p.0) == 1);
 
         P2048 {

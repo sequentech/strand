@@ -187,8 +187,10 @@ impl<C: Ctx> BorshDeserialize for StrandVectorCP<C> {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
         let vectors = <Vec<Vec<u8>>>::deserialize(buf)?;
 
-        let results: std::io::Result<Vec<ChaumPedersen<C>>> =
-            vectors.par().map(|v| ChaumPedersen::<C>::try_from_slice(&v)).collect();
+        let results: std::io::Result<Vec<ChaumPedersen<C>>> = vectors
+            .par()
+            .map(|v| ChaumPedersen::<C>::try_from_slice(&v))
+            .collect();
 
         Ok(StrandVectorCP(results?))
     }
@@ -198,7 +200,7 @@ impl<C: Ctx> BorshDeserialize for StrandVectorCP<C> {
 pub(crate) mod tests {
     use super::StrandDeserialize;
     use super::StrandSerialize;
-    use crate::context::{Ctx, Element};
+    use crate::context::Ctx;
     use crate::elgamal::{Ciphertext, PrivateKey, PublicKey};
     use crate::util;
     use crate::zkp::{ChaumPedersen, Schnorr, Zkp};

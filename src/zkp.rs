@@ -182,8 +182,7 @@ impl<C: Ctx> Zkp<C> {
             &commitment,
             context,
         );
-        let response =
-            r.add(&challenge.mul(secret)).modq(&self.ctx);
+        let response = r.add(&challenge.mul(secret)).modq(&self.ctx);
 
         Schnorr {
             commitment,
@@ -244,8 +243,7 @@ impl<C: Ctx> Zkp<C> {
             &commitment2,
             context,
         );
-        let response =
-            r.add(&challenge.mul(secret)).modq(&self.ctx);
+        let response = r.add(&challenge.mul(secret)).modq(&self.ctx);
 
         ChaumPedersen {
             commitment1,
@@ -358,8 +356,9 @@ pub struct ChaumPedersen<C: Ctx> {
 #[derive(BorshSerialize, BorshDeserialize)]
 pub(crate) struct ChallengeInput(HashMap<String, Vec<u8>>);
 impl ChallengeInput {
-    pub(crate) fn from<T: BorshSerialize>(values: &[(&'static str, &T)]) -> ChallengeInput {
-        
+    pub(crate) fn from<T: BorshSerialize>(
+        values: &[(&'static str, &T)],
+    ) -> ChallengeInput {
         let serialized = values
             .iter()
             .map(|value| (value.0.to_string(), value.1.try_to_vec().unwrap()));

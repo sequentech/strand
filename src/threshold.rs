@@ -263,13 +263,10 @@ pub(crate) mod tests {
         let mut divider = C::E::mul_identity();
         for i in 0..num_trustees {
             divider = divider
-                .mul(
-                    &ctx.emod_pow(&c.gr, &trustees[i].coefficients[0]),
-                )
+                .mul(&ctx.emod_pow(&c.gr, &trustees[i].coefficients[0]))
                 .modp(ctx);
         }
-        let decrypted =
-            c.mhr.divp(&divider, ctx).modp(ctx);
+        let decrypted = c.mhr.divp(&divider, ctx).modp(ctx);
         let decoded = ctx.decode(&decrypted);
 
         assert_eq!(data, decoded);
@@ -298,8 +295,7 @@ pub(crate) mod tests {
             divider = divider.mul(&next).modp(ctx)
         }
 
-        let decrypted =
-            c.mhr.divp(&divider, ctx).modp(ctx);
+        let decrypted = c.mhr.divp(&divider, ctx).modp(ctx);
         let decoded = ctx.decode(&decrypted);
 
         assert_eq!(data, decoded);
@@ -327,8 +323,7 @@ pub(crate) mod tests {
             divider = divider.mul(&next).modp(&ctx)
         }
 
-        let decrypted =
-            c.mhr.divp(&divider, &ctx).modp(&ctx);
+        let decrypted = c.mhr.divp(&divider, &ctx).modp(&ctx);
         let decoded = ctx.decode(&decrypted);
 
         assert_ne!(data, decoded);

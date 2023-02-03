@@ -625,7 +625,8 @@ mod tests {
     #[test]
     fn test_encode_err() {
         let ctx = RugCtx::<P2048>::default();
-        let result = ctx.encode(&IntegerP(ctx.params.exp_modulus().0.clone() - 1i32));
+        let result =
+            ctx.encode(&IntegerP(ctx.params.exp_modulus().0.clone() - 1i32));
         assert!(result.is_err())
     }
 

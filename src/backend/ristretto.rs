@@ -21,7 +21,6 @@ use std::io::ErrorKind;
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use curve25519_dalek::constants::BASEPOINT_ORDER;
 use curve25519_dalek::constants::RISTRETTO_BASEPOINT_POINT;
 use curve25519_dalek::constants::RISTRETTO_BASEPOINT_TABLE;
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
@@ -40,10 +39,8 @@ use crate::serialization::{StrandDeserialize, StrandSerialize};
 use crate::util;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
+// Ristretto context
 pub struct RistrettoCtx;
-
-const DUMMY_SCALAR: Scalar = BASEPOINT_ORDER;
-const DUMMY_POINT: RistrettoPoint = RISTRETTO_BASEPOINT_POINT;
 
 #[derive(PartialEq, Eq, Clone)]
 // RistrettoPoint for Strand

@@ -100,7 +100,8 @@ pub trait Element<C: Ctx>:
     fn mod_pow(&self, exp: &C::X, modulus: &C::E) -> C::E;
     /// Modulo operation / not necessary, applied automatically.
     fn modulo(&self, modulus: &C::E) -> C::E;
-    /// Modulo operation using group order / not necessary, applied automatically.
+    /// Modulo operation using group order / not necessary, applied
+    /// automatically.
     fn modp(&self, ctx: &C) -> C::E;
     /// Division (a div b = a * b^1) using group order / point subtraction.
     fn divp(&self, other: &C::E, ctx: &C) -> C::E;

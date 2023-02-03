@@ -10,14 +10,14 @@ use crate::elgamal::{Ciphertext, PrivateKey, PublicKey};
 use crate::util::Par;
 use crate::zkp::{ChaumPedersen, Schnorr, Zkp};
 
-pub struct Keymaker<C: Ctx> {
+pub(crate) struct Keymaker<C: Ctx> {
     sk: PrivateKey<C>,
     pk: PublicKey<C>,
     ctx: C,
 }
 
 impl<C: Ctx> Keymaker<C> {
-    pub fn gen(ctx: &C) -> Keymaker<C> {
+    pub(crate) fn gen(ctx: &C) -> Keymaker<C> {
         let sk = PrivateKey::gen(ctx);
         let pk = PublicKey::from_element(&sk.pk_element, ctx);
 
@@ -28,7 +28,7 @@ impl<C: Ctx> Keymaker<C> {
         }
     }
 
-    pub fn from_sk(sk: PrivateKey<C>, ctx: &C) -> Keymaker<C> {
+    pub(crate) fn from_sk(sk: PrivateKey<C>, ctx: &C) -> Keymaker<C> {
         let pk = PublicKey::from_element(&sk.pk_element, ctx);
 
         Keymaker {
@@ -38,7 +38,7 @@ impl<C: Ctx> Keymaker<C> {
         }
     }
 
-    pub fn share(&self, label: &[u8]) -> (PublicKey<C>, Schnorr<C>) {
+    pub(crate) fn share(&self, label: &[u8]) -> (PublicKey<C>, Schnorr<C>) {
         let zkp = Zkp::new(&self.ctx);
         let pk = PublicKey::from_element(&self.pk.element, &self.ctx);
         let proof = zkp.schnorr_prove(&self.sk.value, &pk.element, None, label);
@@ -46,7 +46,7 @@ impl<C: Ctx> Keymaker<C> {
         (pk, proof)
     }
 
-    pub fn verify_share(
+    pub(crate) fn verify_share(
         ctx: &C,
         pk: &PublicKey<C>,
         proof: &Schnorr<C>,
@@ -56,7 +56,7 @@ impl<C: Ctx> Keymaker<C> {
         zkp.schnorr_verify(&pk.element, None, proof, label)
     }
 
-    pub fn combine_pks(ctx: &C, pks: Vec<PublicKey<C>>) -> PublicKey<C> {
+    pub(crate) fn combine_pks(ctx: &C, pks: Vec<PublicKey<C>>) -> PublicKey<C> {
         let mut acc: C::E = pks[0].element.clone();
 
         for pk in pks.iter().skip(1) {
@@ -66,7 +66,7 @@ impl<C: Ctx> Keymaker<C> {
         PublicKey::from_element(&acc, ctx)
     }
 
-    pub fn decryption_factor(
+    pub(crate) fn decryption_factor(
         &self,
         c: &Ciphertext<C>,
         label: &[u8],
@@ -85,7 +85,7 @@ impl<C: Ctx> Keymaker<C> {
         (dec_factor, proof)
     }
 
-    pub fn decryption_factor_many(
+    pub(crate) fn decryption_factor_many(
         &self,
         cs: &[Ciphertext<C>],
         label: &[u8],
@@ -96,7 +96,11 @@ impl<C: Ctx> Keymaker<C> {
         decs_proofs
     }
 
-    pub fn joint_dec(ctx: &C, decs: Vec<C::E>, c: &Ciphertext<C>) -> C::E {
+    pub(crate) fn joint_dec(
+        ctx: &C,
+        decs: Vec<C::E>,
+        c: &Ciphertext<C>,
+    ) -> C::E {
         let mut acc: C::E = decs[0].clone();
         for dec in decs.iter().skip(1) {
             acc = acc.mul(dec).modp(ctx);
@@ -105,7 +109,7 @@ impl<C: Ctx> Keymaker<C> {
         c.mhr.divp(&acc, ctx).modp(ctx)
     }
 
-    pub fn joint_dec_many(
+    pub(crate) fn joint_dec_many(
         ctx: &C,
         decs: &[Vec<C::E>],
         cs: &[Ciphertext<C>],
@@ -126,7 +130,7 @@ impl<C: Ctx> Keymaker<C> {
         decrypted
     }
 
-    pub fn verify_decryption_factors(
+    pub(crate) fn verify_decryption_factors(
         ctx: &C,
         pk_value: &C::E,
         ciphertexts: &[Ciphertext<C>],
