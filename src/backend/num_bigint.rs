@@ -11,11 +11,10 @@
 //! let ctx = BigintCtx::<P2048>::default();
 //! // do some stuff..
 //! let g = ctx.generator();
-//! let m = ctx.modulus();
 //! let a = ctx.rnd_exp();
 //! let b = ctx.rnd_exp();
-//! let g_ab = g.mod_pow(&a, &m).mod_pow(&b, &m);
-//! let g_ba = g.mod_pow(&b, &m).mod_pow(&a, &m);
+//! let g_ab = ctx.emod_pow(&ctx.emod_pow(g, &a), &b);
+//! let g_ba = ctx.emod_pow(&ctx.emod_pow(g, &b), &a);
 //! assert_eq!(g_ab, g_ba);
 //! ```
 use std::fmt::Debug;
@@ -126,15 +125,6 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn generator(&self) -> &Self::E {
         self.params.generator()
     }
-    #[inline(always)]
-    fn modulus(&self) -> &Self::E {
-        self.params.modulus()
-    }
-    #[inline(always)]
-    fn exp_modulus(&self) -> &Self::X {
-        self.params.exp_modulus()
-    }
-
     #[inline(always)]
     fn gmod_pow(&self, other: &Self::X) -> Self::E {
         BigUintE::new(
@@ -407,12 +397,7 @@ impl BigintCtxParams for P2048 {
         );
         let co_factor =
             BigUint::from_str_radix(SAFEPRIME_COFACTOR, 16).unwrap();
-        /*
-        FIXME revert to this once we stop using verificatum primes, seems slightly faster due to small generator
-        let p = BigUint::from_str_radix(P_STR_2048, 16).unwrap();
-        let q = BigUint::from_str_radix(Q_STR_2048, 16).unwrap();
-        let g = BigUint::from_str_radix(G_STR_2048, 16).unwrap();*/
-
+            
         assert!(g.0.legendre(&p.0) == 1);
 
         P2048 {

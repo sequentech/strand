@@ -10,11 +10,10 @@
 //! let ctx = RugCtx::<P2048>::default();
 //! // do some stuff..
 //! let g = ctx.generator();
-//! let m = ctx.modulus();
 //! let a = ctx.rnd_exp();
 //! let b = ctx.rnd_exp();
-//! let g_ab = g.mod_pow(&a, &m).mod_pow(&b, &m);
-//! let g_ba = g.mod_pow(&b, &m).mod_pow(&a, &m);
+//! let g_ab = ctx.emod_pow(&ctx.emod_pow(g, &a), &b);
+//! let g_ba = ctx.emod_pow(&ctx.emod_pow(g, &b), &a);
 //! assert_eq!(g_ab, g_ba);
 //! ```
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -80,7 +79,7 @@ impl<P: RugCtxParams> RugCtx<P> {
         let hashed = hasher.finalize();
 
         let (_, rem) = Integer::from_digits(&hashed, Order::Lsf)
-            .div_rem(self.modulus().0.clone());
+            .div_rem(self.params.modulus().0.clone());
 
         rem
     }
@@ -94,14 +93,6 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     #[inline(always)]
     fn generator(&self) -> &Self::E {
         self.params.generator()
-    }
-    #[inline(always)]
-    fn modulus(&self) -> &Self::E {
-        self.params.modulus()
-    }
-    #[inline(always)]
-    fn exp_modulus(&self) -> &Self::X {
-        self.params.exp_modulus()
     }
     #[inline(always)]
     fn gmod_pow(&self, other: &Self::X) -> Self::E {
@@ -778,8 +769,8 @@ mod tests {
         let challenge: Vec<String> = vec![c.0.to_string_radix(16)];
 
         let group = vec![
-            ctx.modulus().0.to_string_radix(16),
-            ctx.exp_modulus().0.to_string_radix(16),
+            ctx.params.modulus().0.to_string_radix(16),
+            ctx.params.exp_modulus().0.to_string_radix(16),
         ];
 
         let transcript = CoqVerifierTranscript {

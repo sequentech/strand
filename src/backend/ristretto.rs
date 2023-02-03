@@ -10,11 +10,10 @@
 //! let ctx = RistrettoCtx;
 //! // do some stuff..
 //! let g = ctx.generator();
-//! let m = ctx.modulus();
 //! let a = ctx.rnd_exp();
 //! let b = ctx.rnd_exp();
-//! let g_ab = g.mod_pow(&a, &m).mod_pow(&b, &m);
-//! let g_ba = g.mod_pow(&b, &m).mod_pow(&a, &m);
+//! let g_ab = ctx.emod_pow(&ctx.emod_pow(g, &a), &b);
+//! let g_ba = ctx.emod_pow(&ctx.emod_pow(g, &b), &a);
 //! assert_eq!(g_ab, g_ba);
 //! ```
 use std::io::Error;
@@ -87,18 +86,6 @@ impl Ctx for RistrettoCtx {
     fn generator(&self) -> &Self::E {
         &RistrettoPointS(RISTRETTO_BASEPOINT_POINT)
     }
-
-    #[inline(always)]
-    fn modulus(&self) -> &Self::E {
-        // returning a dummy value as modulus does not apply to this backend
-        &RistrettoPointS(DUMMY_POINT)
-    }
-    #[inline(always)]
-    fn exp_modulus(&self) -> &Self::X {
-        // returning a dummy value as modulus does not apply to this backend
-        &ScalarS(DUMMY_SCALAR)
-    }
-
     #[inline(always)]
     fn gmod_pow(&self, other: &ScalarS) -> Self::E {
         RistrettoPointS(&other.0 * &RISTRETTO_BASEPOINT_TABLE)
@@ -281,7 +268,7 @@ impl Element<RistrettoCtx> for RistrettoPointS {
     }
     #[inline(always)]
     fn divp(&self, other: &Self, ctx: &RistrettoCtx) -> Self {
-        RistrettoPointS(self.0 + other.inv(ctx.modulus()).0)
+        RistrettoPointS(self.0 + other.invp(ctx).0)
     }
     #[inline(always)]
     fn invp(&self, _ctx: &RistrettoCtx) -> Self {

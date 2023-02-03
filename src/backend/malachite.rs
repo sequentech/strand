@@ -11,11 +11,10 @@
 //! let ctx = MalachiteCtx::<P2048>::default();
 //! // do some stuff..
 //! let g = ctx.generator();
-//! let m = ctx.modulus();
 //! let a = ctx.rnd_exp();
 //! let b = ctx.rnd_exp();
-//! let g_ab = g.mod_pow(&a, &m).mod_pow(&b, &m);
-//! let g_ba = g.mod_pow(&b, &m).mod_pow(&a, &m);
+//! let g_ab = ctx.emod_pow(&ctx.emod_pow(g, &a), &b);
+//! let g_ba = ctx.emod_pow(&ctx.emod_pow(g, &b), &a);
 //! assert_eq!(g_ab, g_ba);
 //! ```
 use std::fmt::Debug;
@@ -146,15 +145,6 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
         self.params.generator()
     }
     #[inline(always)]
-    fn modulus(&self) -> &Self::E {
-        self.params.modulus()
-    }
-    #[inline(always)]
-    fn exp_modulus(&self) -> &Self::X {
-        self.params.exp_modulus()
-    }
-
-    #[inline(always)]
     fn gmod_pow(&self, other: &Self::X) -> Self::E {
         NaturalE::new(
             self.generator()
@@ -270,7 +260,7 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
         let u16s = bytes.iter().map(|b| *b as u16);
         let ret = Natural::from_digits_desc(&256u16, u16s).expect("impossible");
         let zero: Natural = Natural::from(0u8);
-        if (ret < zero) || ret >= self.exp_modulus().0 {
+        if (ret < zero) || ret >= self.params.exp_modulus().0 {
             Err("Out of range")
         } else {
             Ok(NaturalX::new(ret))
@@ -286,7 +276,7 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
         let u16s = hashed.into_iter().map(|b| b as u16);
 
         let num = Natural::from_digits_desc(&256, u16s).expect("impossible");
-        NaturalX::new(num.rem(&self.exp_modulus().0))
+        NaturalX::new(num.rem(&self.params.exp_modulus().0))
     }
     fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
         let encrypted =
@@ -452,11 +442,6 @@ impl MalachiteCtxParams for P2048 {
         );
         let co_factor =
             Natural::from_string_base(16, SAFEPRIME_COFACTOR).unwrap();
-        /*
-        FIXME revert to this once we stop using verificatum primes, seems slightly faster due to small generator
-        let p = BigUint::from_str_radix(P_STR_2048, 16).unwrap();
-        let q = BigUint::from_str_radix(Q_STR_2048, 16).unwrap();
-        let g = BigUint::from_str_radix(G_STR_2048, 16).unwrap();*/
 
         assert!(g.0.clone().legendre_symbol(&p.0) == 1);
 
