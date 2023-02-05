@@ -40,6 +40,7 @@ use crate::context::{Ctx, Element, Exponent, Plaintext};
 use crate::elgamal::{Ciphertext, PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::serialization::{StrandDeserialize, StrandSerialize};
+use crate::util::StrandError;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct NaturalE<P: MalachiteCtxParams>(
@@ -104,13 +105,13 @@ impl<P: MalachiteCtxParams> MalachiteCtx<P> {
     pub fn element_from_natural(
         &self,
         natural: Natural,
-    ) -> Result<NaturalE<P>, &'static str> {
+    ) -> Result<NaturalE<P>, StrandError> {
         let one: Natural = Natural::from(1u8);
         if (natural < one) || natural >= self.params.modulus().0 {
-            Err("Out of range")
+            Err(StrandError::Generic("Out of range".to_string()))
         } else if natural.clone().legendre_symbol(&self.params.modulus().0) != 1
         {
-            Err("Not a quadratic residue")
+            Err(StrandError::Generic("Not a quadratic residue".to_string()))
         } else {
             Ok(NaturalE::new(natural))
         }
@@ -120,9 +121,9 @@ impl<P: MalachiteCtxParams> MalachiteCtx<P> {
         &self,
         string: &str,
         radix: u8,
-    ) -> Result<NaturalE<P>, &'static str> {
+    ) -> Result<NaturalE<P>, StrandError> {
         let natural = Natural::from_string_base(radix, string)
-            .ok_or("Failed to parse")?;
+            .ok_or(StrandError::Generic("Failed to parse".to_string()))?;
 
         self.element_from_natural(natural)
     }
@@ -218,17 +219,21 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
         NaturalP(self.rnd_exp().0)
     }
 
-    fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
+    fn encode(&self, plaintext: &Self::P) -> Result<Self::E, StrandError> {
         let one: Natural = Natural::from(1u8);
 
         if plaintext.0 >= (&self.params.exp_modulus().0 - &one) {
-            return Err("Failed to encode, out of range");
+            return Err(StrandError::Generic(
+                "Failed to encode, out of range".to_string(),
+            ));
         }
         let notzero: Natural = plaintext.0.clone() + one;
         let legendre =
             notzero.clone().legendre_symbol(&self.params.modulus().0);
         if legendre == 0 {
-            return Err("Failed to encode, legendre = 0");
+            return Err(StrandError::Generic(
+                "Failed to encode, legendre = 0".to_string(),
+            ));
         }
         let result = if legendre == 1 {
             notzero
@@ -248,20 +253,17 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
             NaturalP(&element.0 - one)
         }
     }
-    fn element_from_bytes(
-        &self,
-        bytes: &[u8],
-    ) -> Result<Self::E, &'static str> {
+    fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, StrandError> {
         let u16s = bytes.iter().map(|b| *b as u16);
         let num = Natural::from_digits_desc(&256, u16s).expect("impossible");
         self.element_from_natural(num)
     }
-    fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
+    fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, StrandError> {
         let u16s = bytes.iter().map(|b| *b as u16);
         let ret = Natural::from_digits_desc(&256u16, u16s).expect("impossible");
         let zero: Natural = Natural::from(0u8);
         if (ret < zero) || ret >= self.params.exp_modulus().0 {
-            Err("Out of range")
+            Err(StrandError::Generic("Out of range".to_string()))
         } else {
             Ok(NaturalX::new(ret))
         }
@@ -281,7 +283,7 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
     fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
         let encrypted =
             pk.encrypt(&self.encode(&NaturalP(exp.0.clone())).unwrap());
-        encrypted.strand_serialize()
+        encrypted.strand_serialize().unwrap()
     }
     fn decrypt_exp(
         &self,
@@ -491,10 +493,8 @@ impl<P: MalachiteCtxParams> BorshDeserialize for NaturalE<P> {
         let bytes = <Vec<u8>>::deserialize(bytes)?;
         let ctx: MalachiteCtx<P> = Default::default();
 
-        let value = ctx
-            .element_from_bytes(&bytes)
-            .map_err(|e| Error::new(ErrorKind::Other, e));
-        value
+        ctx.element_from_bytes(&bytes)
+            .map_err(|e| Error::new(ErrorKind::Other, e))
     }
 }
 
@@ -516,10 +516,8 @@ impl<P: MalachiteCtxParams> BorshDeserialize for NaturalX<P> {
         let bytes = <Vec<u8>>::deserialize(bytes)?;
         let ctx = MalachiteCtx::<P>::default();
 
-        let value = ctx
-            .exp_from_bytes(&bytes)
-            .map_err(|e| Error::new(ErrorKind::Other, e));
-        value
+        ctx.exp_from_bytes(&bytes)
+            .map_err(|e| Error::new(ErrorKind::Other, e))
     }
 }
 

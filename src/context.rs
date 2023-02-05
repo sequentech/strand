@@ -41,7 +41,10 @@
 
 use borsh::{BorshDeserialize, BorshSerialize};
 // use crate::zkp::Zkp;
-use crate::elgamal::{PrivateKey, PublicKey};
+use crate::{
+    elgamal::{PrivateKey, PublicKey},
+    util::StrandError,
+};
 use std::{
     fmt::Debug,
     marker::{Send, Sync},
@@ -65,11 +68,10 @@ pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
     fn rnd_exp(&self) -> Self::X;
     fn rnd_plaintext(&self) -> Self::P;
 
-    fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str>;
+    fn encode(&self, plaintext: &Self::P) -> Result<Self::E, StrandError>;
     fn decode(&self, element: &Self::E) -> Self::P;
-    fn element_from_bytes(&self, bytes: &[u8])
-        -> Result<Self::E, &'static str>;
-    fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str>;
+    fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, StrandError>;
+    fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, StrandError>;
     fn exp_from_u64(&self, value: u64) -> Self::X;
     fn hash_to_exp(&self, bytes: &[u8]) -> Self::X;
 

@@ -1,7 +1,9 @@
+use num_bigint::ParseBigIntError;
 // SPDX-FileCopyrightText: 2022 David Ruescas <david@sequentech.io>
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 use sha2::{Digest, Sha512};
+use thiserror::Error;
 
 use crate::context::Ctx;
 use crate::elgamal::Ciphertext;
@@ -38,21 +40,33 @@ cfg_if::cfg_if! {
     }
 }
 
+#[derive(Error, Debug)]
+pub enum StrandError {
+    #[error("{0}")]
+    Generic(String),
+    #[error("bigint parse error: {0}")]
+    ParseBigIntError(#[from] ParseBigIntError),
+    #[error("io error: {0}")]
+    SerializationError(#[from] std::io::Error),
+}
+
 /// Converts a slice into a hash-sized array.
-pub fn to_hash_array(input: &[u8]) -> Result<[u8; 64], &'static str> {
+pub fn to_hash_array(input: &[u8]) -> Result<[u8; 64], StrandError> {
     to_u8_array(input)
 }
 
 /// Converts a slice into a fixed size array.
 pub fn to_u8_array<const N: usize>(
     input: &[u8],
-) -> Result<[u8; N], &'static str> {
+) -> Result<[u8; N], StrandError> {
     if input.len() == N {
         let mut bytes = [0u8; N];
         bytes.copy_from_slice(input);
         Ok(bytes)
     } else {
-        Err("Unexpected number of bytes")
+        Err(StrandError::Generic(
+            "Unexpected number of bytes".to_string(),
+        ))
     }
 }
 

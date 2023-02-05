@@ -65,6 +65,7 @@ web-sys = { version = "0.3", features = ['Performance'], optional = true }
 rayon = { version = "1.5", optional = true }
 hex = { version = "0.4.2" }
 cfg-if = "1.0"
+thiserror = "1.0.38"
 
 [dependencies.malachite]
 version = "0.3.1"

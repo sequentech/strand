@@ -14,7 +14,7 @@ use crate::elgamal::{Ciphertext, PublicKey};
 use crate::rnd::StrandRng;
 use crate::serialization::StrandSerialize;
 use crate::serialization::{StrandVectorC, StrandVectorE, StrandVectorX};
-use crate::util::Par;
+use crate::util::{Par, StrandError};
 use crate::zkp::ChallengeInput;
 
 pub(crate) struct YChallengeInput<'a, C: Ctx> {
@@ -130,7 +130,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         r_primes: &[C::X],
         perm: &[usize],
         label: &[u8],
-    ) -> ShuffleProof<C> {
+    ) -> Result<ShuffleProof<C>, StrandError> {
         // let now = Instant::now();
         let (cs, rs) = self.gen_commitments(perm, &self.ctx);
         // println!("gen_commitments {}", now.elapsed().as_millis());
@@ -143,10 +143,10 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         // let now = Instant::now();
         let (proof, _, _) =
-            self.gen_proof_ext(es, e_primes, r_primes, &perm_data, label);
+            self.gen_proof_ext(es, e_primes, r_primes, &perm_data, label)?;
         // println!("gen_proof_ext {}", now.elapsed().as_millis());
 
-        proof
+        Ok(proof)
     }
 
     // gen_proof_ext has support for
@@ -159,7 +159,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         r_primes: &[C::X],
         perm_data: &PermutationData<C>,
         label: &[u8],
-    ) -> (ShuffleProof<C>, Vec<C::X>, C::X) {
+    ) -> Result<(ShuffleProof<C>, Vec<C::X>, C::X), StrandError> {
         let ctx = &self.ctx;
 
         #[allow(non_snake_case)]
@@ -292,7 +292,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         // let now = Instant::now();
         // ~0 cost
-        let c: C::X = self.shuffle_proof_challenge(&y, &t, label);
+        let c: C::X = self.shuffle_proof_challenge(&y, &t, label).unwrap();
 
         // println!("shuffle proof challenge {}", now.elapsed().as_millis());
 
@@ -325,7 +325,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         let cs = cs.to_vec();
 
-        (
+        Ok((
             ShuffleProof {
                 t,
                 s,
@@ -334,7 +334,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             },
             us,
             c,
-        )
+        ))
     }
 
     pub fn check_proof(
@@ -343,7 +343,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         es: &[Ciphertext<C>],
         e_primes: &[Ciphertext<C>],
         label: &[u8],
-    ) -> bool {
+    ) -> Result<bool, StrandError> {
         let ctx = &self.ctx;
 
         #[allow(non_snake_case)]
@@ -416,7 +416,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             pk: self.pk,
         };
 
-        let c = self.shuffle_proof_challenge(&y, &proof.t, label);
+        let c = self.shuffle_proof_challenge(&y, &proof.t, label)?;
 
         let t_prime1 = (ctx.emod_pow(&c_bar.invp(ctx), &c))
             .mul(&ctx.gmod_pow(&proof.s.s1))
@@ -468,7 +468,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         for (i, t_hat) in proof.t.t_hats.0.iter().enumerate().take(N) {
             checks.push(t_hat.eq(&t_hat_primes[i]));
         }
-        !checks.contains(&false)
+        Ok(!checks.contains(&false))
     }
 
     pub(crate) fn gen_commitments(
@@ -551,7 +551,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         prefix_challenge_input.add("cs", &StrandVectorE::<C>(cs.to_vec()));
         prefix_challenge_input.add("label", &label.to_vec());
 
-        let prefix_bytes = prefix_challenge_input.strand_serialize();
+        let prefix_bytes = prefix_challenge_input.strand_serialize().unwrap();
 
         // optimization: instead of calculating u = H(prefix || i),
         // we do u = H(H(prefix) || i)
@@ -578,7 +578,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         y: &YChallengeInput<C>,
         t: &Commitments<C>,
         label: &[u8],
-    ) -> C::X {
+    ) -> Result<C::X, StrandError> {
         let mut challenge_input = ChallengeInput::from(&[
             ("t1", &t.t1),
             ("t2", &t.t2),
@@ -588,27 +588,27 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         ]);
 
         challenge_input
-            .add_bytes("es", StrandVectorC(y.es.to_vec()).strand_serialize());
+            .add_bytes("es", StrandVectorC(y.es.to_vec()).strand_serialize()?);
         challenge_input.add_bytes(
             "e_primes",
-            StrandVectorC(y.e_primes.to_vec()).strand_serialize(),
+            StrandVectorC(y.e_primes.to_vec()).strand_serialize()?,
         );
         challenge_input.add_bytes(
             "cs",
-            StrandVectorE::<C>(y.cs.to_vec()).strand_serialize(),
+            StrandVectorE::<C>(y.cs.to_vec()).strand_serialize()?,
         );
         challenge_input.add_bytes(
             "c_hats",
-            StrandVectorE::<C>(y.c_hats.to_vec()).strand_serialize(),
+            StrandVectorE::<C>(y.c_hats.to_vec()).strand_serialize()?,
         );
         challenge_input
-            .add_bytes("pk.element", y.pk.element.strand_serialize());
-        challenge_input.add_bytes("t_hats", t.t_hats.strand_serialize());
+            .add_bytes("pk.element", y.pk.element.strand_serialize()?);
+        challenge_input.add_bytes("t_hats", t.t_hats.strand_serialize()?);
         challenge_input.add_bytes("label", label.to_vec());
 
         let bytes = challenge_input.get_bytes();
 
-        self.ctx.hash_to_exp(&bytes)
+        Ok(self.ctx.hash_to_exp(&bytes))
     }
 }
 

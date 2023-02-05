@@ -33,6 +33,7 @@ use crate::context::{Ctx, Element, Exponent, Plaintext};
 use crate::elgamal::{Ciphertext, PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::serialization::{StrandDeserialize, StrandSerialize};
+use crate::util::StrandError;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct RugCtx<P: RugCtxParams> {
@@ -141,18 +142,24 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
     fn rnd_plaintext(&self) -> Self::P {
         IntegerP(self.rnd_exp().0)
     }
-    fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
+    fn encode(&self, plaintext: &Self::P) -> Result<Self::E, StrandError> {
         if plaintext.0 >= (self.params.exp_modulus().0.clone() - 1i32) {
-            return Err("Failed to encode, out of range");
+            return Err(StrandError::Generic(
+                "Failed to encode, out of range".to_string(),
+            ));
         }
         if plaintext.0 < 0i32 {
-            return Err("Failed to encode, negative");
+            return Err(StrandError::Generic(
+                "Failed to encode, negative".to_string(),
+            ));
         }
 
         let notzero: Integer = plaintext.0.clone() + 1i32;
         let legendre = notzero.legendre(&self.params.modulus().0);
         if legendre == 0 {
-            return Err("Failed to encode, legendre = 0");
+            return Err(StrandError::Generic(
+                "Failed to encode, legendre = 0".to_string(),
+            ));
         }
         let result = if legendre == 1 {
             notzero
@@ -171,23 +178,20 @@ impl<P: RugCtxParams> Ctx for RugCtx<P> {
             IntegerP(element.0.clone() - 1i32)
         }
     }
-    fn element_from_bytes(
-        &self,
-        bytes: &[u8],
-    ) -> Result<Self::E, &'static str> {
+    fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, StrandError> {
         let ret = Integer::from_digits(bytes, Order::MsfLe);
         if (ret < 1) || ret >= self.params.modulus().0 {
-            Err("Out of range")
+            Err(StrandError::Generic("Out of range".to_string()))
         } else if ret.legendre(&self.params.modulus().0) != 1 {
-            Err("Not a quadratic residue")
+            Err(StrandError::Generic("Not a quadratic residue".to_string()))
         } else {
             Ok(IntegerE::new(ret))
         }
     }
-    fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
+    fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, StrandError> {
         let ret = Integer::from_digits(bytes, Order::MsfLe);
         if (ret < 0) || ret >= self.params.exp_modulus().0 {
-            Err("Out of range")
+            Err(StrandError::Generic("Out of range".to_string()))
         } else {
             Ok(IntegerX::new(ret))
         }
@@ -445,10 +449,8 @@ impl<P: RugCtxParams> BorshDeserialize for IntegerE<P> {
         let bytes = <Vec<u8>>::deserialize(bytes)?;
         let ctx = RugCtx::<P>::default();
 
-        let value = ctx
-            .element_from_bytes(&bytes)
-            .map_err(|e| Error::new(ErrorKind::Other, e));
-        value
+        ctx.element_from_bytes(&bytes)
+            .map_err(|e| Error::new(ErrorKind::Other, e))
     }
 }
 
@@ -469,10 +471,8 @@ impl<P: RugCtxParams> BorshDeserialize for IntegerX<P> {
         let bytes = <Vec<u8>>::deserialize(bytes)?;
         let ctx = RugCtx::<P>::default();
 
-        let value = ctx
-            .exp_from_bytes(&bytes)
-            .map_err(|e| Error::new(ErrorKind::Other, e));
-        value
+        ctx.exp_from_bytes(&bytes)
+            .map_err(|e| Error::new(ErrorKind::Other, e))
     }
 }
 

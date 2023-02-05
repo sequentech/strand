@@ -210,11 +210,11 @@ pub(crate) mod tests {
         let (pk1, proof1) = km1.share(&vec![]);
         let (pk2, proof2) = km2.share(&vec![]);
 
-        let share1_pk_b = pk1.strand_serialize();
-        let share1_proof_b = proof1.strand_serialize();
+        let share1_pk_b = pk1.strand_serialize().unwrap();
+        let share1_proof_b = proof1.strand_serialize().unwrap();
 
-        let share2_pk_b = pk2.strand_serialize();
-        let share2_proof_b = proof2.strand_serialize();
+        let share2_pk_b = pk2.strand_serialize().unwrap();
+        let share2_proof_b = proof2.strand_serialize().unwrap();
 
         let share1_pk_d =
             PublicKey::<C>::strand_deserialize(&share1_pk_b).unwrap();
@@ -250,11 +250,11 @@ pub(crate) mod tests {
         let (decs1, proofs1) = km1.decryption_factor_many(&cs, &vec![]);
         let (decs2, proofs2) = km2.decryption_factor_many(&cs, &vec![]);
 
-        let decs1_b = decs1.strand_serialize();
-        let proofs1_b = proofs1.strand_serialize();
+        let decs1_b = decs1.strand_serialize().unwrap();
+        let proofs1_b = proofs1.strand_serialize().unwrap();
 
-        let decs2_b = decs2.strand_serialize();
-        let proofs2_b = proofs2.strand_serialize();
+        let decs2_b = decs2.strand_serialize().unwrap();
+        let proofs2_b = proofs2.strand_serialize().unwrap();
 
         let decs1_d = Vec::<C::E>::strand_deserialize(&decs1_b).unwrap();
         let proofs1_d =
@@ -307,9 +307,13 @@ pub(crate) mod tests {
         };
 
         let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
-        let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &vec![]);
+        let proof = shuffler
+            .gen_proof(&es, &e_primes, &rs, &perm, &vec![])
+            .unwrap();
 
-        let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
+        let ok = shuffler
+            .check_proof(&proof, &es, &e_primes, &vec![])
+            .unwrap();
 
         assert!(ok);
     }
@@ -327,15 +331,17 @@ pub(crate) mod tests {
             ctx: (*ctx).clone(),
         };
         let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
-        let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &vec![]);
+        let proof = shuffler
+            .gen_proof(&es, &e_primes, &rs, &perm, &vec![])
+            .unwrap();
         // in this test do this only after serialization
         // let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
         // assert!(ok);
 
-        let pk_b = pk.strand_serialize();
-        let es_b = es.strand_serialize();
-        let eprimes_b = e_primes.strand_serialize();
-        let proof_b = proof.strand_serialize();
+        let pk_b = pk.strand_serialize().unwrap();
+        let es_b = es.strand_serialize().unwrap();
+        let eprimes_b = e_primes.strand_serialize().unwrap();
+        let proof_b = proof.strand_serialize().unwrap();
 
         let pk_d = PublicKey::<C>::strand_deserialize(&pk_b).unwrap();
         let es_d = Vec::<Ciphertext<C>>::strand_deserialize(&es_b).unwrap();
@@ -349,7 +355,9 @@ pub(crate) mod tests {
             ctx: (*ctx).clone(),
         };
 
-        let ok_d = shuffler_d.check_proof(&proof_d, &es_d, &eprimes_d, &vec![]);
+        let ok_d = shuffler_d
+            .check_proof(&proof_d, &es_d, &eprimes_d, &vec![])
+            .unwrap();
 
         assert!(ok_d);
     }

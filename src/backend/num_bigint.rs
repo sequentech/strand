@@ -35,6 +35,7 @@ use crate::context::{Ctx, Element, Exponent, Plaintext};
 use crate::elgamal::{Ciphertext, PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::serialization::{StrandDeserialize, StrandSerialize};
+use crate::util::StrandError;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct BigUintE<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
@@ -93,12 +94,12 @@ impl<P: BigintCtxParams> BigintCtx<P> {
     pub fn element_from_biguint(
         &self,
         biguint: BigUint,
-    ) -> Result<BigUintE<P>, &'static str> {
+    ) -> Result<BigUintE<P>, StrandError> {
         let one: BigUint = One::one();
         if (biguint < one) || biguint >= self.params.modulus().0 {
-            Err("Out of range")
+            Err(StrandError::Generic("Out of range".to_string()))
         } else if biguint.legendre(&self.params.modulus().0) != 1 {
-            Err("Not a quadratic residue")
+            Err(StrandError::Generic("Not a quadratic residue".to_string()))
         } else {
             Ok(BigUintE::new(biguint))
         }
@@ -108,11 +109,11 @@ impl<P: BigintCtxParams> BigintCtx<P> {
         &self,
         string: &str,
         radix: u32,
-    ) -> Result<BigUintE<P>, &'static str> {
-        let biguint = BigUint::from_str_radix(string, radix)
-            .map_err(|_| "Failed to parse")?;
+    ) -> Result<BigUintE<P>, StrandError> {
+        let biguint: Result<BigUint, StrandError> =
+            BigUint::from_str_radix(string, radix).map_err(|e| e.into());
 
-        self.element_from_biguint(biguint)
+        self.element_from_biguint(biguint?)
     }
 }
 
@@ -178,16 +179,20 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         BigUintP(self.rnd_exp().0)
     }
 
-    fn encode(&self, plaintext: &Self::P) -> Result<Self::E, &'static str> {
+    fn encode(&self, plaintext: &Self::P) -> Result<Self::E, StrandError> {
         let one: BigUint = One::one();
 
         if plaintext.0 >= (&self.params.exp_modulus().0 - &one) {
-            return Err("Failed to encode, out of range");
+            return Err(StrandError::Generic(
+                "Failed to encode, out of range".to_string(),
+            ));
         }
         let notzero: BigUint = plaintext.0.clone() + one;
         let legendre = notzero.legendre(&self.params.modulus().0);
         if legendre == 0 {
-            return Err("Failed to encode, legendre = 0");
+            return Err(StrandError::Generic(
+                "Failed to encode, legendre = 0".to_string(),
+            ));
         }
         let result = if legendre == 1 {
             notzero
@@ -207,18 +212,15 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
             BigUintP(&element.0 - one)
         }
     }
-    fn element_from_bytes(
-        &self,
-        bytes: &[u8],
-    ) -> Result<Self::E, &'static str> {
+    fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, StrandError> {
         let biguint = BigUint::from_bytes_le(bytes);
         self.element_from_biguint(biguint)
     }
-    fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
+    fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, StrandError> {
         let ret = BigUint::from_bytes_le(bytes);
         let zero: BigUint = Zero::zero();
         if (ret < zero) || ret >= self.params.exp_modulus().0 {
-            Err("Out of range")
+            Err(StrandError::Generic("Out of range".to_string()))
         } else {
             Ok(BigUintX::new(ret))
         }
@@ -237,7 +239,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
     fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
         let encrypted =
             pk.encrypt(&self.encode(&BigUintP(exp.0.clone())).unwrap());
-        encrypted.strand_serialize()
+        encrypted.strand_serialize().unwrap()
     }
     fn decrypt_exp(
         &self,
@@ -445,10 +447,8 @@ impl<P: BigintCtxParams> BorshDeserialize for BigUintE<P> {
         let bytes = <Vec<u8>>::deserialize(bytes)?;
         let ctx: BigintCtx<P> = Default::default();
 
-        let value = ctx
-            .element_from_bytes(&bytes)
-            .map_err(|e| Error::new(ErrorKind::Other, e));
-        value
+        ctx.element_from_bytes(&bytes)
+            .map_err(|e| Error::new(ErrorKind::Other, e))
     }
 }
 
@@ -469,10 +469,8 @@ impl<P: BigintCtxParams> BorshDeserialize for BigUintX<P> {
         let bytes = <Vec<u8>>::deserialize(bytes)?;
         let ctx = BigintCtx::<P>::default();
 
-        let value = ctx
-            .exp_from_bytes(&bytes)
-            .map_err(|e| Error::new(ErrorKind::Other, e));
-        value
+        ctx.exp_from_bytes(&bytes)
+            .map_err(|e| Error::new(ErrorKind::Other, e))
     }
 }
 

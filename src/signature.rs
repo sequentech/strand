@@ -143,13 +143,14 @@ pub(crate) mod tests {
 
         let (vk_bytes, sig_bytes) = {
             let sk = StrandSignatureSk(SigningKey::new(&mut rng));
-            let sk_b = sk.strand_serialize();
+            let sk_b = sk.strand_serialize().unwrap();
             let sk_d = StrandSignatureSk::strand_deserialize(&sk_b).unwrap();
 
             let sig = sk_d.sign(msg);
 
-            let sig_bytes = sig.strand_serialize();
-            let vk_bytes = StrandSignaturePk::from(&sk_d).strand_serialize();
+            let sig_bytes = sig.strand_serialize().unwrap();
+            let vk_bytes =
+                StrandSignaturePk::from(&sk_d).strand_serialize().unwrap();
 
             (vk_bytes, sig_bytes)
         };

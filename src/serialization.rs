@@ -8,13 +8,13 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use crate::context::Ctx;
 use crate::zkp::ChaumPedersen;
 
-use crate::util::Par;
+use crate::util::{Par, StrandError};
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
 
 /// Serialization frontend trait.
 pub trait StrandSerialize {
-    fn strand_serialize(&self) -> Vec<u8>;
+    fn strand_serialize(&self) -> Result<Vec<u8>, StrandError>;
 }
 
 /// Deserialization frontend trait.
@@ -25,9 +25,9 @@ pub trait StrandDeserialize {
 }
 
 impl<T: BorshSerialize> StrandSerialize for T {
-    fn strand_serialize(&self) -> Vec<u8> {
+    fn strand_serialize(&self) -> Result<Vec<u8>, StrandError> {
         // FIXME log on failure
-        self.try_to_vec().unwrap()
+        self.try_to_vec().map_err(|e| e.into())
     }
 }
 
@@ -208,7 +208,7 @@ pub(crate) mod tests {
     pub(crate) fn test_borsh_element<C: Ctx>(ctx: &C) {
         let e = ctx.rnd();
 
-        let encoded_e = e.strand_serialize();
+        let encoded_e = e.strand_serialize().unwrap();
         let decoded_e = C::E::strand_deserialize(&encoded_e).unwrap();
         assert!(e == decoded_e);
     }
@@ -217,7 +217,7 @@ pub(crate) mod tests {
         let elements: Vec<C::E> =
             (0..10).into_iter().map(|_| ctx.rnd()).collect();
 
-        let encoded_e = elements.strand_serialize();
+        let encoded_e = elements.strand_serialize().unwrap();
         let decoded_e = Vec::<C::E>::strand_deserialize(&encoded_e).unwrap();
         assert!(elements == decoded_e);
     }
@@ -225,14 +225,14 @@ pub(crate) mod tests {
     pub(crate) fn test_borsh_exponent<C: Ctx>(ctx: &C) {
         let x = ctx.rnd_exp();
 
-        let encoded_x = x.strand_serialize();
+        let encoded_x = x.strand_serialize().unwrap();
         let decoded_x = C::X::strand_deserialize(&encoded_x).unwrap();
         assert!(x == decoded_x);
     }
 
     pub(crate) fn test_ciphertext_borsh_generic<C: Ctx>(ctx: &C) {
         let c = util::random_ciphertexts(1, ctx).remove(0);
-        let bytes = c.strand_serialize();
+        let bytes = c.strand_serialize().unwrap();
         let back = Ciphertext::<C>::strand_deserialize(&bytes).unwrap();
 
         assert!(c.mhr == back.mhr && c.gr == back.gr);
@@ -242,12 +242,12 @@ pub(crate) mod tests {
         let sk = PrivateKey::gen(ctx);
         let pk = PublicKey::from_element(&sk.pk_element, ctx);
 
-        let bytes = sk.strand_serialize();
+        let bytes = sk.strand_serialize().unwrap();
         let back = PrivateKey::<C>::strand_deserialize(&bytes).unwrap();
 
         assert!(sk == back);
 
-        let bytes = pk.strand_serialize();
+        let bytes = pk.strand_serialize().unwrap();
         let back = PublicKey::<C>::strand_deserialize(&bytes).unwrap();
 
         assert!(pk == back);
@@ -262,7 +262,7 @@ pub(crate) mod tests {
         let verified = zkp.schnorr_verify(&public, Some(&g), &schnorr, &vec![]);
         assert!(verified);
 
-        let bytes = schnorr.strand_serialize();
+        let bytes = schnorr.strand_serialize().unwrap();
         let back = Schnorr::<C>::strand_deserialize(&bytes).unwrap();
         assert!(schnorr == back);
 
@@ -283,7 +283,7 @@ pub(crate) mod tests {
             zkp.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
         assert!(verified);
 
-        let bytes = proof.strand_serialize();
+        let bytes = proof.strand_serialize().unwrap();
         let back = ChaumPedersen::<C>::strand_deserialize(&bytes).unwrap();
         assert!(proof == back);
 

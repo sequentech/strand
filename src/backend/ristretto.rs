@@ -37,6 +37,7 @@ use crate::elgamal::{PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::serialization::{StrandDeserialize, StrandSerialize};
 use crate::util;
+use crate::util::StrandError;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 // Ristretto context
@@ -137,7 +138,7 @@ impl Ctx for RistrettoCtx {
     }
     // see https://github.com/dalek-cryptography/curve25519-dalek/issues/322
     // see https://github.com/hdevalence/ristretto255-data-encoding/blob/master/src/main.rs
-    fn encode(&self, data: &[u8; 30]) -> Result<Self::E, &'static str> {
+    fn encode(&self, data: &[u8; 30]) -> Result<Self::E, StrandError> {
         let mut bytes = [0u8; 32];
         bytes[1..1 + data.len()].copy_from_slice(data);
         for j in 0..64 {
@@ -149,7 +150,9 @@ impl Ctx for RistrettoCtx {
                 }
             }
         }
-        Err("Failed to encode into ristretto point")
+        Err(StrandError::Generic(
+            "Failed to encode into ristretto point".to_string(),
+        ))
     }
     fn decode(&self, element: &Self::E) -> Self::P {
         let compressed = element.0.compress();
@@ -157,21 +160,20 @@ impl Ctx for RistrettoCtx {
         let slice = &compressed.as_bytes()[1..31];
         to_ristretto_plaintext_array(slice).unwrap()
     }
-    fn element_from_bytes(
-        &self,
-        bytes: &[u8],
-    ) -> Result<Self::E, &'static str> {
+    fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, StrandError> {
         let b32 = to_ristretto_point_array(bytes)?;
         CompressedRistretto(b32)
             .decompress()
             .map(RistrettoPointS)
-            .ok_or("Failed constructing ristretto point")
+            .ok_or(StrandError::Generic(
+                "Failed constructing ristretto point".to_string(),
+            ))
     }
-    fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, &'static str> {
+    fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, StrandError> {
         let b32 = to_ristretto_point_array(bytes)?;
-        Scalar::from_canonical_bytes(b32)
-            .map(ScalarS)
-            .ok_or("Failed constructing scalar")
+        Scalar::from_canonical_bytes(b32).map(ScalarS).ok_or(
+            StrandError::Generic("Failed constructing scalar".to_string()),
+        )
     }
     fn exp_from_u64(&self, value: u64) -> Self::X {
         let val_bytes = value.to_le_bytes();
@@ -205,7 +207,7 @@ impl Ctx for RistrettoCtx {
         let first_c = pk.encrypt(&first.unwrap());
         let second_c = pk.encrypt(&second.unwrap());
 
-        vec![first_c, second_c].strand_serialize()
+        vec![first_c, second_c].strand_serialize().unwrap()
     }
     fn decrypt_exp(
         &self,
@@ -344,10 +346,8 @@ impl BorshDeserialize for RistrettoPointS {
         let bytes = <[u8; 32]>::deserialize(bytes)?;
         let ctx = RistrettoCtx::default();
 
-        let value = ctx
-            .element_from_bytes(&bytes)
-            .map_err(|e| Error::new(ErrorKind::Other, e));
-        value
+        ctx.element_from_bytes(&bytes)
+            .map_err(|e| Error::new(ErrorKind::Other, e))
     }
 }
 
@@ -368,10 +368,8 @@ impl BorshDeserialize for ScalarS {
         let bytes = <[u8; 32]>::deserialize(bytes)?;
         let ctx = RistrettoCtx::default();
 
-        let value = ctx
-            .exp_from_bytes(&bytes)
-            .map_err(|e| Error::new(ErrorKind::Other, e));
-        value
+        ctx.exp_from_bytes(&bytes)
+            .map_err(|e| Error::new(ErrorKind::Other, e))
     }
 }
 
@@ -387,12 +385,12 @@ impl std::fmt::Debug for RistrettoPointS {
 
 pub(crate) fn to_ristretto_point_array(
     input: &[u8],
-) -> Result<[u8; 32], &'static str> {
+) -> Result<[u8; 32], StrandError> {
     util::to_u8_array(input)
 }
 pub fn to_ristretto_plaintext_array(
     input: &[u8],
-) -> Result<[u8; 30], &'static str> {
+) -> Result<[u8; 30], StrandError> {
     util::to_u8_array(input)
 }
 
