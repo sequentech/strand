@@ -8,13 +8,9 @@ use crate::backend::malachite::{MalachiteCtx, P2048 as MP2048};
 use crate::backend::num_bigint::{BigintCtx, P2048};
 use crate::backend::ristretto::RistrettoCtx;
 use crate::backend::tests::*;
-use crate::context::{Ctx, Element};
-use crate::elgamal::PublicKey;
+use crate::context::Ctx;
 use crate::rnd::StrandRng;
-use crate::shuffler::Shuffler;
 use crate::threshold::tests::test_threshold_generic;
-use crate::util;
-use crate::zkp::Zkp;
 
 #[wasm_bindgen]
 extern "C" {

@@ -8,7 +8,7 @@ use crate::backend::malachite::{MalachiteCtx, P2048 as MP2048};
 use crate::backend::num_bigint::{BigintCtx, P2048};
 use crate::backend::ristretto;
 use crate::backend::ristretto::RistrettoCtx;
-use crate::context::{Ctx, Element};
+use crate::context::Ctx;
 use crate::elgamal::{PrivateKey, PublicKey};
 use crate::rnd::StrandRng;
 use crate::serialization::StrandSerialize;
@@ -127,7 +127,7 @@ fn bench_shuffle_serialization_generic<C: Ctx>(ctx: C, n: usize) {
     postMessage(&format!("shuffle n = {}, proving..", n));
     let now = performance.now();
     let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
-    let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &vec![]);
+    let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &vec![]).unwrap();
     postMessage(&format!(
         "prove {:.3} c / s",
         n as f64 / ((performance.now() - now) / 1000.0)
@@ -135,7 +135,7 @@ fn bench_shuffle_serialization_generic<C: Ctx>(ctx: C, n: usize) {
 
     postMessage(&format!("shuffle n = {}, verifying..", n));
     let now = performance.now();
-    let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
+    let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]).unwrap();
     assert!(ok);
     postMessage(&format!(
         "verify {:.3} c / s",
@@ -144,10 +144,10 @@ fn bench_shuffle_serialization_generic<C: Ctx>(ctx: C, n: usize) {
 
     log(&format!("serialization.."));
     let now = performance.now();
-    let pk_b = pk.strand_serialize();
-    let es_b = es.strand_serialize();
-    let eprimes_b = e_primes.strand_serialize();
-    let proof_b = proof.strand_serialize();
+    let _pk_b = pk.strand_serialize();
+    let _es_b = es.strand_serialize();
+    let _eprimes_b = e_primes.strand_serialize();
+    let _proof_b = proof.strand_serialize();
     postMessage(&format!(
         "serialization {:.3} c / s",
         n as f64 / ((performance.now() - now) / 1000.0)
@@ -160,23 +160,12 @@ fn bench_shuffle_serialization_generic<C: Ctx>(ctx: C, n: usize) {
     }
     let now = performance.now();
     for next in v {
-        next.strand_serialize();
+        next.strand_serialize().unwrap();
     }
     postMessage(&format!(
         "serialization raw {:.3} c / s",
         n as f64 / ((performance.now() - now) / 1000.0)
     ));
-
-    /* use crate::byte_tree::BTreeDeser;
-    use crate::shuffler::ShuffleProof;
-    use crate::elgamal::Ciphertext;
-    log(&format!("deserialization.."));
-    let now = performance.now();
-    let pk_d = PublicKey::<C>::deser(&pk_b, &ctx).unwrap();
-    let es_d = Vec::<Ciphertext<C>>::deser(&es_b, &ctx).unwrap();
-    let eprimes_d = Vec::<Ciphertext<C>>::deser(&eprimes_b, &ctx).unwrap();
-    let proof_d = ShuffleProof::<C>::deser(&proof_b, &ctx).unwrap();
-    log(&format!("{} / s", n as f64 / ( (performance.now() - now) / 1000.0)));*/
 }
 
 fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P, n: u32) {
@@ -215,9 +204,6 @@ fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P, n: u32) {
 fn bench_modpow_generic<C: Ctx>(ctx: C, n: u32) {
     for _ in 0..n {
         let x = ctx.rnd_exp();
-        // let g = ctx.generator();
-        // let modulus = ctx.modulus();
-        // let _ = g.mod_pow(&x, &modulus);
         let _ = ctx.gmod_pow(&x);
     }
 }

@@ -1,21 +1,15 @@
 // SPDX-FileCopyrightText: 2022 David Ruescas <david@sequentech.io>
 //
 // SPDX-License-Identifier: AGPL-3.0-only
-use rand::RngCore;
 use wasm_bindgen::prelude::*;
 
-use crate::backend::num_bigint::{BigintCtx, P2048};
 use crate::backend::ristretto;
 use crate::backend::ristretto::RistrettoCtx;
 use crate::backend::ristretto::RistrettoPointS;
-use crate::backend::tests::*;
-use crate::context::{Ctx, Element};
-use crate::elgamal::{PrivateKey, PublicKey};
-use crate::rnd::StrandRng;
+use crate::context::Ctx;
+use crate::elgamal::PrivateKey;
 use crate::shuffler::Shuffler;
-use crate::threshold::tests::test_threshold_generic;
 use crate::util::Par;
-use crate::zkp::Zkp;
 use rayon::iter::ParallelIterator;
 
 #[wasm_bindgen]
@@ -179,10 +173,10 @@ pub fn shuffle(value: JsValue) -> JsValue {
     message("Gen shuffle..");
     let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
     message("Gen proof..");
-    let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &vec![]);
+    let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &vec![]).unwrap();
 
     message("Verify proof..");
-    let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
+    let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]).unwrap();
     message(&format!("Proof ok: {}", ok));
 
     let per_sec =
@@ -206,7 +200,6 @@ pub fn shuffle(value: JsValue) -> JsValue {
 
 #[wasm_bindgen]
 pub fn decrypt(value: JsValue) -> JsValue {
-    let ctx = RistrettoCtx;
     let sk = secret_key();
 
     let values: Vec<CiphertextS> =
