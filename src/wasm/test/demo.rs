@@ -173,10 +173,14 @@ pub fn shuffle(value: JsValue) -> JsValue {
     message("Gen shuffle..");
     let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
     message("Gen proof..");
-    let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &vec![]).unwrap();
+    let proof = shuffler
+        .gen_proof(&es, &e_primes, &rs, &perm, &vec![])
+        .unwrap();
 
     message("Verify proof..");
-    let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]).unwrap();
+    let ok = shuffler
+        .check_proof(&proof, &es, &e_primes, &vec![])
+        .unwrap();
     message(&format!("Proof ok: {}", ok));
 
     let per_sec =

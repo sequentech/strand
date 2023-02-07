@@ -127,7 +127,9 @@ fn bench_shuffle_serialization_generic<C: Ctx>(ctx: C, n: usize) {
     postMessage(&format!("shuffle n = {}, proving..", n));
     let now = performance.now();
     let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
-    let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &vec![]).unwrap();
+    let proof = shuffler
+        .gen_proof(&es, &e_primes, &rs, &perm, &vec![])
+        .unwrap();
     postMessage(&format!(
         "prove {:.3} c / s",
         n as f64 / ((performance.now() - now) / 1000.0)
@@ -135,7 +137,9 @@ fn bench_shuffle_serialization_generic<C: Ctx>(ctx: C, n: usize) {
 
     postMessage(&format!("shuffle n = {}, verifying..", n));
     let now = performance.now();
-    let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]).unwrap();
+    let ok = shuffler
+        .check_proof(&proof, &es, &e_primes, &vec![])
+        .unwrap();
     assert!(ok);
     postMessage(&format!(
         "verify {:.3} c / s",
