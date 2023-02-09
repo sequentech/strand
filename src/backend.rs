@@ -46,7 +46,7 @@ pub(crate) mod tests {
         let exp = ctx.rnd_exp();
         let sk = PrivateKey::<C>::gen(ctx);
 
-        let encrypted = ctx.encrypt_exp(&exp, sk.get_pk());
+        let encrypted = ctx.encrypt_exp(&exp, sk.get_pk()).unwrap();
         let decrypted = ctx.decrypt_exp(&encrypted, sk);
 
         assert_eq!(exp, decrypted.unwrap());

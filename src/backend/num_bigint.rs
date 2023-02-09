@@ -236,19 +236,23 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         let num = BigUint::from_bytes_le(&hashed);
         BigUintX::new(num.mod_floor(&self.params.exp_modulus().0))
     }
-    fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
+    fn encrypt_exp(
+        &self,
+        exp: &Self::X,
+        pk: PublicKey<Self>,
+    ) -> Result<Vec<u8>, StrandError> {
         let encrypted =
             pk.encrypt(&self.encode(&BigUintP(exp.0.clone())).unwrap());
-        encrypted.strand_serialize().unwrap()
+        encrypted.strand_serialize()
     }
     fn decrypt_exp(
         &self,
         bytes: &[u8],
         sk: PrivateKey<Self>,
-    ) -> Option<Self::X> {
-        let encrypted = Ciphertext::<Self>::strand_deserialize(bytes).ok()?;
+    ) -> Result<Self::X, StrandError> {
+        let encrypted = Ciphertext::<Self>::strand_deserialize(bytes)?;
         let decrypted = sk.decrypt(&encrypted);
-        Some(BigUintX(self.decode(&decrypted).0, PhantomData))
+        Ok(BigUintX(self.decode(&decrypted).0, PhantomData))
     }
 
     fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E> {

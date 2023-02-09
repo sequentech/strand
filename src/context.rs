@@ -75,12 +75,16 @@ pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
     fn exp_from_u64(&self, value: u64) -> Self::X;
     fn hash_to_exp(&self, bytes: &[u8]) -> Self::X;
 
-    fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8>;
+    fn encrypt_exp(
+        &self,
+        exp: &Self::X,
+        pk: PublicKey<Self>,
+    ) -> Result<Vec<u8>, StrandError>;
     fn decrypt_exp(
         &self,
         bytes: &[u8],
         sk: PrivateKey<Self>,
-    ) -> Option<Self::X>;
+    ) -> Result<Self::X, StrandError>;
 
     fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E>;
 }

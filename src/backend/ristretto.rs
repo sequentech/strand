@@ -195,26 +195,30 @@ impl Ctx for RistrettoCtx {
         ScalarS(scalar)
     }
 
-    fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
+    fn encrypt_exp(
+        &self,
+        exp: &Self::X,
+        pk: PublicKey<Self>,
+    ) -> Result<Vec<u8>, StrandError> {
         let bytes = exp.0.to_bytes();
         let mut blank = vec![0; 30];
         blank[0..16].copy_from_slice(&bytes[0..16]);
-        let first_array = to_ristretto_plaintext_array(&blank).unwrap();
+        let first_array = to_ristretto_plaintext_array(&blank)?;
         let first = self.encode(&first_array);
         blank[0..16].copy_from_slice(&bytes[16..32]);
-        let second_array = to_ristretto_plaintext_array(&blank).unwrap();
+        let second_array = to_ristretto_plaintext_array(&blank)?;
         let second = self.encode(&second_array);
         let first_c = pk.encrypt(&first.unwrap());
         let second_c = pk.encrypt(&second.unwrap());
 
-        vec![first_c, second_c].strand_serialize().unwrap()
+        vec![first_c, second_c].strand_serialize()
     }
     fn decrypt_exp(
         &self,
         bytes: &[u8],
         sk: PrivateKey<Self>,
-    ) -> Option<Self::X> {
-        let vector = Vec::<Ciphertext<Self>>::strand_deserialize(bytes).ok()?;
+    ) -> Result<Self::X, StrandError> {
+        let vector = Vec::<Ciphertext<Self>>::strand_deserialize(bytes)?;
         if vector.len() == 2 {
             let first = self.decode(&sk.decrypt(&vector[0]));
             let second = self.decode(&sk.decrypt(&vector[1]));
@@ -222,11 +226,14 @@ impl Ctx for RistrettoCtx {
             let mut concat = first[0..16].to_vec();
             concat.extend_from_slice(&second[0..16]);
 
-            let ret = self.exp_from_bytes(&concat).ok()?;
+            let ret = self.exp_from_bytes(&concat)?;
 
-            Some(ret)
+            Ok(ret)
         } else {
-            None
+            Err(StrandError::Generic(
+                "Ristretto encrypted exponent vector should have length 2"
+                    .to_string(),
+            ))
         }
     }
     fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E> {

@@ -19,25 +19,24 @@ pub trait StrandSerialize {
 
 /// Deserialization frontend trait.
 pub trait StrandDeserialize {
-    fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
+    fn strand_deserialize(bytes: &[u8]) -> Result<Self, StrandError>
     where
         Self: Sized;
 }
 
 impl<T: BorshSerialize> StrandSerialize for T {
     fn strand_serialize(&self) -> Result<Vec<u8>, StrandError> {
-        // FIXME log on failure
         self.try_to_vec().map_err(|e| e.into())
     }
 }
 
 impl<T: BorshDeserialize> StrandDeserialize for T {
-    fn strand_deserialize(bytes: &[u8]) -> Result<Self, &'static str>
+    fn strand_deserialize(bytes: &[u8]) -> Result<Self, StrandError>
     where
         Self: Sized,
     {
         let value = T::try_from_slice(bytes);
-        value.map_err(|_| "borsh deserialize failed")
+        value.map_err(|e| e.into())
     }
 }
 

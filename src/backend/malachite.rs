@@ -280,19 +280,23 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
         let num = Natural::from_digits_desc(&256, u16s).expect("impossible");
         NaturalX::new(num.rem(&self.params.exp_modulus().0))
     }
-    fn encrypt_exp(&self, exp: &Self::X, pk: PublicKey<Self>) -> Vec<u8> {
+    fn encrypt_exp(
+        &self,
+        exp: &Self::X,
+        pk: PublicKey<Self>,
+    ) -> Result<Vec<u8>, StrandError> {
         let encrypted =
             pk.encrypt(&self.encode(&NaturalP(exp.0.clone())).unwrap());
-        encrypted.strand_serialize().unwrap()
+        encrypted.strand_serialize()
     }
     fn decrypt_exp(
         &self,
         bytes: &[u8],
         sk: PrivateKey<Self>,
-    ) -> Option<Self::X> {
-        let encrypted = Ciphertext::<Self>::strand_deserialize(bytes).ok()?;
+    ) -> Result<Self::X, StrandError> {
+        let encrypted = Ciphertext::<Self>::strand_deserialize(bytes)?;
         let decrypted = sk.decrypt(&encrypted);
-        Some(NaturalX(self.decode(&decrypted).0, PhantomData))
+        Ok(NaturalX(self.decode(&decrypted).0, PhantomData))
     }
 
     fn generators(&self, size: usize, seed: &[u8]) -> Vec<Self::E> {
