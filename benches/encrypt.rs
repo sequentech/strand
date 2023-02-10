@@ -8,6 +8,7 @@ use criterion::{
 use rand::rngs::OsRng;
 use rand::RngCore;
 use strand::backend::num_bigint::{BigintCtx, P2048};
+use strand::backend::malachite::{MalachiteCtx, P2048 as MP2048};
 use strand::backend::ristretto;
 use strand::backend::ristretto::RistrettoCtx;
 use strand::context::Ctx;
@@ -21,10 +22,10 @@ fn encrypt<C: Ctx>(ctx: &C, pk: &PublicKey<C>, data: C::P, n: usize) {
         let randomness = ctx.rnd_exp();
         let c = pk.encrypt_with_randomness(&plaintext, &randomness);
 
-        let _proof = zkp.schnorr_prove(
+        let _proof = zkp.encryption_popk(
             &randomness,
-            &c.gr(),
-            Some(ctx.generator()),
+            c.mhr(),
+            c.gr(),
             &vec![],
         );
     }
@@ -52,6 +53,15 @@ fn encrypt_bigint(
     encrypt(ctx, pk, plaintext, n);
 }
 
+fn encrypt_malachite(
+    ctx: &MalachiteCtx<MP2048>,
+    pk: &PublicKey<MalachiteCtx<MP2048>>,
+    n: usize,
+) {
+    let plaintext = ctx.rnd_plaintext();
+    encrypt(ctx, pk, plaintext, n);
+}
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "rug")] {
         use strand::backend::rug::RugCtx;
@@ -73,6 +83,10 @@ fn bench_encrypt(c: &mut Criterion) {
     let bsk = PrivateKey::gen(&bctx);
     let bpk = bsk.get_pk();
 
+    let mctx: MalachiteCtx<MP2048> = Default::default();
+    let msk = PrivateKey::gen(&mctx);
+    let mpk = msk.get_pk();
+
     cfg_if::cfg_if! {
         if #[cfg(feature = "rug")] {
             use strand::backend::rug::P2048 as RP2048;
@@ -92,6 +106,9 @@ fn bench_encrypt(c: &mut Criterion) {
         });
         group.bench_with_input(BenchmarkId::new("bigint", i), i, |b, i| {
             b.iter(|| encrypt_bigint(&bctx, &bpk, *i))
+        });
+        group.bench_with_input(BenchmarkId::new("malachite", i), i, |b, i| {
+            b.iter(|| encrypt_malachite(&mctx, &mpk, *i))
         });
         #[cfg(feature = "rug")]
         group.bench_with_input(BenchmarkId::new("rug", i), i, |b, i| {

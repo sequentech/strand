@@ -6,6 +6,7 @@ use criterion::{
     criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode,
 };
 use strand::backend::num_bigint::{BigintCtx, P2048};
+use strand::backend::malachite::{MalachiteCtx, P2048 as MP2048};
 use strand::backend::ristretto::RistrettoCtx;
 use strand::context::Ctx;
 use strand::elgamal::*;
@@ -22,8 +23,8 @@ fn test_shuffle_generic<C: Ctx>(ctx: C, n: usize) {
     let shuffler = Shuffler::new(&pk, &hs, &ctx);
 
     let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
-    let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &vec![]);
-    let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
+    let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &vec![]).unwrap();
+    let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]).unwrap();
 
     assert!(ok);
 }
@@ -35,6 +36,11 @@ fn shuffle_ristretto(n: usize) {
 
 fn shuffle_bigint(n: usize) {
     let ctx: BigintCtx<P2048> = Default::default();
+    test_shuffle_generic(ctx, n);
+}
+
+fn shuffle_malachite(n: usize) {
+    let ctx: MalachiteCtx<MP2048> = Default::default();
     test_shuffle_generic(ctx, n);
 }
 
@@ -60,6 +66,9 @@ fn bench_shuffle(c: &mut Criterion) {
         });
         group.bench_with_input(BenchmarkId::new("bigint", i), i, |b, i| {
             b.iter(|| shuffle_bigint(*i))
+        });
+        group.bench_with_input(BenchmarkId::new("malachite", i), i, |b, i| {
+            b.iter(|| shuffle_malachite(*i))
         });
         #[cfg(feature = "rug")]
         group.bench_with_input(BenchmarkId::new("rug", i), i, |b, i| {
