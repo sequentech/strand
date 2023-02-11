@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: 2023 Eduardo Robles <edu@sequentech.io>
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
+name: 'CI | SonarCloud'
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+      types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  # allows SonarCloud to decorate PRs with analysis results
+  pull-requests: read
+
+jobs:
+  sonarcloud:
+    name: 'SonarCloud'
+    uses: sequentech/meta/.github/workflows/sonarcloud.yml@main
+    with:
+      project-key: 'sequentech_bulletin-board'
+    secrets:
+      github-token: '${{ secrets.GITHUB_TOKEN }}'
+      sonar-token: '${{ secrets.SONAR_TOKEN }}'

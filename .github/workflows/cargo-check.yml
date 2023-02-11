@@ -3,19 +3,16 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only
 
-name: 'CI | Update flake.lock'
+name: 'CI | Cargo check'
 on:
   workflow_dispatch: # allows manual triggering
-  schedule:
-    # minute, hour, day of month, month, day of week
-    - cron: '0 0 * * 1' # runs weekly on Monday at 00:00
+  push:
 
 jobs:
-  update-flake:
-    name: 'Update flake.lock'
-    uses: sequentech/meta/.github/workflows/update-flake.yml@main
+  cargo-check:
+    name: 'Cargo check'
+    uses: sequentech/meta/.github/workflows/cargo-check.yml@main
     with:
       cachix-auth-identity: '${{ vars.CACHIX_AUTH_IDENTITY }}'
     secrets:
       cachix-auth-token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-      gh-token-for-updates: '${{ secrets.GH_TOKEN_FOR_UPDATES }}'
