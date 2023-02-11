@@ -256,8 +256,10 @@ pub(crate) mod tests {
             cs.push(c);
         }
 
-        let (decs1, proofs1) = km1.decryption_factor_many(&cs, &vec![]);
-        let (decs2, proofs2) = km2.decryption_factor_many(&cs, &vec![]);
+        let (decs1, proofs1) =
+            km1.decryption_factor_many(&cs, &vec![]).unwrap();
+        let (decs2, proofs2) =
+            km2.decryption_factor_many(&cs, &vec![]).unwrap();
 
         let decs1_b = decs1.strand_serialize().unwrap();
         let proofs1_b = proofs1.strand_serialize().unwrap();
@@ -290,8 +292,8 @@ pub(crate) mod tests {
             &vec![],
         );
 
-        assert!(verified1);
-        assert!(verified2);
+        assert!(verified1.unwrap());
+        assert!(verified2.unwrap());
 
         let decs = vec![decs1_d, decs2_d];
         let ds = Keymaker::joint_dec_many(ctx, &decs, &cs);

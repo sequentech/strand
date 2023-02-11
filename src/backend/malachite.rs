@@ -194,8 +194,7 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
             &self.params.exp_modulus().0 - one,
         )
         .next()
-        // FIXME unwrap
-        .unwrap();
+        .expect("impossible: uniform_random_natural_inclusive_range implementation never returns None");
 
         let unencoded = NaturalP(num);
 
@@ -212,8 +211,7 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
             self.params.exp_modulus().0.clone(),
         )
         .next()
-        // FIXME unwrap
-        .unwrap();
+        .expect("impossible: uniform_random_natural_inclusive_range implementation never returns None");
 
         NaturalX::new(num)
     }

@@ -560,6 +560,8 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         hasher.update(prefix_bytes);
         let prefix_hash = hasher.finalize().to_vec();
 
+        // Non unwrapping code, see below
+        // let us: Result<Vec<C::X>, StrandError> = (0..n)*/
         let us = (0..n)
             .par()
             .map(|i| {
@@ -570,6 +572,16 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
                 // FIXME unwrap
                 let bytes = next.get_bytes().unwrap();
                 self.ctx.hash_to_exp(&bytes)
+
+                // This code avoids unwrapping, but it causes 3% slowdown in
+                // shuffle benchmark
+                /*
+                let bytes = next.get_bytes();
+                let z: Result<C::X, StrandError> = match bytes {
+                    Err(e) => Err(e),
+                    Ok(b) => Ok(self.ctx.hash_to_exp(&b))
+                };
+                z*/
             })
             .collect();
 

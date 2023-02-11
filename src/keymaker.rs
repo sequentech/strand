@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2021 David Ruescas <david@sequentech.io>
 //
 // SPDX-License-Identifier: AGPL-3.0-only
-
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
 
@@ -88,18 +87,18 @@ impl<C: Ctx> Keymaker<C> {
         Ok((dec_factor, proof?))
     }
 
+    #[allow(clippy::type_complexity)]
     pub(crate) fn decryption_factor_many(
         &self,
         cs: &[Ciphertext<C>],
         label: &[u8],
-    ) -> (Vec<C::E>, Vec<ChaumPedersen<C>>) {
-        let decs_proofs: (Vec<C::E>, Vec<ChaumPedersen<C>>) = cs
-            .par()
-            // FIXME unwrap
-            .map(|c| self.decryption_factor(c, label).unwrap())
-            .unzip();
+    ) -> Result<(Vec<C::E>, Vec<ChaumPedersen<C>>), StrandError> {
+        let decs_proofs: Result<Vec<(C::E, ChaumPedersen<C>)>, StrandError> =
+            cs.par().map(|c| self.decryption_factor(c, label)).collect();
 
-        decs_proofs
+        let d = decs_proofs?.into_iter().unzip();
+
+        Ok(d)
     }
 
     pub(crate) fn joint_dec(
@@ -143,12 +142,12 @@ impl<C: Ctx> Keymaker<C> {
         decs: &[C::E],
         proofs: &[ChaumPedersen<C>],
         label: &[u8],
-    ) -> bool {
+    ) -> Result<bool, StrandError> {
         assert_eq!(decs.len(), proofs.len());
         assert_eq!(decs.len(), ciphertexts.len());
         let zkp = Zkp::new(ctx);
 
-        let notok = (0..decs.len())
+        let results: Result<Vec<bool>, StrandError> = (0..decs.len())
             .par()
             .map(|i| {
                 zkp.verify_decryption(
@@ -158,12 +157,12 @@ impl<C: Ctx> Keymaker<C> {
                     &ciphertexts[i].gr,
                     &proofs[i],
                     label,
-                    // FIXME unwrap
                 )
-                .unwrap()
             })
-            .any(|x| !x);
+            .collect();
 
-        !notok
+        let notok = results?.iter().any(|x| !x);
+
+        Ok(!notok)
     }
 }
