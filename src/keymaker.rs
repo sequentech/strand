@@ -7,7 +7,7 @@ use rayon::prelude::*;
 
 use crate::context::{Ctx, Element};
 use crate::elgamal::{Ciphertext, PrivateKey, PublicKey};
-use crate::util::Par;
+use crate::util::{Par, StrandError};
 use crate::zkp::{ChaumPedersen, Schnorr, Zkp};
 
 pub(crate) struct Keymaker<C: Ctx> {
@@ -38,12 +38,15 @@ impl<C: Ctx> Keymaker<C> {
         }
     }
 
-    pub(crate) fn share(&self, label: &[u8]) -> (PublicKey<C>, Schnorr<C>) {
+    pub(crate) fn share(
+        &self,
+        label: &[u8],
+    ) -> Result<(PublicKey<C>, Schnorr<C>), StrandError> {
         let zkp = Zkp::new(&self.ctx);
         let pk = PublicKey::from_element(&self.pk.element, &self.ctx);
         let proof = zkp.schnorr_prove(&self.sk.value, &pk.element, None, label);
 
-        (pk, proof)
+        Ok((pk, proof?))
     }
 
     pub(crate) fn verify_share(
@@ -70,7 +73,7 @@ impl<C: Ctx> Keymaker<C> {
         &self,
         c: &Ciphertext<C>,
         label: &[u8],
-    ) -> (C::E, ChaumPedersen<C>) {
+    ) -> Result<(C::E, ChaumPedersen<C>), StrandError> {
         let dec_factor = self.sk.decryption_factor(c);
         let zkp = Zkp::new(&self.ctx);
         let proof = zkp.decryption_proof(
@@ -82,7 +85,7 @@ impl<C: Ctx> Keymaker<C> {
             label,
         );
 
-        (dec_factor, proof)
+        Ok((dec_factor, proof?))
     }
 
     pub(crate) fn decryption_factor_many(
@@ -90,8 +93,11 @@ impl<C: Ctx> Keymaker<C> {
         cs: &[Ciphertext<C>],
         label: &[u8],
     ) -> (Vec<C::E>, Vec<ChaumPedersen<C>>) {
-        let decs_proofs: (Vec<C::E>, Vec<ChaumPedersen<C>>) =
-            cs.par().map(|c| self.decryption_factor(c, label)).unzip();
+        let decs_proofs: (Vec<C::E>, Vec<ChaumPedersen<C>>) = cs
+            .par()
+            // FIXME unwrap
+            .map(|c| self.decryption_factor(c, label).unwrap())
+            .unzip();
 
         decs_proofs
     }
@@ -152,7 +158,9 @@ impl<C: Ctx> Keymaker<C> {
                     &ciphertexts[i].gr,
                     &proofs[i],
                     label,
+                    // FIXME unwrap
                 )
+                .unwrap()
             })
             .any(|x| !x);
 

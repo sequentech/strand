@@ -181,7 +181,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         // COST
         // let now = Instant::now();
-        let us = self.shuffle_proof_us(es, e_primes, cs, N, label);
+        let us = self.shuffle_proof_us(es, e_primes, cs, N, label)?;
         // println!("shuffle proof us {}", now.elapsed().as_millis());
 
         let mut u_primes: Vec<&C::X> = Vec::with_capacity(N);
@@ -292,7 +292,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
 
         // let now = Instant::now();
         // ~0 cost
-        let c: C::X = self.shuffle_proof_challenge(&y, &t, label).unwrap();
+        let c: C::X = self.shuffle_proof_challenge(&y, &t, label)?;
 
         // println!("shuffle proof challenge {}", now.elapsed().as_millis());
 
@@ -358,7 +358,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         // let gmod = ctx.modulus();
 
         let us: Vec<C::X> =
-            self.shuffle_proof_us(es, e_primes, &proof.cs.0, N, label);
+            self.shuffle_proof_us(es, e_primes, &proof.cs.0, N, label)?;
 
         let mut c_bar_num: C::E = C::E::mul_identity();
         let mut c_bar_den: C::E = C::E::mul_identity();
@@ -543,15 +543,15 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         cs: &[C::E],
         n: usize,
         label: &[u8],
-    ) -> Vec<C::X> {
+    ) -> Result<Vec<C::X>, StrandError> {
         let mut prefix_challenge_input = ChallengeInput::from(&[
             ("es", &StrandVectorC(es.to_vec())),
             ("e_primes", &StrandVectorC(e_primes.to_vec())),
-        ]);
-        prefix_challenge_input.add("cs", &StrandVectorE::<C>(cs.to_vec()));
-        prefix_challenge_input.add("label", &label.to_vec());
+        ])?;
+        prefix_challenge_input.add("cs", &StrandVectorE::<C>(cs.to_vec()))?;
+        prefix_challenge_input.add("label", &label.to_vec())?;
 
-        let prefix_bytes = prefix_challenge_input.strand_serialize().unwrap();
+        let prefix_bytes = prefix_challenge_input.strand_serialize()?;
 
         // optimization: instead of calculating u = H(prefix || i),
         // we do u = H(H(prefix) || i)
@@ -560,17 +560,20 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         hasher.update(prefix_bytes);
         let prefix_hash = hasher.finalize().to_vec();
 
-        (0..n)
+        let us = (0..n)
             .par()
             .map(|i| {
                 let next = ChallengeInput::from_bytes(vec![
                     ("prefix", prefix_hash.clone()),
                     ("counter", i.to_le_bytes().to_vec()),
                 ]);
-                let bytes = next.get_bytes();
+                // FIXME unwrap
+                let bytes = next.get_bytes().unwrap();
                 self.ctx.hash_to_exp(&bytes)
             })
-            .collect()
+            .collect();
+
+        Ok(us)
     }
 
     fn shuffle_proof_challenge(
@@ -585,7 +588,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
             ("t3", &t.t3),
             ("t4_1", &t.t4_1),
             ("t4_2", &t.t4_2),
-        ]);
+        ])?;
 
         challenge_input
             .add_bytes("es", StrandVectorC(y.es.to_vec()).strand_serialize()?);
@@ -606,7 +609,7 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         challenge_input.add_bytes("t_hats", t.t_hats.strand_serialize()?);
         challenge_input.add_bytes("label", label.to_vec());
 
-        let bytes = challenge_input.get_bytes();
+        let bytes = challenge_input.get_bytes()?;
 
         Ok(self.ctx.hash_to_exp(&bytes))
     }

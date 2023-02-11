@@ -241,8 +241,7 @@ impl<P: BigintCtxParams> Ctx for BigintCtx<P> {
         exp: &Self::X,
         pk: PublicKey<Self>,
     ) -> Result<Vec<u8>, StrandError> {
-        let encrypted =
-            pk.encrypt(&self.encode(&BigUintP(exp.0.clone())).unwrap());
+        let encrypted = pk.encrypt(&self.encode(&BigUintP(exp.0.clone()))?);
         encrypted.strand_serialize()
     }
     fn decrypt_exp(

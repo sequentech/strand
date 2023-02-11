@@ -257,7 +257,9 @@ pub(crate) mod tests {
         let g = ctx.generator();
         let secret = ctx.rnd_exp();
         let public = ctx.gmod_pow(&secret);
-        let schnorr = zkp.schnorr_prove(&secret, &public, Some(&g), &vec![]);
+        let schnorr = zkp
+            .schnorr_prove(&secret, &public, Some(&g), &vec![])
+            .unwrap();
         let verified = zkp.schnorr_verify(&public, Some(&g), &schnorr, &vec![]);
         assert!(verified);
 
@@ -276,8 +278,9 @@ pub(crate) mod tests {
         let secret = ctx.rnd_exp();
         let public1 = ctx.emod_pow(g1, &secret);
         let public2 = ctx.emod_pow(&g2, &secret);
-        let proof =
-            zkp.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
+        let proof = zkp
+            .cp_prove(&secret, &public1, &public2, None, &g2, &vec![])
+            .unwrap();
         let verified =
             zkp.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
         assert!(verified);

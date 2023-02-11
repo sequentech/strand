@@ -62,7 +62,7 @@ impl<P: RugCtxParams> RugCtx<P> {
                 let elem: Integer = self.hash_to_element(&next);
                 let g = elem
                     .pow_mod(self.params.co_factor(), &self.params.modulus().0)
-                    .unwrap();
+                    .expect("an answer always exists for prime modulus p");
 
                 if g >= two {
                     ret.push(IntegerE::new(g));
@@ -255,7 +255,8 @@ impl<P: RugCtxParams> Element<RugCtx<P>> for IntegerE<P> {
             self.0
                 .clone()
                 .invert(&modulus.0)
-                .expect("there is always an inverse for prime p"),
+                // FIXME verify expect
+                .expect("there is always an inverse for prime modulus p"),
         )
     }
     #[inline(always)]
@@ -265,7 +266,8 @@ impl<P: RugCtxParams> Element<RugCtx<P>> for IntegerE<P> {
         // "If the exponent is negative, then the number must have an inverse
         // for an answer to exist. When the exponent is positive and the
         // modulo is not zero, an answer always exists."
-        IntegerE::new(ret.expect("an answer always exists for prime p"))
+        // FIXME verify expect
+        IntegerE::new(ret.expect("an answer always exists for prime modulus p"))
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {

@@ -4,6 +4,7 @@
 
 use crate::context::{Ctx, Element, Exponent};
 use crate::elgamal::Ciphertext;
+use crate::util::StrandError;
 use crate::zkp::{ChaumPedersen, Zkp};
 
 // A degree n polynomial is determined by n + 1 points.
@@ -89,14 +90,14 @@ pub fn decryption_factor<C: Ctx>(
     v_key: &C::E,
     label: &[u8],
     ctx: C,
-) -> (C::E, ChaumPedersen<C>) {
+) -> Result<(C::E, ChaumPedersen<C>), StrandError> {
     let zkp = Zkp::new(&ctx);
     let factor = ctx.emod_pow(&c.gr, share);
     let proof =
         zkp.decryption_proof(share, v_key, &factor, &c.mhr, &c.gr, label);
     // let ok = zkp.decryption_verify(&v_key, &factor, None, &c.mhr, &c.gr,
     // &proof, label); assert!(ok);
-    (factor, proof)
+    Ok((factor, proof?))
 }
 
 /// Computes the Lagrange coefficient for the given trustee.
@@ -128,6 +129,7 @@ pub(crate) mod tests {
     use crate::context::{Ctx, Element, Exponent};
     use crate::elgamal::{Ciphertext, PublicKey};
     use crate::threshold;
+    use crate::util::StrandError;
 
     use crate::zkp::{ChaumPedersen, Zkp};
 
@@ -205,7 +207,7 @@ pub(crate) mod tests {
             &self,
             c: &Ciphertext<C>,
             label: &[u8],
-        ) -> (C::E, ChaumPedersen<C>) {
+        ) -> Result<(C::E, ChaumPedersen<C>), StrandError> {
             let zkp = Zkp::new(&self.ctx);
             let share = self.secret_share();
             let v_key = self.verification_key();
@@ -215,7 +217,7 @@ pub(crate) mod tests {
             );
             // let ok = zkp.decryption_verify(&v_key, &factor, None, &c.mhr,
             // &c.gr, &proof, label); assert!(ok);
-            (factor, proof)
+            Ok((factor, proof?))
         }
 
         fn verification_key(&self) -> C::E {
@@ -278,15 +280,17 @@ pub(crate) mod tests {
         for i in 0..present.len() {
             let v_key = trustees[present[i] - 1].verification_key();
             let (base, proof) =
-                trustees[present[i] - 1].decryption_factor(&c, &[]);
-            let ok = zkp.verify_decryption(
-                &v_key,
-                &base,
-                &c.mhr,
-                &c.gr,
-                &proof,
-                &vec![],
-            );
+                trustees[present[i] - 1].decryption_factor(&c, &[]).unwrap();
+            let ok = zkp
+                .verify_decryption(
+                    &v_key,
+                    &base,
+                    &c.mhr,
+                    &c.gr,
+                    &proof,
+                    &vec![],
+                )
+                .unwrap();
             assert!(ok);
 
             let lagrange = threshold::lagrange(present[i], &present, ctx);
@@ -306,15 +310,17 @@ pub(crate) mod tests {
         for i in 0..present.len() {
             let v_key = trustees[present[i] - 1].verification_key();
             let (base, proof) =
-                trustees[present[i] - 1].decryption_factor(&c, &[]);
-            let ok = zkp.verify_decryption(
-                &v_key,
-                &base,
-                &c.mhr,
-                &c.gr,
-                &proof,
-                &vec![],
-            );
+                trustees[present[i] - 1].decryption_factor(&c, &[]).unwrap();
+            let ok = zkp
+                .verify_decryption(
+                    &v_key,
+                    &base,
+                    &c.mhr,
+                    &c.gr,
+                    &proof,
+                    &vec![],
+                )
+                .unwrap();
             assert!(ok);
 
             let lagrange = threshold::lagrange(present[i], &present, ctx);

@@ -194,6 +194,7 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
             &self.params.exp_modulus().0 - one,
         )
         .next()
+        // FIXME unwrap
         .unwrap();
 
         let unencoded = NaturalP(num);
@@ -211,6 +212,7 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
             self.params.exp_modulus().0.clone(),
         )
         .next()
+        // FIXME unwrap
         .unwrap();
 
         NaturalX::new(num)
@@ -285,8 +287,7 @@ impl<P: MalachiteCtxParams> Ctx for MalachiteCtx<P> {
         exp: &Self::X,
         pk: PublicKey<Self>,
     ) -> Result<Vec<u8>, StrandError> {
-        let encrypted =
-            pk.encrypt(&self.encode(&NaturalP(exp.0.clone())).unwrap());
+        let encrypted = pk.encrypt(&self.encode(&NaturalP(exp.0.clone()))?);
         encrypted.strand_serialize()
     }
     fn decrypt_exp(

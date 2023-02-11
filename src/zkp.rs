@@ -16,13 +16,13 @@
 //! let g = ctx.generator();
 //! let power = ctx.gmod_pow(&exponent);
 //! // prove knowledge of discrete logarithm
-//! let proof = zkp.schnorr_prove(&exponent, &power, Some(&g), &vec![]);
+//! let proof = zkp.schnorr_prove(&exponent, &power, Some(&g), &vec![]).unwrap();
 //! let verified = zkp.schnorr_verify(&power, Some(&g), &proof, &vec![]);
 //! assert!(verified);
 //! // prove equality of discrete logarithms, using default generator (None)
 //! let g2 = ctx.rnd();
 //! let power2 = ctx.emod_pow(&g2, &exponent);
-//! let proof = zkp.cp_prove(&exponent, &power, &power2, None, &g2, &vec![]);
+//! let proof = zkp.cp_prove(&exponent, &power, &power2, None, &g2, &vec![]).unwrap();
 //! let verified = zkp.cp_verify(&power, &power2, None, &g2, &proof, &vec![]);
 //! assert!(verified);
 //! ```
@@ -34,6 +34,7 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 use crate::context::{Ctx, Element, Exponent};
+use crate::util::StrandError;
 
 /// Interface to zero knowledge proof functionality.
 pub struct Zkp<C: Ctx> {
@@ -52,9 +53,9 @@ impl<C: Ctx> Zkp<C> {
         mhr: &C::E,
         gr: &C::E,
         label: &[u8],
-    ) -> Schnorr<C> {
-        let mut context = ChallengeInput::from(&[("mhr", &mhr)]);
-        context.add("label", &label.to_vec());
+    ) -> Result<Schnorr<C>, StrandError> {
+        let mut context = ChallengeInput::from(&[("mhr", &mhr)])?;
+        context.add("label", &label.to_vec())?;
 
         self.schnorr_prove_private(secret, gr, None, context)
     }
@@ -67,11 +68,11 @@ impl<C: Ctx> Zkp<C> {
         gr: &C::E,
         proof: &Schnorr<C>,
         label: &[u8],
-    ) -> bool {
-        let mut context = ChallengeInput::from(&[("mhr", &mhr)]);
-        context.add("label", &label.to_vec());
+    ) -> Result<bool, StrandError> {
+        let mut context = ChallengeInput::from(&[("mhr", &mhr)])?;
+        context.add("label", &label.to_vec())?;
 
-        self.schnorr_verify_private(gr, None, proof, context)
+        Ok(self.schnorr_verify_private(gr, None, proof, context))
     }
 
     /// Prove decryption of a ciphertext.
@@ -83,9 +84,9 @@ impl<C: Ctx> Zkp<C> {
         mhr: &C::E,
         gr: &C::E,
         label: &[u8],
-    ) -> ChaumPedersen<C> {
-        let mut context = ChallengeInput::from(&[("mhr", &mhr)]);
-        context.add("label", &label.to_vec());
+    ) -> Result<ChaumPedersen<C>, StrandError> {
+        let mut context = ChallengeInput::from(&[("mhr", &mhr)])?;
+        context.add("label", &label.to_vec())?;
 
         self.cp_prove_private(secret, pk, dec_factor, None, gr, context)
     }
@@ -99,11 +100,11 @@ impl<C: Ctx> Zkp<C> {
         gr: &C::E,
         proof: &ChaumPedersen<C>,
         label: &[u8],
-    ) -> bool {
-        let mut context = ChallengeInput::from(&[("mhr", &mhr)]);
-        context.add("label", &label.to_vec());
+    ) -> Result<bool, StrandError> {
+        let mut context = ChallengeInput::from(&[("mhr", &mhr)])?;
+        context.add("label", &label.to_vec())?;
 
-        self.cp_verify_private(pk, dec_factor, None, gr, proof, context)
+        Ok(self.cp_verify_private(pk, dec_factor, None, gr, proof, context))
     }
 
     /// Prove knowledge of discrete logarithm.
@@ -113,7 +114,7 @@ impl<C: Ctx> Zkp<C> {
         public: &C::E,
         g: Option<&C::E>,
         label: &[u8],
-    ) -> Schnorr<C> {
+    ) -> Result<Schnorr<C>, StrandError> {
         let context =
             ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
         self.schnorr_prove_private(secret, public, g, context)
@@ -142,7 +143,7 @@ impl<C: Ctx> Zkp<C> {
         g1: Option<&C::E>,
         g2: &C::E,
         label: &[u8],
-    ) -> ChaumPedersen<C> {
+    ) -> Result<ChaumPedersen<C>, StrandError> {
         let context =
             ChallengeInput::from_bytes(vec![("label", label.to_vec())]);
         self.cp_prove_private(secret, public1, public2, g1, g2, context)
@@ -169,7 +170,7 @@ impl<C: Ctx> Zkp<C> {
         public: &C::E,
         g: Option<&C::E>,
         context: ChallengeInput,
-    ) -> Schnorr<C> {
+    ) -> Result<Schnorr<C>, StrandError> {
         let r = self.ctx.rnd_exp();
         let commitment = if let Some(g) = g {
             self.ctx.emod_pow(g, &r)
@@ -181,14 +182,14 @@ impl<C: Ctx> Zkp<C> {
             public,
             &commitment,
             context,
-        );
+        )?;
         let response = r.add(&challenge.mul(secret)).modq(&self.ctx);
 
-        Schnorr {
+        Ok(Schnorr {
             commitment,
             challenge,
             response,
-        }
+        })
     }
 
     fn schnorr_verify_private(
@@ -204,7 +205,12 @@ impl<C: Ctx> Zkp<C> {
             &proof.commitment,
             context,
         );
-        let ok1 = challenge_.eq(&proof.challenge);
+
+        if challenge_.is_err() {
+            return false;
+        }
+
+        let ok1 = challenge_.expect("impossible").eq(&proof.challenge);
         let lhs = if let Some(g) = g {
             self.ctx.emod_pow(g, &proof.response)
         } else {
@@ -226,7 +232,7 @@ impl<C: Ctx> Zkp<C> {
         g1: Option<&C::E>,
         g2: &C::E,
         context: ChallengeInput,
-    ) -> ChaumPedersen<C> {
+    ) -> Result<ChaumPedersen<C>, StrandError> {
         let r = self.ctx.rnd_exp();
         let commitment1 = if let Some(g1) = g1 {
             self.ctx.emod_pow(g1, &r)
@@ -242,15 +248,15 @@ impl<C: Ctx> Zkp<C> {
             &commitment1,
             &commitment2,
             context,
-        );
+        )?;
         let response = r.add(&challenge.mul(secret)).modq(&self.ctx);
 
-        ChaumPedersen {
+        Ok(ChaumPedersen {
             commitment1,
             commitment2,
             challenge,
             response,
-        }
+        })
     }
 
     fn cp_verify_private(
@@ -271,7 +277,11 @@ impl<C: Ctx> Zkp<C> {
             &proof.commitment2,
             context,
         );
-        let ok1 = challenge_.eq(&proof.challenge);
+        if challenge_.is_err() {
+            return false;
+        }
+
+        let ok1 = challenge_.expect("impossible").eq(&proof.challenge);
 
         let lhs1 = if let Some(g1) = g1 {
             self.ctx.emod_pow(g1, &proof.response)
@@ -299,16 +309,16 @@ impl<C: Ctx> Zkp<C> {
         public: &C::E,
         commitment: &C::E,
         context: ChallengeInput,
-    ) -> C::X {
+    ) -> Result<C::X, StrandError> {
         let mut values = ChallengeInput::from(&[
             ("g", g),
             ("public", public),
             ("commitment", commitment),
-        ]);
-        values.add("context", &context);
+        ])?;
+        values.add("context", &context)?;
 
-        let bytes = values.get_bytes();
-        self.ctx.hash_to_exp(&bytes)
+        let bytes = values.get_bytes()?;
+        Ok(self.ctx.hash_to_exp(&bytes))
     }
 
     fn cp_proof_challenge(
@@ -320,7 +330,7 @@ impl<C: Ctx> Zkp<C> {
         commitment1: &C::E,
         commitment2: &C::E,
         context: ChallengeInput,
-    ) -> C::X {
+    ) -> Result<C::X, StrandError> {
         let mut values = ChallengeInput::from(&[
             ("g1", g1),
             ("g2", g2),
@@ -328,11 +338,11 @@ impl<C: Ctx> Zkp<C> {
             ("public2", public2),
             ("commitment1", commitment1),
             ("commitment2", commitment2),
-        ]);
-        values.add("context", &context);
+        ])?;
+        values.add("context", &context)?;
 
-        let bytes = values.get_bytes();
-        self.ctx.hash_to_exp(&bytes)
+        let bytes = values.get_bytes()?;
+        Ok(self.ctx.hash_to_exp(&bytes))
     }
 }
 
@@ -358,14 +368,16 @@ pub(crate) struct ChallengeInput(HashMap<String, Vec<u8>>);
 impl ChallengeInput {
     pub(crate) fn from<T: BorshSerialize>(
         values: &[(&'static str, &T)],
-    ) -> ChallengeInput {
-        let serialized = values
-            .iter()
-            .map(|value| (value.0.to_string(), value.1.try_to_vec().unwrap()));
+    ) -> Result<ChallengeInput, StrandError> {
+        let mut h = HashMap::new();
+        for (tag, value) in values {
+            let s = tag.to_string();
+            let r: Result<Vec<u8>, StrandError> =
+                value.try_to_vec().map_err(|e| e.into());
+            h.insert(s, r?);
+        }
 
-        let map = HashMap::from_iter(serialized);
-
-        ChallengeInput(map)
+        Ok(ChallengeInput(h))
     }
 
     pub(crate) fn from_bytes(
@@ -384,16 +396,18 @@ impl ChallengeInput {
         &mut self,
         name: &'static str,
         value: &T,
-    ) {
-        let bytes = value.try_to_vec().unwrap();
-        self.0.insert(name.to_string(), bytes);
+    ) -> Result<(), StrandError> {
+        let bytes: Result<Vec<u8>, StrandError> =
+            value.try_to_vec().map_err(|e| e.into());
+        self.0.insert(name.to_string(), bytes?);
+        Ok(())
     }
 
     pub(crate) fn add_bytes(&mut self, name: &'static str, bytes: Vec<u8>) {
         self.0.insert(name.to_string(), bytes);
     }
 
-    pub(crate) fn get_bytes(&self) -> Vec<u8> {
-        self.try_to_vec().unwrap()
+    pub(crate) fn get_bytes(&self) -> Result<Vec<u8>, StrandError> {
+        self.try_to_vec().map_err(|e| e.into())
     }
 }

@@ -7,8 +7,8 @@ use criterion::{
 };
 use rand::rngs::OsRng;
 use rand::RngCore;
-use strand::backend::num_bigint::{BigintCtx, P2048};
 use strand::backend::malachite::{MalachiteCtx, P2048 as MP2048};
+use strand::backend::num_bigint::{BigintCtx, P2048};
 use strand::backend::ristretto;
 use strand::backend::ristretto::RistrettoCtx;
 use strand::context::Ctx;
@@ -22,12 +22,7 @@ fn encrypt<C: Ctx>(ctx: &C, pk: &PublicKey<C>, data: C::P, n: usize) {
         let randomness = ctx.rnd_exp();
         let c = pk.encrypt_with_randomness(&plaintext, &randomness);
 
-        let _proof = zkp.encryption_popk(
-            &randomness,
-            c.mhr(),
-            c.gr(),
-            &vec![],
-        );
+        let _proof = zkp.encryption_popk(&randomness, c.mhr(), c.gr(), &vec![]);
     }
 }
 

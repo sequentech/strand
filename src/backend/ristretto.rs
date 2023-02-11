@@ -158,7 +158,8 @@ impl Ctx for RistrettoCtx {
         let compressed = element.0.compress();
         // the 30 bytes of data are placed in the range 1-30
         let slice = &compressed.as_bytes()[1..31];
-        to_ristretto_plaintext_array(slice).unwrap()
+        to_ristretto_plaintext_array(slice)
+            .expect("impossible, passed slice is size 30")
     }
     fn element_from_bytes(&self, bytes: &[u8]) -> Result<Self::E, StrandError> {
         let b32 = to_ristretto_point_array(bytes)?;
@@ -208,8 +209,8 @@ impl Ctx for RistrettoCtx {
         blank[0..16].copy_from_slice(&bytes[16..32]);
         let second_array = to_ristretto_plaintext_array(&blank)?;
         let second = self.encode(&second_array);
-        let first_c = pk.encrypt(&first.unwrap());
-        let second_c = pk.encrypt(&second.unwrap());
+        let first_c = pk.encrypt(&first?);
+        let second_c = pk.encrypt(&second?);
 
         vec![first_c, second_c].strand_serialize()
     }

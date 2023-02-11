@@ -29,10 +29,10 @@
 //! let ciphertext = pk1.encrypt_with_randomness(&encoded, &randomness);
 //!
 //! // encrypt and prove knowledge of plaintext (enc + pok)
-//! let (c, proof) = pk1.encrypt_and_pok(&encoded, &vec![]);
+//! let (c, proof) = pk1.encrypt_and_pok(&encoded, &vec![]).unwrap();
 //! // verify
 //! let zkp = Zkp::new(&ctx);
-//! let proof_ok = zkp.encryption_popk_verify(c.mhr(), c.gr(), &proof, &vec![]);
+//! let proof_ok = zkp.encryption_popk_verify(c.mhr(), c.gr(), &proof, &vec![]).unwrap();
 //! assert!(proof_ok);
 //! let decrypted = sk1.decrypt(&c);
 //! let plaintext_ = ctx.decode(&decrypted);
@@ -42,6 +42,7 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 
 use crate::context::{Ctx, Element};
+use crate::util::StrandError;
 use crate::zkp::{ChaumPedersen, Schnorr, Zkp};
 
 /// An ElGamal ciphertext.
@@ -93,13 +94,13 @@ impl<C: Ctx> PublicKey<C> {
         &self,
         plaintext: &C::E,
         label: &[u8],
-    ) -> (Ciphertext<C>, Schnorr<C>) {
+    ) -> Result<(Ciphertext<C>, Schnorr<C>), StrandError> {
         let zkp = Zkp::new(&self.ctx);
         let randomness = self.ctx.rnd_exp();
         let c = self.encrypt_with_randomness(plaintext, &randomness);
         let proof = zkp.encryption_popk(&randomness, &c.mhr, &c.gr, label);
 
-        (c, proof)
+        Ok((c, proof?))
     }
     pub fn encrypt_exponential(&self, plaintext: &C::X) -> Ciphertext<C> {
         self.encrypt(&self.ctx.gmod_pow(plaintext))
@@ -134,7 +135,7 @@ impl<C: Ctx> PrivateKey<C> {
         &self,
         c: &Ciphertext<C>,
         label: &[u8],
-    ) -> (C::E, ChaumPedersen<C>) {
+    ) -> Result<(C::E, ChaumPedersen<C>), StrandError> {
         let ctx = &self.ctx;
         let zkp = Zkp::new(ctx);
 
@@ -151,7 +152,7 @@ impl<C: Ctx> PrivateKey<C> {
 
         let decrypted = c.mhr.divp(dec_factor, ctx).modp(ctx);
 
-        (decrypted, proof)
+        Ok((decrypted, proof?))
     }
     pub fn decryption_factor(&self, c: &Ciphertext<C>) -> C::E {
         self.ctx.emod_pow(&c.gr, &self.value)

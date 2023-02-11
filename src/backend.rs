@@ -72,11 +72,12 @@ pub(crate) mod tests {
         let plaintext = ctx.encode(&data).unwrap();
         let label = vec![];
 
-        let (c, proof) = pk.encrypt_and_pok(&plaintext, &label);
+        let (c, proof) = pk.encrypt_and_pok(&plaintext, &label).unwrap();
         let d = sk.decrypt(&c);
         let zkp = Zkp::new(ctx);
-        let proof_ok =
-            zkp.encryption_popk_verify(&c.mhr, &c.gr, &proof, &label);
+        let proof_ok = zkp
+            .encryption_popk_verify(&c.mhr, &c.gr, &proof, &label)
+            .unwrap();
         assert!(proof_ok);
 
         let recovered = ctx.decode(&d);
@@ -87,7 +88,8 @@ pub(crate) mod tests {
         let zkp = Zkp::new(ctx);
         let secret = ctx.rnd_exp();
         let public = ctx.gmod_pow(&secret);
-        let schnorr = zkp.schnorr_prove(&secret, &public, None, &vec![]);
+        let schnorr =
+            zkp.schnorr_prove(&secret, &public, None, &vec![]).unwrap();
         let verified = zkp.schnorr_verify(&public, None, &schnorr, &vec![]);
         assert!(verified);
         let public_false = ctx.gmod_pow(&ctx.rnd_exp());
@@ -105,8 +107,9 @@ pub(crate) mod tests {
         let secret = ctx.rnd_exp();
         let public1 = ctx.emod_pow(g1, &secret);
         let public2 = ctx.emod_pow(&g2, &secret);
-        let proof =
-            zkp.cp_prove(&secret, &public1, &public2, None, &g2, &vec![]);
+        let proof = zkp
+            .cp_prove(&secret, &public1, &public2, None, &g2, &vec![])
+            .unwrap();
         let verified =
             zkp.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
 
@@ -125,18 +128,20 @@ pub(crate) mod tests {
         let plaintext = ctx.encode(&data).unwrap();
 
         let c = pk.encrypt(&plaintext);
-        let (d, proof) = sk.decrypt_and_prove(&c, &vec![]);
+        let (d, proof) = sk.decrypt_and_prove(&c, &vec![]).unwrap();
 
         let dec_factor = c.mhr.divp(&d, &ctx).modp(&ctx);
 
-        let verified = zkp.verify_decryption(
-            &pk.element,
-            &dec_factor,
-            &c.mhr,
-            &c.gr,
-            &proof,
-            &vec![],
-        );
+        let verified = zkp
+            .verify_decryption(
+                &pk.element,
+                &dec_factor,
+                &c.mhr,
+                &c.gr,
+                &proof,
+                &vec![],
+            )
+            .unwrap();
         let recovered = ctx.decode(&d);
         assert!(verified);
         assert_eq!(data, recovered);
@@ -146,8 +151,8 @@ pub(crate) mod tests {
         let zkp = Zkp::new(ctx);
         let km1 = Keymaker::gen(ctx);
         let km2 = Keymaker::gen(ctx);
-        let (pk1, proof1) = km1.share(&vec![]);
-        let (pk2, proof2) = km2.share(&vec![]);
+        let (pk1, proof1) = km1.share(&vec![]).unwrap();
+        let (pk2, proof2) = km2.share(&vec![]).unwrap();
 
         let verified1 = zkp.schnorr_verify(
             &pk1.element,
@@ -173,25 +178,29 @@ pub(crate) mod tests {
         let pk_combined = Keymaker::combine_pks(ctx, pks);
         let c = pk_combined.encrypt(&plaintext);
 
-        let (dec_f1, proof1) = km1.decryption_factor(&c, &vec![]);
-        let (dec_f2, proof2) = km2.decryption_factor(&c, &vec![]);
+        let (dec_f1, proof1) = km1.decryption_factor(&c, &vec![]).unwrap();
+        let (dec_f2, proof2) = km2.decryption_factor(&c, &vec![]).unwrap();
 
-        let verified1 = zkp.verify_decryption(
-            pk1_value,
-            &dec_f1,
-            &c.mhr,
-            &c.gr,
-            &proof1,
-            &vec![],
-        );
-        let verified2 = zkp.verify_decryption(
-            pk2_value,
-            &dec_f2,
-            &c.mhr,
-            &c.gr,
-            &proof2,
-            &vec![],
-        );
+        let verified1 = zkp
+            .verify_decryption(
+                pk1_value,
+                &dec_f1,
+                &c.mhr,
+                &c.gr,
+                &proof1,
+                &vec![],
+            )
+            .unwrap();
+        let verified2 = zkp
+            .verify_decryption(
+                pk2_value,
+                &dec_f2,
+                &c.mhr,
+                &c.gr,
+                &proof2,
+                &vec![],
+            )
+            .unwrap();
         assert!(verified1);
         assert!(verified2);
 
@@ -207,8 +216,8 @@ pub(crate) mod tests {
     ) {
         let km1 = Keymaker::gen(ctx);
         let km2 = Keymaker::gen(ctx);
-        let (pk1, proof1) = km1.share(&vec![]);
-        let (pk2, proof2) = km2.share(&vec![]);
+        let (pk1, proof1) = km1.share(&vec![]).unwrap();
+        let (pk2, proof2) = km2.share(&vec![]).unwrap();
 
         let share1_pk_b = pk1.strand_serialize().unwrap();
         let share1_proof_b = proof1.strand_serialize().unwrap();
