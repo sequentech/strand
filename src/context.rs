@@ -75,6 +75,7 @@ pub trait Ctx: Send + Sync + Sized + Clone + Default + Debug {
     fn exp_from_u64(&self, value: u64) -> Self::X;
     fn hash_to_exp(&self, bytes: &[u8]) -> Self::X;
 
+    // In braid, used to encrypt shares (evaluations of the polynomial in Zp)
     fn encrypt_exp(
         &self,
         exp: &Self::X,

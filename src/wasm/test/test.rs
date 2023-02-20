@@ -35,8 +35,9 @@ pub fn test() {
     test_distributed();
     test_distributed_serialization();
     test_threshold();
-    // test_shuffle();
     test_shuffle_serialization();
+    test_encrypt_exp();
+    test_encrypt_pok();
 }
 
 #[wasm_bindgen]
@@ -89,7 +90,7 @@ pub fn test_elgamal() {
     let mut csprng = StrandRng;
     let mut fill = [0u8; 30];
     csprng.fill_bytes(&mut fill);
-    let plaintext = to_plaintext_array(&fill.to_vec());
+    let plaintext = to_plaintext_array(fill.as_ref());
     test_elgamal_generic(&ctx, plaintext);
 
     message("* BigInt encrypt..");
@@ -125,7 +126,7 @@ pub fn test_vdecryption() {
     let ctx = RistrettoCtx;
     let mut fill = [0u8; 30];
     csprng.fill_bytes(&mut fill);
-    let plaintext = to_plaintext_array(&fill.to_vec());
+    let plaintext = to_plaintext_array(fill.as_ref());
     test_vdecryption_generic(&ctx, plaintext);
 
     message("* BigInt vdecryption..");
@@ -145,7 +146,7 @@ pub fn test_distributed() {
     let ctx = RistrettoCtx;
     let mut fill = [0u8; 30];
     csprng.fill_bytes(&mut fill);
-    let plaintext = to_plaintext_array(&fill.to_vec());
+    let plaintext = to_plaintext_array(fill.as_ref());
     test_distributed_generic(&ctx, plaintext);
 
     message("* BigInt distributed..");
@@ -168,7 +169,7 @@ pub fn test_distributed_serialization() {
     for _ in 0..1 {
         let mut fill = [0u8; 30];
         csprng.fill_bytes(&mut fill);
-        let p = to_plaintext_array(&fill.to_vec());
+        let p = to_plaintext_array(fill.as_ref());
         ps.push(p);
     }
     test_distributed_serialization_generic(&ctx, ps);
@@ -198,7 +199,7 @@ pub fn test_threshold() {
     let ctx = RistrettoCtx;
     let mut fill = [0u8; 30];
     csprng.fill_bytes(&mut fill);
-    let plaintext = to_plaintext_array(&fill.to_vec());
+    let plaintext = to_plaintext_array(fill.as_ref());
     let trustees = 5usize;
     let threshold = 3usize;
     test_threshold_generic(&ctx, trustees, threshold, plaintext);
@@ -216,6 +217,40 @@ pub fn test_threshold() {
     let ctx: MalachiteCtx<MP2048> = Default::default();
     let plaintext = ctx.rnd_plaintext();
     test_threshold_generic(&ctx, trustees, threshold, plaintext);
+}
+
+pub fn test_encrypt_exp() {
+    message("* Ristretto encrypt exp..");
+    let ctx = RistrettoCtx;
+    test_encrypt_exp_generic(&ctx);
+
+    message("* BigInt encrypt exp..");
+    let ctx: BigintCtx<P2048> = Default::default();
+    test_encrypt_exp_generic(&ctx);
+
+    message("* Malachite encrypt exp..");
+    let ctx: MalachiteCtx<MP2048> = Default::default();
+    test_encrypt_exp_generic(&ctx);
+}
+
+pub fn test_encrypt_pok() {
+    message("* Ristretto encrypt_pok..");
+    let mut csprng = StrandRng;
+    let ctx = RistrettoCtx;
+    let mut fill = [0u8; 30];
+    csprng.fill_bytes(&mut fill);
+    let plaintext = to_plaintext_array(fill.as_ref());
+    test_elgamal_enc_pok_generic(&ctx, plaintext);
+
+    message("* BigInt encrypt_pok..");
+    let ctx: BigintCtx<P2048> = Default::default();
+    let plaintext = ctx.rnd_plaintext();
+    test_elgamal_enc_pok_generic(&ctx, plaintext);
+
+    message("* Malachite encrypt_pok..");
+    let ctx: MalachiteCtx<MP2048> = Default::default();
+    let plaintext = ctx.rnd_plaintext();
+    test_elgamal_enc_pok_generic(&ctx, plaintext);
 }
 
 fn to_plaintext_array(input: &[u8]) -> [u8; 30] {

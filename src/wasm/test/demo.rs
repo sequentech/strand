@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 use wasm_bindgen::prelude::*;
 
-use crate::backend::ristretto;
 use crate::backend::ristretto::RistrettoCtx;
 use crate::backend::ristretto::RistrettoPointS;
 use crate::context::Ctx;
@@ -86,14 +85,6 @@ fn to_plaintext_s(plaintext: &RistrettoPointS) -> PlaintextS {
     };
 
     PlaintextS { value }
-}
-
-fn from_plaintext_s(plaintext: &PlaintextS) -> RistrettoPointS {
-    let ctx = RistrettoCtx;
-
-    let bytes = hex::decode(&plaintext.value).unwrap();
-    ctx.encode(&ristretto::to_ristretto_plaintext_array(&bytes).unwrap())
-        .unwrap()
 }
 
 fn secret_key() -> PrivateKey<RistrettoCtx> {

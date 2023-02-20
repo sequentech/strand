@@ -247,8 +247,8 @@ pub(crate) mod tests {
         }
 
         // distribute shares, including to ourselves
-        for i in 0..num_trustees as usize {
-            for j in 0..num_trustees as usize {
+        for i in 0..num_trustees {
+            for j in 0..num_trustees {
                 let share = trustees[i].shares[j].clone();
                 let commitments = trustees[i].commitments.clone();
                 let ok =
@@ -263,9 +263,9 @@ pub(crate) mod tests {
         let c: Ciphertext<C> = pk.encrypt(&plaintext);
         // sanity check: all trustees present for decryption works
         let mut divider = C::E::mul_identity();
-        for i in 0..num_trustees {
+        for t in trustees.iter().take(num_trustees) {
             divider = divider
-                .mul(&ctx.emod_pow(&c.gr, &trustees[i].coefficients[0]))
+                .mul(&ctx.emod_pow(&c.gr, &t.coefficients[0]))
                 .modp(ctx);
         }
         let decrypted = c.mhr.divp(&divider, ctx).modp(ctx);
@@ -282,18 +282,11 @@ pub(crate) mod tests {
             let (base, proof) =
                 trustees[present[i] - 1].decryption_factor(&c, &[]).unwrap();
             let ok = zkp
-                .verify_decryption(
-                    &v_key,
-                    &base,
-                    &c.mhr,
-                    &c.gr,
-                    &proof,
-                    &vec![],
-                )
+                .verify_decryption(&v_key, &base, &c.mhr, &c.gr, &proof, &[])
                 .unwrap();
             assert!(ok);
 
-            let lagrange = threshold::lagrange(present[i], &present, ctx);
+            let lagrange = threshold::lagrange(present[i], present, ctx);
 
             let next = ctx.emod_pow(&base, &lagrange);
             divider = divider.mul(&next).modp(ctx)
@@ -312,24 +305,17 @@ pub(crate) mod tests {
             let (base, proof) =
                 trustees[present[i] - 1].decryption_factor(&c, &[]).unwrap();
             let ok = zkp
-                .verify_decryption(
-                    &v_key,
-                    &base,
-                    &c.mhr,
-                    &c.gr,
-                    &proof,
-                    &vec![],
-                )
+                .verify_decryption(&v_key, &base, &c.mhr, &c.gr, &proof, &[])
                 .unwrap();
             assert!(ok);
 
-            let lagrange = threshold::lagrange(present[i], &present, ctx);
+            let lagrange = threshold::lagrange(present[i], present, ctx);
 
             let next = ctx.emod_pow(&base, &lagrange);
-            divider = divider.mul(&next).modp(&ctx)
+            divider = divider.mul(&next).modp(ctx)
         }
 
-        let decrypted = c.mhr.divp(&divider, &ctx).modp(&ctx);
+        let decrypted = c.mhr.divp(&divider, ctx).modp(ctx);
         let decoded = ctx.decode(&decrypted);
 
         assert_ne!(data, decoded);

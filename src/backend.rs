@@ -88,14 +88,13 @@ pub(crate) mod tests {
         let zkp = Zkp::new(ctx);
         let secret = ctx.rnd_exp();
         let public = ctx.gmod_pow(&secret);
-        let schnorr =
-            zkp.schnorr_prove(&secret, &public, None, &vec![]).unwrap();
-        let verified = zkp.schnorr_verify(&public, None, &schnorr, &vec![]);
+        let schnorr = zkp.schnorr_prove(&secret, &public, None, &[]).unwrap();
+        let verified = zkp.schnorr_verify(&public, None, &schnorr, &[]);
         assert!(verified);
         let public_false = ctx.gmod_pow(&ctx.rnd_exp());
         let verified_false =
-            zkp.schnorr_verify(&public_false, None, &schnorr, &vec![]);
-        assert!(verified_false == false);
+            !zkp.schnorr_verify(&public_false, None, &schnorr, &[]);
+        assert!(verified_false);
     }
 
     use crate::zkp::Zkp;
@@ -108,16 +107,16 @@ pub(crate) mod tests {
         let public1 = ctx.emod_pow(g1, &secret);
         let public2 = ctx.emod_pow(&g2, &secret);
         let proof = zkp
-            .cp_prove(&secret, &public1, &public2, None, &g2, &vec![])
+            .cp_prove(&secret, &public1, &public2, None, &g2, &[])
             .unwrap();
         let verified =
-            zkp.cp_verify(&public1, &public2, None, &g2, &proof, &vec![]);
+            zkp.cp_verify(&public1, &public2, None, &g2, &proof, &[]);
 
         assert!(verified);
         let public_false = ctx.gmod_pow(&ctx.rnd_exp());
         let verified_false =
-            zkp.cp_verify(&public1, &public_false, None, &g2, &proof, &vec![]);
-        assert!(verified_false == false);
+            !zkp.cp_verify(&public1, &public_false, None, &g2, &proof, &[]);
+        assert!(verified_false);
     }
 
     pub(crate) fn test_vdecryption_generic<C: Ctx>(ctx: &C, data: C::P) {
@@ -128,9 +127,9 @@ pub(crate) mod tests {
         let plaintext = ctx.encode(&data).unwrap();
 
         let c = pk.encrypt(&plaintext);
-        let (d, proof) = sk.decrypt_and_prove(&c, &vec![]).unwrap();
+        let (d, proof) = sk.decrypt_and_prove(&c, &[]).unwrap();
 
-        let dec_factor = c.mhr.divp(&d, &ctx).modp(&ctx);
+        let dec_factor = c.mhr.divp(&d, ctx).modp(ctx);
 
         let verified = zkp
             .verify_decryption(
@@ -139,7 +138,7 @@ pub(crate) mod tests {
                 &c.mhr,
                 &c.gr,
                 &proof,
-                &vec![],
+                &[],
             )
             .unwrap();
         let recovered = ctx.decode(&d);
@@ -151,20 +150,20 @@ pub(crate) mod tests {
         let zkp = Zkp::new(ctx);
         let km1 = Keymaker::gen(ctx);
         let km2 = Keymaker::gen(ctx);
-        let (pk1, proof1) = km1.share(&vec![]).unwrap();
-        let (pk2, proof2) = km2.share(&vec![]).unwrap();
+        let (pk1, proof1) = km1.share(&[]).unwrap();
+        let (pk2, proof2) = km2.share(&[]).unwrap();
 
         let verified1 = zkp.schnorr_verify(
             &pk1.element,
-            Some(&ctx.generator()),
+            Some(ctx.generator()),
             &proof1,
-            &vec![],
+            &[],
         );
         let verified2 = zkp.schnorr_verify(
             &pk2.element,
-            Some(&ctx.generator()),
+            Some(ctx.generator()),
             &proof2,
-            &vec![],
+            &[],
         );
         assert!(verified1);
         assert!(verified2);
@@ -178,28 +177,14 @@ pub(crate) mod tests {
         let pk_combined = Keymaker::combine_pks(ctx, pks);
         let c = pk_combined.encrypt(&plaintext);
 
-        let (dec_f1, proof1) = km1.decryption_factor(&c, &vec![]).unwrap();
-        let (dec_f2, proof2) = km2.decryption_factor(&c, &vec![]).unwrap();
+        let (dec_f1, proof1) = km1.decryption_factor(&c, &[]).unwrap();
+        let (dec_f2, proof2) = km2.decryption_factor(&c, &[]).unwrap();
 
         let verified1 = zkp
-            .verify_decryption(
-                pk1_value,
-                &dec_f1,
-                &c.mhr,
-                &c.gr,
-                &proof1,
-                &vec![],
-            )
+            .verify_decryption(pk1_value, &dec_f1, &c.mhr, &c.gr, &proof1, &[])
             .unwrap();
         let verified2 = zkp
-            .verify_decryption(
-                pk2_value,
-                &dec_f2,
-                &c.mhr,
-                &c.gr,
-                &proof2,
-                &vec![],
-            )
+            .verify_decryption(pk2_value, &dec_f2, &c.mhr, &c.gr, &proof2, &[])
             .unwrap();
         assert!(verified1);
         assert!(verified2);
@@ -216,8 +201,8 @@ pub(crate) mod tests {
     ) {
         let km1 = Keymaker::gen(ctx);
         let km2 = Keymaker::gen(ctx);
-        let (pk1, proof1) = km1.share(&vec![]).unwrap();
-        let (pk2, proof2) = km2.share(&vec![]).unwrap();
+        let (pk1, proof1) = km1.share(&[]).unwrap();
+        let (pk2, proof2) = km2.share(&[]).unwrap();
 
         let share1_pk_b = pk1.strand_serialize().unwrap();
         let share1_proof_b = proof1.strand_serialize().unwrap();
@@ -236,9 +221,9 @@ pub(crate) mod tests {
             Schnorr::<C>::strand_deserialize(&share2_proof_b).unwrap();
 
         let verified1 =
-            Keymaker::verify_share(ctx, &share1_pk_d, &share1_proof_d, &vec![]);
+            Keymaker::verify_share(ctx, &share1_pk_d, &share1_proof_d, &[]);
         let verified2 =
-            Keymaker::verify_share(ctx, &share2_pk_d, &share2_proof_d, &vec![]);
+            Keymaker::verify_share(ctx, &share2_pk_d, &share2_proof_d, &[]);
 
         assert!(verified1);
         assert!(verified2);
@@ -251,15 +236,13 @@ pub(crate) mod tests {
         let mut cs = vec![];
 
         for plaintext in &data {
-            let encoded = ctx.encode(&plaintext).unwrap();
+            let encoded = ctx.encode(plaintext).unwrap();
             let c = pk_combined.encrypt(&encoded);
             cs.push(c);
         }
 
-        let (decs1, proofs1) =
-            km1.decryption_factor_many(&cs, &vec![]).unwrap();
-        let (decs2, proofs2) =
-            km2.decryption_factor_many(&cs, &vec![]).unwrap();
+        let (decs1, proofs1) = km1.decryption_factor_many(&cs, &[]).unwrap();
+        let (decs2, proofs2) = km2.decryption_factor_many(&cs, &[]).unwrap();
 
         let decs1_b = decs1.strand_serialize().unwrap();
         let proofs1_b = proofs1.strand_serialize().unwrap();
@@ -281,7 +264,7 @@ pub(crate) mod tests {
             &cs,
             &decs1_d,
             &proofs1_d,
-            &vec![],
+            &[],
         );
         let verified2 = Keymaker::verify_decryption_factors(
             ctx,
@@ -289,7 +272,7 @@ pub(crate) mod tests {
             &cs,
             &decs2_d,
             &proofs2_d,
-            &vec![],
+            &[],
         );
 
         assert!(verified1.unwrap());
@@ -318,13 +301,10 @@ pub(crate) mod tests {
         };
 
         let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
-        let proof = shuffler
-            .gen_proof(&es, &e_primes, &rs, &perm, &vec![])
-            .unwrap();
+        let proof =
+            shuffler.gen_proof(&es, &e_primes, &rs, &perm, &[]).unwrap();
 
-        let ok = shuffler
-            .check_proof(&proof, &es, &e_primes, &vec![])
-            .unwrap();
+        let ok = shuffler.check_proof(&proof, &es, &e_primes, &[]).unwrap();
 
         assert!(ok);
     }
@@ -342,11 +322,10 @@ pub(crate) mod tests {
             ctx: (*ctx).clone(),
         };
         let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
-        let proof = shuffler
-            .gen_proof(&es, &e_primes, &rs, &perm, &vec![])
-            .unwrap();
+        let proof =
+            shuffler.gen_proof(&es, &e_primes, &rs, &perm, &[]).unwrap();
         // in this test do this only after serialization
-        // let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
+        // let ok = shuffler.check_proof(&proof, &es, &e_primes, &[]);
         // assert!(ok);
 
         let pk_b = pk.strand_serialize().unwrap();
@@ -367,7 +346,7 @@ pub(crate) mod tests {
         };
 
         let ok_d = shuffler_d
-            .check_proof(&proof_d, &es_d, &eprimes_d, &vec![])
+            .check_proof(&proof_d, &es_d, &eprimes_d, &[])
             .unwrap();
 
         assert!(ok_d);

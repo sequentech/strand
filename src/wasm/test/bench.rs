@@ -30,7 +30,7 @@ extern "C" {
 
 #[wasm_bindgen]
 pub fn bench(n: u32) {
-    postMessage(&format!("--- wasm::bench.rs (n = {})", n));
+    postMessage(&format!("--- wasm::bench.rs (n = {n})"));
     #[cfg(feature = "rayon")]
     postMessage(">> strand wasm build WITH rayon");
     #[cfg(not(feature = "rayon"))]
@@ -58,7 +58,7 @@ pub fn bench_shuffle(n: usize) {
 #[wasm_bindgen]
 pub fn bench_modpow(n: u32) {
     let ctx = RistrettoCtx;
-    postMessage(&format!("> Ristretto modpow n = {}", n));
+    postMessage(&format!("> Ristretto modpow n = {n}"));
     let now = performance.now();
     bench_modpow_generic(ctx, n);
     postMessage(&format!(
@@ -66,7 +66,7 @@ pub fn bench_modpow(n: u32) {
         (performance.now() - now) / n as f64
     ));
     let ctx: BigintCtx<P2048> = Default::default();
-    postMessage(&format!("> Bigint modpow n = {}", n));
+    postMessage(&format!("> Bigint modpow n = {n}"));
     let now = performance.now();
     bench_modpow_generic(ctx, n);
     postMessage(&format!(
@@ -75,7 +75,7 @@ pub fn bench_modpow(n: u32) {
     ));
 
     let ctx: MalachiteCtx<MP2048> = Default::default();
-    postMessage(&format!("> Malachite modpow n = {}", n));
+    postMessage(&format!("> Malachite modpow n = {n}"));
     let now = performance.now();
     bench_modpow_generic(ctx, n);
     postMessage(&format!(
@@ -91,7 +91,7 @@ pub fn bench_enc_pok(n: u32) {
     let mut fill = [0u8; 30];
     csprng.fill_bytes(&mut fill);
     let plaintext =
-        ristretto::to_ristretto_plaintext_array(&fill.to_vec()).unwrap();
+        ristretto::to_ristretto_plaintext_array(fill.as_ref()).unwrap();
     postMessage("> Ristretto enc_pok");
     bench_enc_pok_generic(ctx, plaintext, n);
 
@@ -124,29 +124,25 @@ fn bench_shuffle_serialization_generic<C: Ctx>(ctx: C, n: usize) {
     };
     log(&format!("{}", performance.now() - now));
 
-    postMessage(&format!("shuffle n = {}, proving..", n));
+    postMessage(&format!("shuffle n = {n}, proving.."));
     let now = performance.now();
     let (e_primes, rs, perm) = shuffler.gen_shuffle(&es);
-    let proof = shuffler
-        .gen_proof(&es, &e_primes, &rs, &perm, &vec![])
-        .unwrap();
+    let proof = shuffler.gen_proof(&es, &e_primes, &rs, &perm, &[]).unwrap();
     postMessage(&format!(
         "prove {:.3} c / s",
         n as f64 / ((performance.now() - now) / 1000.0)
     ));
 
-    postMessage(&format!("shuffle n = {}, verifying..", n));
+    postMessage(&format!("shuffle n = {n}, verifying.."));
     let now = performance.now();
-    let ok = shuffler
-        .check_proof(&proof, &es, &e_primes, &vec![])
-        .unwrap();
+    let ok = shuffler.check_proof(&proof, &es, &e_primes, &[]).unwrap();
     assert!(ok);
     postMessage(&format!(
         "verify {:.3} c / s",
         n as f64 / ((performance.now() - now) / 1000.0)
     ));
 
-    log(&format!("serialization.."));
+    log("serialization..");
     let now = performance.now();
     let _pk_b = pk.strand_serialize();
     let _es_b = es.strand_serialize();
@@ -157,7 +153,7 @@ fn bench_shuffle_serialization_generic<C: Ctx>(ctx: C, n: usize) {
         n as f64 / ((performance.now() - now) / 1000.0)
     ));
 
-    log(&format!("serialization raw"));
+    log("serialization raw");
     let mut v = vec![];
     for _ in 0..n {
         v.push(ctx.rnd());
@@ -191,12 +187,8 @@ fn bench_enc_pok_generic<C: Ctx>(ctx: C, data: C::P, n: u32) {
         log(&format!("{}", performance.now() - now));
         log("prove..");
         let now = performance.now();
-        let _proof = zkp.schnorr_prove(
-            &randomness,
-            &c.gr,
-            Some(ctx.generator()),
-            &vec![],
-        );
+        let _proof =
+            zkp.schnorr_prove(&randomness, &c.gr, Some(ctx.generator()), &[]);
         log(&format!("{}", performance.now() - now));
     }
     postMessage(&format!(
