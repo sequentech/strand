@@ -158,7 +158,7 @@ See [here](https://github.com/sequentech/strand/tree/main/benches).
 [RustSec Advisory Database]: https://github.com/RustSec/advisory-db/
 [rayon]: https://github.com/rayon-rs/rayon
 [threshold distributed ElGamal]: https://members.loria.fr/VCortier/files/Papers/WPES2013.pdf
-[Wikstrom]: http://www.csc.kth.se/~terelius/TeWi10Full.pdf
+[Wikstrom]: https://www.csc.kth.se/~dog/research/papers/TW10Conf.pdf
 [shuffle]: https://eprint.iacr.org/2011/168.pdf
 [proofs]: https://www.ifca.ai/fc17/voting/papers/voting17_HLKD17.pdf
 [Did you mix me? - Formally Verifying Verifiable Mix Nets in Electronic Voting]: https://eprint.iacr.org/2020/1114.pdf
