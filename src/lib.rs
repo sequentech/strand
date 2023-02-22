@@ -35,5 +35,3 @@ pub mod util;
 pub mod wasm;
 /// Schnorr and Chaum-Pedersen zero knowledge proofs.
 pub mod zkp;
-
-pub use sha3;
