@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
+use base64::{engine::general_purpose, Engine as _};
 use borsh::{BorshDeserialize, BorshSerialize};
 use ed25519_zebra::Signature;
 use ed25519_zebra::SigningKey;
@@ -11,6 +12,8 @@ use std::hash::Hasher;
 use std::io::{Error, ErrorKind};
 
 use crate::rnd::StrandRng;
+use crate::util::StrandError;
+use crate::serialization::{StrandDeserialize, StrandSerialize};
 
 /// An ed25519 backed signature.
 #[derive(Clone)]
@@ -50,6 +53,24 @@ impl std::fmt::Debug for StrandSignaturePk {
     }
 }
 impl Eq for StrandSignaturePk {}
+
+impl TryFrom<String> for StrandSignaturePk {
+    type Error = StrandError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let bytes: Vec<u8> = general_purpose::STANDARD_NO_PAD.decode(value)?;
+        StrandSignaturePk::strand_deserialize(&bytes)
+    }
+}
+
+impl TryFrom<StrandSignaturePk> for String {
+    type Error = StrandError;
+
+    fn try_from(value: StrandSignaturePk) -> Result<Self, Self::Error> {
+        let bytes = value.strand_serialize()?;
+        Ok(general_purpose::STANDARD_NO_PAD.encode(bytes))
+    }
+}
 
 /// An ed25519 backed signing key.
 #[derive(Clone)]
@@ -109,6 +130,7 @@ impl BorshDeserialize for StrandSignaturePk {
     }
 }
 
+
 impl BorshSerialize for StrandSignature {
     fn serialize<W: std::io::Write>(
         &self,
@@ -126,6 +148,25 @@ impl BorshDeserialize for StrandSignature {
             .map_err(|e| Error::new(ErrorKind::Other, e))?;
 
         Ok(StrandSignature(signature))
+    }
+}
+
+
+impl TryFrom<String> for StrandSignatureSk {
+    type Error = StrandError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let bytes: Vec<u8> = general_purpose::STANDARD_NO_PAD.decode(value)?;
+        StrandSignatureSk::strand_deserialize(&bytes)
+    }
+}
+
+impl TryFrom<StrandSignatureSk> for String {
+    type Error = StrandError;
+
+    fn try_from(value: StrandSignatureSk) -> Result<Self, Self::Error> {
+        let bytes = value.strand_serialize()?;
+        Ok(general_purpose::STANDARD_NO_PAD.encode(bytes))
     }
 }
 

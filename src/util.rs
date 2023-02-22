@@ -48,6 +48,8 @@ pub enum StrandError {
     ParseBigIntError(#[from] ParseBigIntError),
     #[error("io error: {0}")]
     SerializationError(#[from] std::io::Error),
+    #[error("decode error: {0}")]
+    DecodingError(#[from] base64::DecodeError),
 }
 
 /// Converts a slice into a hash-sized array.
