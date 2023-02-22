@@ -12,8 +12,8 @@ use std::hash::Hasher;
 use std::io::{Error, ErrorKind};
 
 use crate::rnd::StrandRng;
-use crate::util::StrandError;
 use crate::serialization::{StrandDeserialize, StrandSerialize};
+use crate::util::StrandError;
 
 /// An ed25519 backed signature.
 #[derive(Clone)]
@@ -130,7 +130,6 @@ impl BorshDeserialize for StrandSignaturePk {
     }
 }
 
-
 impl BorshSerialize for StrandSignature {
     fn serialize<W: std::io::Write>(
         &self,
@@ -150,7 +149,6 @@ impl BorshDeserialize for StrandSignature {
         Ok(StrandSignature(signature))
     }
 }
-
 
 impl TryFrom<String> for StrandSignatureSk {
     type Error = StrandError;
