@@ -560,32 +560,25 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
         hasher.update(prefix_bytes);
         let prefix_hash = hasher.finalize().to_vec();
 
-        // Non unwrapping code, see below
-        // let us: Result<Vec<C::X>, StrandError> = (0..n)*/
-        let us = (0..n)
+        let us: Result<Vec<C::X>, StrandError> = (0..n)
             .par()
             .map(|i| {
                 let next = ChallengeInput::from_bytes(vec![
                     ("prefix", prefix_hash.clone()),
                     ("counter", i.to_le_bytes().to_vec()),
                 ]);
-                // FIXME unwrap
-                let bytes = next.get_bytes().unwrap();
-                self.ctx.hash_to_exp(&bytes)
-
-                // This code avoids unwrapping, but it causes 3% slowdown in
-                // shuffle benchmark
-                /*
+                
                 let bytes = next.get_bytes();
                 let z: Result<C::X, StrandError> = match bytes {
                     Err(e) => Err(e),
                     Ok(b) => Ok(self.ctx.hash_to_exp(&b))
                 };
-                z*/
+                z
+                
             })
             .collect();
 
-        Ok(us)
+        us
     }
 
     fn shuffle_proof_challenge(
