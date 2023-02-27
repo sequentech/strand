@@ -168,6 +168,24 @@ impl TryFrom<StrandSignatureSk> for String {
     }
 }
 
+impl TryFrom<String> for StrandSignature {
+    type Error = StrandError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let bytes: Vec<u8> = general_purpose::STANDARD_NO_PAD.decode(value)?;
+        StrandSignature::strand_deserialize(&bytes)
+    }
+}
+
+impl TryFrom<StrandSignature> for String {
+    type Error = StrandError;
+
+    fn try_from(value: StrandSignature) -> Result<Self, Self::Error> {
+        let bytes = value.strand_serialize()?;
+        Ok(general_purpose::STANDARD_NO_PAD.encode(bytes))
+    }
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
