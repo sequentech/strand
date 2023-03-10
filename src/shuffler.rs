@@ -567,14 +567,13 @@ impl<'a, C: Ctx> Shuffler<'a, C> {
                     ("prefix", prefix_hash.clone()),
                     ("counter", i.to_le_bytes().to_vec()),
                 ]);
-                
+
                 let bytes = next.get_bytes();
                 let z: Result<C::X, StrandError> = match bytes {
                     Err(e) => Err(e),
-                    Ok(b) => Ok(self.ctx.hash_to_exp(&b))
+                    Ok(b) => Ok(self.ctx.hash_to_exp(&b)),
                 };
                 z
-                
             })
             .collect();
 
