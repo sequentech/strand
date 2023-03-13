@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2023 David Ruescas <david@sequentech.io>
+// SPDX-FileCopyrightText: 2020 Zcash Foundation
 //
 // SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 
 use base64::{engine::general_purpose, Engine as _};
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -191,7 +193,7 @@ pub(crate) mod tests {
     use super::*;
     use crate::serialization::{StrandDeserialize, StrandSerialize};
 
-    // Adapted from ed25519-zebra
+    // Adapted from ed25519-zebra (MIT)
     #[test]
     pub fn test_signature() {
         let msg = b"ok";
@@ -219,6 +221,40 @@ pub(crate) mod tests {
         assert!(ok.is_ok());
 
         let not_ok = vk.verify(&sig, msg2);
+        assert!(not_ok.is_err());
+    }
+
+    #[test]
+    fn test_string_serialization() {
+        let message = b"ok";
+        let other_message = b"not_ok";
+        let mut rng = StrandRng;
+
+        let (public_key_string, signature_string) = {
+            let signing_key = StrandSignatureSk(SigningKey::new(&mut rng));
+            let signing_key_string: String = signing_key.try_into().unwrap();
+            let signing_key_deserialized: StrandSignatureSk =
+                signing_key_string.try_into().unwrap();
+
+            let sig = signing_key_deserialized.sign(message);
+
+            let signature_string: String = sig.try_into().unwrap();
+            let public_key_string: String =
+                StrandSignaturePk::from(&signing_key_deserialized)
+                    .try_into()
+                    .unwrap();
+
+            (public_key_string, signature_string)
+        };
+
+        let public_key: StrandSignaturePk =
+            public_key_string.try_into().unwrap();
+        let signature = signature_string.try_into().unwrap();
+
+        let ok = public_key.verify(&signature, message);
+        assert!(ok.is_ok());
+
+        let not_ok = public_key.verify(&signature, other_message);
         assert!(not_ok.is_err());
     }
 }
