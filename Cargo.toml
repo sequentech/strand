@@ -48,6 +48,7 @@ sha3 = "0.10"
 
 # Serialization
 borsh = "0.9.3"
+base64 = "0.21"
 
 # RNG
 rand = { package="rand", version = "0.8" }
