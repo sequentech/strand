@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: 2023 David Ruescas <david@sequentech.io>
+// SPDX-FileCopyrightText: 2020 Zcash Foundation
 //
 // SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 
+use base64::{engine::general_purpose, Engine as _};
 use borsh::{BorshDeserialize, BorshSerialize};
 use ed25519_zebra::Signature;
 use ed25519_zebra::SigningKey;
@@ -11,6 +14,8 @@ use std::hash::Hasher;
 use std::io::{Error, ErrorKind};
 
 use crate::rnd::StrandRng;
+use crate::serialization::{StrandDeserialize, StrandSerialize};
+use crate::util::StrandError;
 
 /// An ed25519 backed signature.
 #[derive(Clone)]
@@ -50,6 +55,24 @@ impl std::fmt::Debug for StrandSignaturePk {
     }
 }
 impl Eq for StrandSignaturePk {}
+
+impl TryFrom<String> for StrandSignaturePk {
+    type Error = StrandError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let bytes: Vec<u8> = general_purpose::STANDARD_NO_PAD.decode(value)?;
+        StrandSignaturePk::strand_deserialize(&bytes)
+    }
+}
+
+impl TryFrom<StrandSignaturePk> for String {
+    type Error = StrandError;
+
+    fn try_from(value: StrandSignaturePk) -> Result<Self, Self::Error> {
+        let bytes = value.strand_serialize()?;
+        Ok(general_purpose::STANDARD_NO_PAD.encode(bytes))
+    }
+}
 
 /// An ed25519 backed signing key.
 #[derive(Clone)]
@@ -129,12 +152,48 @@ impl BorshDeserialize for StrandSignature {
     }
 }
 
+impl TryFrom<String> for StrandSignatureSk {
+    type Error = StrandError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let bytes: Vec<u8> = general_purpose::STANDARD_NO_PAD.decode(value)?;
+        StrandSignatureSk::strand_deserialize(&bytes)
+    }
+}
+
+impl TryFrom<StrandSignatureSk> for String {
+    type Error = StrandError;
+
+    fn try_from(value: StrandSignatureSk) -> Result<Self, Self::Error> {
+        let bytes = value.strand_serialize()?;
+        Ok(general_purpose::STANDARD_NO_PAD.encode(bytes))
+    }
+}
+
+impl TryFrom<String> for StrandSignature {
+    type Error = StrandError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let bytes: Vec<u8> = general_purpose::STANDARD_NO_PAD.decode(value)?;
+        StrandSignature::strand_deserialize(&bytes)
+    }
+}
+
+impl TryFrom<StrandSignature> for String {
+    type Error = StrandError;
+
+    fn try_from(value: StrandSignature) -> Result<Self, Self::Error> {
+        let bytes = value.strand_serialize()?;
+        Ok(general_purpose::STANDARD_NO_PAD.encode(bytes))
+    }
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
     use crate::serialization::{StrandDeserialize, StrandSerialize};
 
-    // Adapted from ed25519-zebra
+    // Adapted from ed25519-zebra (MIT)
     #[test]
     pub fn test_signature() {
         let msg = b"ok";
@@ -162,6 +221,40 @@ pub(crate) mod tests {
         assert!(ok.is_ok());
 
         let not_ok = vk.verify(&sig, msg2);
+        assert!(not_ok.is_err());
+    }
+
+    #[test]
+    fn test_string_serialization() {
+        let message = b"ok";
+        let other_message = b"not_ok";
+        let mut rng = StrandRng;
+
+        let (public_key_string, signature_string) = {
+            let signing_key = StrandSignatureSk(SigningKey::new(&mut rng));
+            let signing_key_string: String = signing_key.try_into().unwrap();
+            let signing_key_deserialized: StrandSignatureSk =
+                signing_key_string.try_into().unwrap();
+
+            let sig = signing_key_deserialized.sign(message);
+
+            let signature_string: String = sig.try_into().unwrap();
+            let public_key_string: String =
+                StrandSignaturePk::from(&signing_key_deserialized)
+                    .try_into()
+                    .unwrap();
+
+            (public_key_string, signature_string)
+        };
+
+        let public_key: StrandSignaturePk =
+            public_key_string.try_into().unwrap();
+        let signature = signature_string.try_into().unwrap();
+
+        let ok = public_key.verify(&signature, message);
+        assert!(ok.is_ok());
+
+        let not_ok = public_key.verify(&signature, other_message);
         assert!(not_ok.is_err());
     }
 }
