@@ -271,7 +271,7 @@ impl<P: RugCtxParams> Element<RugCtx<P>> for IntegerE<P> {
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
-        // FIXME remove this check
+        // Sanity check: group elements are always be positive
         assert!(self.0 >= 0);
         // From https://docs.rs/rug/latest/rug/struct.Integer.html#method.div_rem
         // The remainder has the same sign as the dividend.
@@ -685,8 +685,8 @@ mod tests {
             commitments_r: &c_rs,
         };
         let (proof, us, c) =
-            shuffler.gen_proof_ext(&es, &e_primes, &rs, &perm_data, &vec![]);
-        let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]);
+            shuffler.gen_proof_ext(&es, &e_primes, &rs, &perm_data, &vec![]).unwrap();
+        let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]).unwrap();
 
         assert!(ok);
 
