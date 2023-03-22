@@ -255,7 +255,6 @@ impl<P: RugCtxParams> Element<RugCtx<P>> for IntegerE<P> {
             self.0
                 .clone()
                 .invert(&modulus.0)
-                // FIXME verify expect
                 .expect("there is always an inverse for prime modulus p"),
         )
     }
@@ -266,12 +265,11 @@ impl<P: RugCtxParams> Element<RugCtx<P>> for IntegerE<P> {
         // "If the exponent is negative, then the number must have an inverse
         // for an answer to exist. When the exponent is positive and the
         // modulo is not zero, an answer always exists."
-        // FIXME verify expect
         IntegerE::new(ret.expect("an answer always exists for prime modulus p"))
     }
     #[inline(always)]
     fn modulo(&self, modulus: &Self) -> Self {
-        // Sanity check: group elements are always be positive
+        // Sanity check: group elements are always positive
         assert!(self.0 >= 0);
         // From https://docs.rs/rug/latest/rug/struct.Integer.html#method.div_rem
         // The remainder has the same sign as the dividend.
