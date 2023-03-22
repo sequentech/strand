@@ -38,12 +38,18 @@ use crate::serialization::{StrandDeserialize, StrandSerialize};
 use crate::util::StrandError;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct BigUintE<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
+pub struct BigUintE<P: BigintCtxParams>(
+    pub(crate) BigUint,
+    PhantomData<BigintCtx<P>>,
+);
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct BigUintX<P: BigintCtxParams>(pub BigUint, PhantomData<BigintCtx<P>>);
+pub struct BigUintX<P: BigintCtxParams>(
+    pub(crate) BigUint,
+    PhantomData<BigintCtx<P>>,
+);
 
 #[derive(PartialEq, Eq, Debug, Clone, Hash)]
-pub struct BigUintP(pub BigUint);
+pub struct BigUintP(pub(crate) BigUint);
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct BigintCtx<P: BigintCtxParams> {

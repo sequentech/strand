@@ -44,17 +44,17 @@ use crate::util::StrandError;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct NaturalE<P: MalachiteCtxParams>(
-    pub Natural,
+    pub(crate) Natural,
     PhantomData<MalachiteCtx<P>>,
 );
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct NaturalX<P: MalachiteCtxParams>(
-    pub Natural,
+    pub(crate) Natural,
     PhantomData<MalachiteCtx<P>>,
 );
 
 #[derive(PartialEq, Eq, Debug, Clone, Hash)]
-pub struct NaturalP(pub Natural);
+pub struct NaturalP(pub(crate) Natural);
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct MalachiteCtx<P: MalachiteCtxParams> {

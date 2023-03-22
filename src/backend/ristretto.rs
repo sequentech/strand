@@ -45,10 +45,10 @@ pub struct RistrettoCtx;
 
 #[derive(PartialEq, Eq, Clone)]
 // RistrettoPoint for Strand
-pub struct RistrettoPointS(pub RistrettoPoint);
+pub struct RistrettoPointS(pub(crate) RistrettoPoint);
 #[derive(PartialEq, Eq, Debug, Clone)]
 // Scalar for Strand
-pub struct ScalarS(pub Scalar);
+pub struct ScalarS(pub(crate) Scalar);
 
 impl RistrettoCtx {
     // https://docs.rs/bulletproofs/4.0.0/src/bulletproofs/generators.rs.html

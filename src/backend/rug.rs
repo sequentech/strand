@@ -420,11 +420,17 @@ impl RugCtxParams for P2048 {
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct IntegerE<P: RugCtxParams>(Integer, PhantomData<RugCtx<P>>);
+pub struct IntegerE<P: RugCtxParams>(
+    pub(crate) Integer,
+    PhantomData<RugCtx<P>>,
+);
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct IntegerX<P: RugCtxParams>(Integer, PhantomData<RugCtx<P>>);
+pub struct IntegerX<P: RugCtxParams>(
+    pub(crate) Integer,
+    PhantomData<RugCtx<P>>,
+);
 #[derive(PartialEq, Eq, Debug, Clone, Hash)]
-pub struct IntegerP(pub Integer);
+pub struct IntegerP(pub(crate) Integer);
 
 impl<P: RugCtxParams> IntegerE<P> {
     fn new(value: Integer) -> IntegerE<P> {
@@ -684,9 +690,12 @@ mod tests {
             commitments_c: &cs,
             commitments_r: &c_rs,
         };
-        let (proof, us, c) =
-            shuffler.gen_proof_ext(&es, &e_primes, &rs, &perm_data, &vec![]).unwrap();
-        let ok = shuffler.check_proof(&proof, &es, &e_primes, &vec![]).unwrap();
+        let (proof, us, c) = shuffler
+            .gen_proof_ext(&es, &e_primes, &rs, &perm_data, &vec![])
+            .unwrap();
+        let ok = shuffler
+            .check_proof(&proof, &es, &e_primes, &vec![])
+            .unwrap();
 
         assert!(ok);
 
