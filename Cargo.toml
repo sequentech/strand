@@ -47,7 +47,7 @@ sha2 = "0.9"
 sha3 = "0.10"
 
 # Serialization
-borsh = "0.9.3"
+borsh = "0.10.3"
 base64 = "0.21"
 
 # RNG
