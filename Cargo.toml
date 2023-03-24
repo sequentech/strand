@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 [package]
 name = "strand"
-version = "0.1.0"
+version = "0.2.0"
 authors = [
   "David Ruescas <david@sequenttech.io>",
   "Eduardo Robles <edulix@sequenttech.io>"
