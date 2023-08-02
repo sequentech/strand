@@ -39,7 +39,7 @@ use crate::util::StrandError;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct BigUintE<P: BigintCtxParams>(
-    pub(crate) BigUint,
+    pub BigUint,
     PhantomData<BigintCtx<P>>,
 );
 #[derive(PartialEq, Eq, Debug, Clone)]
