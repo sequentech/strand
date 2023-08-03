@@ -55,6 +55,10 @@ pub struct BigUintX<P: BigintCtxParams>(
 #[derive(PartialEq, Eq, Debug, Clone, Hash)]
 pub struct BigUintP(pub(crate) BigUint);
 
+pub fn get_plaintext(val: BigUint) -> BigUintP {
+    BigUintP ( val )
+}
+
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct BigintCtx<P: BigintCtxParams> {
     params: P,
