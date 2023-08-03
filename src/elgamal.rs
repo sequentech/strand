@@ -29,7 +29,7 @@
 //! let ciphertext = pk1.encrypt_with_randomness(&encoded, &randomness);
 //!
 //! // encrypt and prove knowledge of plaintext (enc + pok)
-//! let (c, proof) = pk1.encrypt_and_pok(&encoded, &vec![]).unwrap();
+//! let (c, proof, _randomness) = pk1.encrypt_and_pok(&encoded, &vec![]).unwrap();
 //! // verify
 //! let zkp = Zkp::new(&ctx);
 //! let proof_ok = zkp.encryption_popk_verify(c.mhr(), c.gr(), &proof, &vec![]).unwrap();
@@ -91,18 +91,6 @@ impl<C: Ctx> PublicKey<C> {
         self.encrypt_with_randomness(plaintext, &randomness)
     }
     pub fn encrypt_and_pok(
-        &self,
-        plaintext: &C::E,
-        label: &[u8],
-    ) -> Result<(Ciphertext<C>, Schnorr<C>), StrandError> {
-        let zkp = Zkp::new(&self.ctx);
-        let randomness = self.ctx.rnd_exp();
-        let c = self.encrypt_with_randomness(plaintext, &randomness);
-        let proof = zkp.encryption_popk(&randomness, &c.mhr, &c.gr, label);
-
-        Ok((c, proof?))
-    }
-    pub fn encrypt_and_pok_with_randomness(
         &self,
         plaintext: &C::E,
         label: &[u8],

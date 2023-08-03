@@ -37,14 +37,18 @@ use crate::rnd::StrandRng;
 use crate::serialization::{StrandDeserialize, StrandSerialize};
 use crate::util::StrandError;
 
+pub trait SerializeNumber {
+    fn to_str_radix(&self, radix: u32) -> String;
+}
+
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct BigUintE<P: BigintCtxParams>(
-    pub BigUint,
+    pub(crate) BigUint,
     PhantomData<BigintCtx<P>>,
 );
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct BigUintX<P: BigintCtxParams>(
-    pub BigUint,
+    pub(crate) BigUint,
     PhantomData<BigintCtx<P>>,
 );
 
@@ -54,6 +58,18 @@ pub struct BigUintP(pub(crate) BigUint);
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct BigintCtx<P: BigintCtxParams> {
     params: P,
+}
+
+impl<P: BigintCtxParams> SerializeNumber for BigUintE<P> {
+    fn to_str_radix(&self, radix: u32) -> String {
+        self.0.to_str_radix(radix)
+    }
+}
+
+impl<P: BigintCtxParams> SerializeNumber for BigUintX<P> {
+    fn to_str_radix(&self, radix: u32) -> String {
+        self.0.to_str_radix(radix)
+    }
 }
 
 impl<P: BigintCtxParams> BigintCtx<P> {
