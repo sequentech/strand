@@ -102,6 +102,18 @@ impl<C: Ctx> PublicKey<C> {
 
         Ok((c, proof?))
     }
+    pub fn encrypt_and_pok_with_randomness(
+        &self,
+        plaintext: &C::E,
+        label: &[u8],
+    ) -> Result<(Ciphertext<C>, Schnorr<C>, C::X), StrandError> {
+        let zkp = Zkp::new(&self.ctx);
+        let randomness = self.ctx.rnd_exp();
+        let c = self.encrypt_with_randomness(plaintext, &randomness);
+        let proof = zkp.encryption_popk(&randomness, &c.mhr, &c.gr, label);
+
+        Ok((c, proof?, randomness))
+    }
     pub fn encrypt_exponential(&self, plaintext: &C::X) -> Ciphertext<C> {
         self.encrypt(&self.ctx.gmod_pow(plaintext))
     }
