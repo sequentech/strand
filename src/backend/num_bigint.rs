@@ -22,12 +22,11 @@ use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use num_bigint::BigUint;
+use num_bigint::{BigUint, ParseBigIntError};
 use num_bigint::RandBigInt;
 use num_integer::Integer;
 use num_modular::{ModularSymbols, ModularUnaryOps};
-use num_traits::Num;
-use num_traits::{One, Zero};
+use num_traits::{One, Zero, Num};
 use sha2::Digest;
 
 use crate::backend::constants::*;
@@ -39,6 +38,10 @@ use crate::util::StrandError;
 
 pub trait SerializeNumber {
     fn to_str_radix(&self, radix: u32) -> String;
+}
+
+pub trait DeserializeNumber: Sized {
+    fn from_str_radix(s: &str, radix: u32) -> Result<Self, ParseBigIntError>;
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -55,8 +58,12 @@ pub struct BigUintX<P: BigintCtxParams>(
 #[derive(PartialEq, Eq, Debug, Clone, Hash)]
 pub struct BigUintP(pub(crate) BigUint);
 
-pub fn get_plaintext(val: BigUint) -> BigUintP {
-    BigUintP ( val )
+impl DeserializeNumber for BigUintP {
+    fn from_str_radix(s: &str, radix: u32) -> Result<BigUintP, ParseBigIntError> {
+        let val = BigUint::from_str_radix(s, radix)?;
+        Ok(BigUintP(val))
+    }
+    
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
