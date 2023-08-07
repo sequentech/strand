@@ -41,7 +41,7 @@ rug = { version = "1.16", default-features = false, features = ["integer", "rand
 ed25519-zebra = "3.1.0"
 
 # Hashing 
-sha2 = "0.9"
+sha2 = "0.10"
 
 # Needed for extendable hashing function when deriving generators for ristretto
 sha3 = "0.10"
