@@ -86,7 +86,7 @@ impl Ctx for RistrettoCtx {
     }
     #[inline(always)]
     fn gmod_pow(&self, other: &ScalarS) -> Self::E {
-        RistrettoPointS(&other.0 * &RISTRETTO_BASEPOINT_TABLE)
+        RistrettoPointS(&other.0 * RISTRETTO_BASEPOINT_TABLE)
     }
     #[inline(always)]
     fn emod_pow(&self, base: &Self::E, exponent: &Self::X) -> Self::E {
@@ -172,7 +172,8 @@ impl Ctx for RistrettoCtx {
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, StrandError> {
         let b32 = to_ristretto_point_array(bytes)?;
-        Scalar::from_canonical_bytes(b32).map(ScalarS).ok_or(
+        let opt: Option<Self::X> = Scalar::from_canonical_bytes(b32).map(ScalarS).into();
+            opt.ok_or(
             StrandError::Generic("Failed constructing scalar".to_string()),
         )
     }
@@ -328,10 +329,10 @@ impl Exponent<RistrettoCtx> for ScalarS {
         ScalarS(self.0.invert())
     }
     fn add_identity() -> Self {
-        ScalarS(Scalar::zero())
+        ScalarS(Scalar::ZERO)
     }
     fn mul_identity() -> Self {
-        ScalarS(Scalar::one())
+        ScalarS(Scalar::ONE)
     }
 }
 

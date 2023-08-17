@@ -27,8 +27,10 @@ pub mod serialization;
 /// Wikstrom proof of shuffle.
 #[doc(hidden)]
 pub mod shuffler;
-/// Signature frontend.
+/// Signature frontend (Zcash).
 pub mod signature;
+/// Signature frontend (Dalek).
+pub mod signature2;
 /// Support for threshold ElGamal.
 #[doc(hidden)]
 pub mod threshold;

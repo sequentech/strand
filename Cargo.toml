@@ -30,7 +30,7 @@ rug = ["dep:rug"]
 # The dalek simd_backend feature requires nightly (also requires 
 # RUSTFLAGS="-C target_feature=+avx2" to select avx2)
 # curve25519-dalek = {version = "3", features = ["simd_backend"]}
-curve25519-dalek = {version = "3"}
+curve25519-dalek = {version = "4", features = []}
 num-bigint = { version = "0.4", features = ["rand"] }
 num-traits = "0.2"
 num-integer = "0.1"
@@ -39,9 +39,10 @@ rug = { version = "1.16", default-features = false, features = ["integer", "rand
 
 # Signatures
 ed25519-zebra = "3.1.0"
+ed25519-dalek = { version = "2.0.0", features = ["rand_core"] }
 
 # Hashing 
-sha2 = "0.9"
+sha2 = "0.10.7"
 
 # Needed for extendable hashing function when deriving generators for ristretto
 sha3 = "0.10"
@@ -71,12 +72,13 @@ serde = { version = "1.0", features = ["derive"] }
 hex = { version = "0.4.2" }
 
 [dependencies.malachite]
-version = "0.3.1"
+version = "0.3.2"
 default-features = false
 features = [ "naturals_and_integers" ]
 
 [dev-dependencies]
-criterion = {version = "0.3", features=["html_reports"]}
+# criterion = {version = "0.3", features=["html_reports"]}
+criterion = "0.5.1"
 serde_json = "1.0"
 
 [build-dependencies]
@@ -92,4 +94,4 @@ bench = false
 name = "encrypt"
 harness = false
 # remove this to run benchmark
-bench = true
+bench = false
