@@ -172,10 +172,11 @@ impl Ctx for RistrettoCtx {
     }
     fn exp_from_bytes(&self, bytes: &[u8]) -> Result<Self::X, StrandError> {
         let b32 = to_ristretto_point_array(bytes)?;
-        let opt: Option<Self::X> = Scalar::from_canonical_bytes(b32).map(ScalarS).into();
-            opt.ok_or(
-            StrandError::Generic("Failed constructing scalar".to_string()),
-        )
+        let opt: Option<Self::X> =
+            Scalar::from_canonical_bytes(b32).map(ScalarS).into();
+        opt.ok_or(StrandError::Generic(
+            "Failed constructing scalar".to_string(),
+        ))
     }
     fn exp_from_u64(&self, value: u64) -> Self::X {
         let val_bytes = value.to_le_bytes();

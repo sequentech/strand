@@ -7,10 +7,10 @@
 use base64::{engine::general_purpose, Engine as _};
 use borsh::{BorshDeserialize, BorshSerialize};
 use ed25519_dalek::Signature;
-use ed25519_dalek::SigningKey;
-use ed25519_dalek::VerifyingKey;
-use ed25519_dalek::Verifier;
 use ed25519_dalek::Signer;
+use ed25519_dalek::SigningKey;
+use ed25519_dalek::Verifier;
+use ed25519_dalek::VerifyingKey;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::io::{Error, ErrorKind};
@@ -37,7 +37,7 @@ impl StrandSignaturePk {
         msg: &[u8],
     ) -> Result<(), &'static str> {
         self.0
-            .verify( msg, &signature.0)
+            .verify(msg, &signature.0)
             .map_err(|_| "Failed to verify signature")
     }
 }

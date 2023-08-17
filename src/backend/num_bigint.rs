@@ -22,11 +22,11 @@ use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use num_bigint::{BigUint, ParseBigIntError};
 use num_bigint::RandBigInt;
+use num_bigint::{BigUint, ParseBigIntError};
 use num_integer::Integer;
 use num_modular::{ModularSymbols, ModularUnaryOps};
-use num_traits::{One, Zero, Num};
+use num_traits::{Num, One, Zero};
 use sha2::Digest;
 
 use crate::backend::constants::*;
@@ -59,11 +59,13 @@ pub struct BigUintX<P: BigintCtxParams>(
 pub struct BigUintP(pub(crate) BigUint);
 
 impl DeserializeNumber for BigUintP {
-    fn from_str_radix(s: &str, radix: u32) -> Result<BigUintP, ParseBigIntError> {
+    fn from_str_radix(
+        s: &str,
+        radix: u32,
+    ) -> Result<BigUintP, ParseBigIntError> {
         let val = BigUint::from_str_radix(s, radix)?;
         Ok(BigUintP(val))
     }
-    
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
